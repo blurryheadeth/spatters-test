@@ -1,6 +1,4 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import "@typechain/hardhat";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
@@ -14,22 +12,18 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    hardhat: {
-      chainId: 31337,
-    },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "",
+      type: "http",
+      url: process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
     },
     mainnet: {
-      url: process.env.MAINNET_RPC_URL || "",
+      type: "http",
+      url: process.env.MAINNET_RPC_URL || "https://eth.public-rpc.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 1,
     },
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
   paths: {
     sources: "./contracts",
