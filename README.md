@@ -120,6 +120,40 @@ npx hardhat run scripts/test-pricing.ts
 npx hardhat coverage
 ```
 
+## 🎨 Frontend Development
+
+### Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env.local file
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+
+# Run development server
+npm run dev
+```
+
+### Configuration
+
+Update `frontend/.env.local` with:
+- WalletConnect Project ID (from https://cloud.walletconnect.com)
+- Contract addresses (after deployment)
+- RPC URLs
+- Pinata API keys
+
+### Build for Production
+
+```bash
+cd frontend
+npm run build
+npm start
+```
+
 ## 🚀 Deployment
 
 ### Testnet (Sepolia)
@@ -225,13 +259,13 @@ function getContractBalance() external view returns (uint256)
 - [x] Create deployment scripts
 - [x] Write tests
 
-### Phase 2: Frontend (In Progress)
-- [ ] Set up Next.js project
-- [ ] Integrate Web3 (ethers.js)
-- [ ] Build minting interface with 3-choice selection
-- [ ] Build mutation interface
-- [ ] Display NFT gallery
-- [ ] Integrate p5.js for client-side rendering
+### Phase 2: Frontend ✅
+- [x] Set up Next.js project
+- [x] Integrate Web3 (wagmi + RainbowKit)
+- [x] Build minting interface with 3-choice selection
+- [ ] Build mutation interface (TODO)
+- [ ] Display NFT gallery (TODO)
+- [ ] Integrate p5.js for client-side rendering (TODO)
 
 ### Phase 3: Integration
 - [ ] Deploy to Sepolia testnet
