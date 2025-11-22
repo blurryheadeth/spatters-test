@@ -46,11 +46,11 @@ NFT holders can mutate their tokens on any of these dates:
 3. **Monthly Eligibility**: Based on circles and lines count
    - Formula: `month = (circles × 3) + lines`
    - Can mutate on the 1st of calculated month
-4. **Quarter-End Eligibility**: Based on unique colors count
-   - 1 or 5 colors → March 31 (Q1)
-   - 2 colors → June 30 (Q2)
-   - 3 colors → September 30 (Q3)
-   - 4 colors → December 31 (Q4)
+4. **Equinox/Solstice Eligibility**: Based on unique colors count
+   - 1 or 5 colors → March 20 (Spring Equinox)
+   - 2 colors → June 21 (Summer Solstice)
+   - 3 colors → September 22 (Fall Equinox)
+   - 4 colors → December 21 (Winter Solstice)
 
 ## 🛠️ Technical Stack
 

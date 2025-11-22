@@ -25,7 +25,7 @@
   1. Individual NFT anniversary
   2. Collection launch anniversary
   3. Monthly based on circles/lines count
-  4. Quarterly based on unique colors count
+  4. Equinoxes/Solstices based on unique colors count
 - **On-chain metadata storage** with 10KB size limit
 - **Events-based mutation history** for efficient gas usage
 - **Secure withdrawal** for accumulated mint fees
@@ -40,7 +40,7 @@
 **`MetadataParser.sol`**
 - JSON metadata parsing for eligibility checks
 - Extracts circles, lines, and unique colors count
-- Calculates eligibility months and quarters
+- Calculates eligibility months and equinox/solstice dates
 
 **`DateTime.sol`**
 - Date/time calculations for anniversaries
@@ -162,7 +162,7 @@ ExponentialPricing
 MetadataParser
 ├── parseMetadata() - Extract JSON values
 ├── calculateEligibilityMonth()
-└── getQuarterEndDate()
+└── getQuarterEndDate() - Returns equinox/solstice dates
 
 DateTime
 ├── isSameMonthAndDay() - Anniversary check
@@ -465,4 +465,5 @@ The codebase is clean, well-documented, and follows best practices. All core fea
 **The project is ready for testnet deployment and testing!**
 
 Good luck with your Spatters launch! 🎨🚀
+
 

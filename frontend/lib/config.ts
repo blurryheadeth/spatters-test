@@ -42,3 +42,4 @@ export const RPC_URLS = {
   mainnet: process.env.NEXT_PUBLIC_MAINNET_RPC_URL || "https://eth.public-rpc.com",
 };
 
+

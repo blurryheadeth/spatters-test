@@ -146,12 +146,12 @@ library MetadataParser {
     }
     
     /**
-     * @dev Determine quarter-end date based on unique colors count
-     * Returns: (month, day) of quarter end
-     * 1 or 5 colors -> Q1 (March 31)
-     * 2 colors -> Q2 (June 30)
-     * 3 colors -> Q3 (September 30)
-     * 4 colors -> Q4 (December 31)
+     * @dev Determine equinox/solstice date based on unique colors count
+     * Returns: (month, day) of astronomical event
+     * 1 or 5 colors -> Spring Equinox (March 20)
+     * 2 colors -> Summer Solstice (June 21)
+     * 3 colors -> Fall Equinox (September 22)
+     * 4 colors -> Winter Solstice (December 21)
      */
     function getQuarterEndDate(uint256 uniqueColors) 
         internal 
@@ -159,17 +159,18 @@ library MetadataParser {
         returns (uint256 month, uint256 day) 
     {
         if (uniqueColors == 1 || uniqueColors == 5) {
-            return (3, 31); // March 31
+            return (3, 20); // Spring Equinox - March 20
         } else if (uniqueColors == 2) {
-            return (6, 30); // June 30
+            return (6, 21); // Summer Solstice - June 21
         } else if (uniqueColors == 3) {
-            return (9, 30); // September 30
+            return (9, 22); // Fall Equinox - September 22
         } else if (uniqueColors == 4) {
-            return (12, 31); // December 31
+            return (12, 21); // Winter Solstice - December 21
         }
         
-        // Default to no quarter-end eligibility
+        // Default to no eligibility
         return (0, 0);
     }
 }
+
 

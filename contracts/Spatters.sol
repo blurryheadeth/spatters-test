@@ -204,7 +204,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard {
      * 1. Individual anniversary (token's mint date anniversary)
      * 2. Collection anniversary (collection launch date anniversary)
      * 3. Month eligibility (based on circles and lines count)
-     * 4. Quarter-end eligibility (based on unique colors count)
+     * 4. Equinox/Solstice eligibility (based on unique colors count)
      */
     function canMutate(uint256 tokenId) public view returns (bool) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
@@ -240,10 +240,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard {
             return true;
         }
         
-        // Check 4: Quarter-End Eligibility (based on unique colors)
-        (uint256 quarterMonth, uint256 quarterDay) = 
+        // Check 4: Equinox/Solstice Eligibility (based on unique colors)
+        (uint256 seasonMonth, uint256 seasonDay) = 
             MetadataParser.getQuarterEndDate(uniqueColors);
-        if (quarterMonth > 0 && DateTime.isMonthAndDay(block.timestamp, quarterMonth, quarterDay)) {
+        if (seasonMonth > 0 && DateTime.isMonthAndDay(block.timestamp, seasonMonth, seasonDay)) {
             return true;
         }
         
