@@ -166,8 +166,10 @@ vercel
 
 Test ALL features on Sepolia:
 - [ ] Public minting (from different wallet)
-- [ ] Anti-whale protection (try minting more than allowed)
-- [ ] Cooldown period enforcement
+- [ ] Anti-whale protection (try minting more than 10 per wallet)
+- [ ] Global cooldown enforcement (1 hour between any mints)
+- [ ] Per-wallet cooldown enforcement (24 hours between same wallet's mints)
+- [ ] First public mint (token #26) bypasses global cooldown
 - [ ] Metadata display
 - [ ] Mutation eligibility checks
 - [ ] ETH withdrawal by owner
@@ -196,7 +198,8 @@ Before mainnet deployment, review:
 ### 3.3 Economic Security
 
 - [ ] Pricing curve verified mathematically
-- [ ] Anti-whale limits tested
+- [ ] Dual cooldown system tested (1h global + 24h per-wallet)
+- [ ] Launch timeline understood (minimum 41 days for full collection)
 - [ ] Withdrawal function tested
 - [ ] No way to bypass mint limits
 
@@ -215,6 +218,9 @@ For mainnet launch, consider:
 - [ ] Sufficient ETH for deployment (~0.1-0.5 ETH)
 - [ ] Backups of all code and keys
 - [ ] Emergency procedures documented
+- [ ] Community prepared for slow launch pace (minimum 41 days)
+
+**📅 Launch Timeline Note**: The dual cooldown system (1-hour global + 24-hour per-wallet) ensures a fair, deliberate launch. The 974 public tokens will take a minimum of 41 days to fully mint (1 NFT per hour maximum pace). This prevents whale accumulation and bot rushing while building community engagement over time.
 
 ### 4.1 Deploy to Mainnet
 

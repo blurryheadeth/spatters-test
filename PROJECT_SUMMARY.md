@@ -17,10 +17,11 @@
 - **ERC-721 compliant** NFT implementation
 - **Exponential pricing**: 0.00618 ETH → 100 ETH over 974 tokens
 - **Owner reserve**: First 25 tokens free for project owner
-- **Anti-whale protection**:
-  - Max 2 per transaction
+- **Dual-tier anti-whale protection**:
   - Max 10 per wallet
-  - 1-hour cooldown between mints
+  - 1-hour global cooldown (between ANY mints by ANY wallet)
+  - 24-hour per-wallet cooldown (between same wallet's mints)
+  - 1 NFT per transaction
 - **Time-based mutation system** with 4 eligibility types:
   1. Individual NFT anniversary
   2. Collection launch anniversary
@@ -284,17 +285,20 @@ spatters/
 - Could be more robust with structured storage
 - Gas cost vs. flexibility balance
 
-### 5. Anti-Whale Protection
+### 5. Dual-Tier Anti-Whale Protection
 
 **Implementation**:
-- Per-transaction limit (MAX_PER_TX = 2)
 - Per-wallet limit (MAX_PER_WALLET = 10)
-- Cooldown period (1 hour)
+- Global cooldown (GLOBAL_COOLDOWN = 1 hour)
+- Per-wallet cooldown (WALLET_COOLDOWN = 24 hours)
+- 1 NFT per transaction (enforced by mint function)
 
 **Why these specific values?**
-- Allows genuine collectors to get multiple
-- Prevents single whale from buying too many
-- 1-hour cooldown balances security and UX
+- Allows genuine collectors to get multiple (up to 10)
+- Prevents single whale from rapid accumulation
+- Global cooldown ensures steady, fair launch pace
+- 24-hour per-wallet cooldown prevents same-wallet rushing
+- Results in minimum 41-day collection completion time
 
 ## 🔒 Security Considerations
 

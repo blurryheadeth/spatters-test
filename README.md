@@ -8,7 +8,7 @@ A fully on-chain, dynamic NFT collection on Ethereum with time-based mutations a
 - **Fully On-Chain**: All metadata and generative scripts stored on-chain
 - **Dynamic Mutations**: NFTs can be mutated on specific eligibility dates
 - **Art Blocks Style**: Client-side rendering using on-chain p5.js code
-- **Anti-Whale Protection**: Fair distribution with per-wallet limits and cooldowns
+- **Anti-Whale Protection**: Fair distribution with dual cooldown system (1h global + 24h per-wallet)
 - **Deterministic Randomness**: Reproducible image generation using on-chain seeds
 - **Events-Based History**: Full mutation history preserved in blockchain events
 
@@ -18,9 +18,12 @@ A fully on-chain, dynamic NFT collection on Ethereum with time-based mutations a
 - **Owner Reserve**: First 25 tokens (free mint for owner)
 - **Public Supply**: Tokens 26-999 (exponential pricing)
 - **Anti-Whale Limits**:
-  - Max 2 per transaction
   - Max 10 per wallet
-  - 1-hour cooldown between mints
+  - 1-hour cooldown between ANY mints (global)
+  - 24-hour cooldown per wallet
+  - 1 NFT per transaction
+
+**Note**: The global cooldown means the collection will mint at a maximum pace of 1 NFT per hour, resulting in a minimum 41-day launch period for fair distribution.
 
 ## 💰 Pricing Structure
 

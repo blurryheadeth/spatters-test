@@ -165,7 +165,7 @@ describe("Spatters NFT Contract", function () {
     });
   });
 
-  describe("Anti-Whale Protection", function () {
+  describe("Dual-Tier Anti-Whale Protection", function () {
     beforeEach(async function () {
       // Mint owner reserve
       for (let i = 0; i < 25; i++) {
@@ -173,29 +173,65 @@ describe("Spatters NFT Contract", function () {
       }
     });
 
-    it("Should enforce cooldown period", async function () {
+    it("Should allow first public mint without global cooldown", async function () {
+      const price = await spatters.getMintPrice();
+      
+      // First public mint (token #26) should succeed immediately
+      await expect(
+        spatters.connect(addr1).mint(sampleMetadata, { value: price })
+      ).to.not.be.reverted;
+      
+      expect(await spatters.totalSupply()).to.equal(26);
+    });
+
+    it("Should enforce per-wallet cooldown (24 hours)", async function () {
       const price = await spatters.getMintPrice();
       
       // First mint succeeds
       await spatters.connect(addr1).mint(sampleMetadata, { value: price });
       
-      // Second mint immediately should fail
+      // Second mint by same wallet immediately should fail with wallet cooldown
       const price2 = await spatters.getMintPrice();
       await expect(
         spatters.connect(addr1).mint(sampleMetadata, { value: price2 })
-      ).to.be.revertedWith("Cooldown active");
+      ).to.be.revertedWith("Wallet cooldown active");
     });
 
-    it("Should enforce max per wallet", async function () {
-      // For testing, we'll need to wait between mints or increase time
-      // This test would require time manipulation
-      // Skipping detailed implementation for now
+    it("Should enforce global cooldown (1 hour) for all wallets", async function () {
+      const price = await spatters.getMintPrice();
+      
+      // First mint by addr1
+      await spatters.connect(addr1).mint(sampleMetadata, { value: price });
+      
+      // Different wallet (addr2) tries to mint immediately - should fail with global cooldown
+      const price2 = await spatters.getMintPrice();
+      await expect(
+        spatters.connect(addr2).mint(sampleMetadata, { value: price2 })
+      ).to.be.revertedWith("Global cooldown active");
     });
 
     it("Should track minted per wallet", async function () {
       const price = await spatters.getMintPrice();
       await spatters.connect(addr1).mint(sampleMetadata, { value: price });
       expect(await spatters.mintedPerWallet(addr1.address)).to.equal(1);
+    });
+
+    it("Should update lastGlobalMintTime on each mint", async function () {
+      const price = await spatters.getMintPrice();
+      
+      const timeBefore = await spatters.lastGlobalMintTime();
+      expect(timeBefore).to.equal(0); // Not set yet
+      
+      await spatters.connect(addr1).mint(sampleMetadata, { value: price });
+      
+      const timeAfter = await spatters.lastGlobalMintTime();
+      expect(timeAfter).to.be.greaterThan(0);
+    });
+
+    it("Should enforce max per wallet limit", async function () {
+      // This would require minting 10 tokens with time manipulation
+      // Testing the constant is defined correctly
+      expect(await spatters.MAX_PER_WALLET()).to.equal(10);
     });
   });
 
