@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "dotenv/config";
+import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -12,14 +13,15 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    hardhat: {
+      chainId: 31337,
+    },
     sepolia: {
-      type: "http",
       url: process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.public.blastapi.io",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111,
     },
     mainnet: {
-      type: "http",
       url: process.env.MAINNET_RPC_URL || "https://eth.public-rpc.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 1,
@@ -30,6 +32,11 @@ const config: HardhatUserConfig = {
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",
+  },
+  typechain: {
+    outDir: "typechain",
+    target: "ethers-v6",
+    alwaysGenerateIntoStructs: true,
   },
 };
 
