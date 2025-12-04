@@ -156,7 +156,13 @@ export async function GET(
   const hasCustomPalette = customPalette[0] !== '';
   const paletteArray = hasCustomPalette ? [...customPalette] : [];
 
+  // Art Blocks config for p5.js loading
+  const artBlocksRegistry = '0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF';
+  const p5DependencyBytes32 = '0x703540312e302e30000000000000000000000000000000000000000000000000';
+  const p5ChunkCount = 10;
+
   // Build the full HTML with all on-chain data injected
+  // This matches the on-chain template behavior - loads p5.js from Art Blocks
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,17 +173,13 @@ export async function GET(
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { 
       width: 100%; 
-      height: 100%; 
-      overflow: hidden; 
+      min-height: 100%; 
       background: #000;
     }
   </style>
 </head>
 <body>
-  <div id="status" style="position:fixed;top:10px;left:10px;color:#fff;font-family:monospace;z-index:9999;"></div>
-  
-  <!-- p5.js from CDN for generation -->
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <div id="status" style="position:fixed;top:10px;left:10px;color:#fff;font-family:monospace;z-index:9999;background:rgba(0,0,0,0.7);padding:5px 10px;border-radius:4px;"></div>
   
   <!-- Inject spatters.js from on-chain -->
   <script>
@@ -185,6 +187,100 @@ ${spattersScript}
   </script>
   
   <script>
+    // ============================================================
+    // ART BLOCKS P5.JS LOADING (Matching on-chain template)
+    // ============================================================
+    
+    const CONFIG = {
+      mainnetRpc: '${MAINNET_RPC_URL}',
+      artBlocksRegistry: '${artBlocksRegistry}',
+      p5DependencyBytes32: '${p5DependencyBytes32}',
+      p5ChunkCount: ${p5ChunkCount}
+    };
+    
+    async function ethCall(rpcUrl, to, data) {
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_call',
+          params: [{ to, data }, 'latest'],
+          id: Date.now()
+        })
+      });
+      const json = await response.json();
+      if (json.error) throw new Error(json.error.message);
+      return json.result;
+    }
+    
+    function encodeUint256(num) {
+      return num.toString(16).padStart(64, '0');
+    }
+    
+    function hexToString(hex) {
+      if (!hex || hex === '0x') return '';
+      if (hex.startsWith('0x')) hex = hex.slice(2);
+      let str = '';
+      for (let i = 0; i < hex.length; i += 2) {
+        const code = parseInt(hex.substr(i, 2), 16);
+        if (code === 0) continue;
+        str += String.fromCharCode(code);
+      }
+      return str;
+    }
+    
+    function decodeAbiString(hex) {
+      if (hex.startsWith('0x')) hex = hex.slice(2);
+      const offset = parseInt(hex.slice(0, 64), 16) * 2;
+      const length = parseInt(hex.slice(offset, offset + 64), 16);
+      const data = hex.slice(offset + 64, offset + 64 + length * 2);
+      return hexToString('0x' + data);
+    }
+    
+    async function decompressGzip(compressedData) {
+      const ds = new DecompressionStream('gzip');
+      const blob = new Blob([compressedData]);
+      const decompressedStream = blob.stream().pipeThrough(ds);
+      return await new Response(decompressedStream).text();
+    }
+    
+    const GET_DEPENDENCY_SCRIPT_SELECTOR = '0x518cb3df';
+    
+    async function loadP5jsFromArtBlocks() {
+      updateStatus('Fetching p5.js from Art Blocks (Ethereum Mainnet)...');
+      
+      const chunks = [];
+      for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
+        updateStatus('Fetching p5.js chunk ' + (i + 1) + '/' + CONFIG.p5ChunkCount + ' from Art Blocks...');
+        
+        const indexHex = encodeUint256(i);
+        const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + 
+                         CONFIG.p5DependencyBytes32.slice(2) + 
+                         indexHex;
+        
+        const result = await ethCall(CONFIG.mainnetRpc, CONFIG.artBlocksRegistry, callData);
+        const chunk = decodeAbiString(result);
+        chunks.push(chunk);
+      }
+      
+      const compressedBase64 = chunks.join('');
+      
+      updateStatus('Decompressing p5.js...');
+      const compressedBinary = atob(compressedBase64);
+      const compressedArray = new Uint8Array(compressedBinary.length);
+      for (let i = 0; i < compressedBinary.length; i++) {
+        compressedArray[i] = compressedBinary.charCodeAt(i);
+      }
+      
+      const decompressed = await decompressGzip(compressedArray);
+      return decompressed;
+    }
+    
+    // ============================================================
+    // GENERATION LOGIC
+    // ============================================================
+    
     // Token data from blockchain (seed converted to decimal, matching on-chain template)
     const TOKEN_ID = ${tokenId};
     const MINT_SEED = ${mintSeedDecimal};
@@ -200,15 +296,14 @@ ${spattersScript}
       console.log('[Generation]', msg);
     }
     
-    function setup() {
+    // Define setup before p5.js loads (p5.js will call this)
+    window.setup = function() {
       updateStatus('Starting generation with seed: ' + MINT_SEED);
       
-      // Generate the artwork - spatters.js populates canvasHistory
       try {
         generate(MINT_SEED, MUTATIONS, CUSTOM_PALETTE);
         
         // Expose canvasHistory to window for Puppeteer extraction
-        // (spatters.js uses 'let' which doesn't attach to window automatically)
         window.canvasHistory = canvasHistory;
         
         updateStatus('Generation complete! Frames: ' + (typeof canvasHistory !== 'undefined' ? canvasHistory.length : 0));
@@ -217,11 +312,25 @@ ${spattersScript}
         updateStatus('Generation error: ' + e.message);
         console.error('Generation error:', e);
       }
+    };
+    
+    window.draw = function() {
+      // spatters.js handles drawing
+    };
+    
+    // Load p5.js from Art Blocks and execute
+    async function init() {
+      try {
+        const p5jsCode = await loadP5jsFromArtBlocks();
+        updateStatus('Initializing p5.js...');
+        eval(p5jsCode);
+      } catch (e) {
+        updateStatus('Error loading p5.js: ' + e.message);
+        console.error('Error loading p5.js:', e);
+      }
     }
     
-    function draw() {
-      // spatters.js handles drawing
-    }
+    window.onload = init;
   </script>
 </body>
 </html>`;
