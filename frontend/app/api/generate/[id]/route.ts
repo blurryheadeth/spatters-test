@@ -1,0 +1,224 @@
+/**
+ * Full On-Chain Generation Viewer
+ * 
+ * This endpoint serves the FULL on-chain HTML that actually generates
+ * the artwork using p5.js and spatters.js from the blockchain.
+ * 
+ * Used by the worker/GitHub Actions to generate pixel data.
+ * 
+ * URL: /api/generate/[id]
+ */
+
+import { NextResponse } from 'next/server';
+import { createPublicClient, http, toHex, fromHex } from 'viem';
+import { sepolia, mainnet } from 'viem/chains';
+
+const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+const GENERATOR_ADDRESS = process.env.NEXT_PUBLIC_GENERATOR_ADDRESS || '0x9A0836db227A902575ba904610d2D533AaD7AB56';
+const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
+const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL;
+
+const chain = NETWORK === 'mainnet' ? mainnet : sepolia;
+const rpcUrl = NETWORK === 'mainnet' ? MAINNET_RPC_URL : SEPOLIA_RPC_URL;
+
+const publicClient = createPublicClient({
+  chain,
+  transport: http(rpcUrl),
+});
+
+// Art Blocks Dependency Registry on Ethereum Mainnet
+const ART_BLOCKS_REGISTRY = '0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF';
+const P5_DEPENDENCY_BYTES32 = '0x70356a732d76312e302e3000000000000000000000000000000000000000000a';
+const P5_CHUNK_COUNT = 10;
+
+const GENERATOR_ABI = [
+  {
+    name: 'getHtmlTemplate',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    name: 'getSpattersScript',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    name: 'getTokenData',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [
+      { name: 'seed', type: 'bytes32' },
+      { name: 'timestamp', type: 'uint256' },
+      { name: 'palette', type: 'string[6]' },
+      {
+        name: 'mutations',
+        type: 'tuple[]',
+        components: [
+          { name: 'mutationType', type: 'string' },
+          { name: 'seed', type: 'bytes32' },
+          { name: 'timestamp', type: 'uint256' },
+        ],
+      },
+    ],
+  },
+] as const;
+
+const SPATTERS_ABI = [
+  {
+    name: 'ownerOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'address' }],
+  },
+] as const;
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const tokenId = parseInt(id, 10);
+
+  if (isNaN(tokenId) || tokenId < 1) {
+    return new NextResponse('Invalid token ID', { status: 400 });
+  }
+
+  try {
+    // Verify token exists
+    await publicClient.readContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: SPATTERS_ABI,
+      functionName: 'ownerOf',
+      args: [BigInt(tokenId)],
+    });
+  } catch (error: any) {
+    if (error.message?.includes('ERC721NonexistentToken')) {
+      return new NextResponse('Token does not exist', { status: 404 });
+    }
+    console.error('Error verifying token:', error);
+  }
+
+  // Fetch on-chain data
+  let htmlTemplate: string;
+  let spattersScript: string;
+  let tokenData: any;
+
+  try {
+    [htmlTemplate, spattersScript, tokenData] = await Promise.all([
+      publicClient.readContract({
+        address: GENERATOR_ADDRESS as `0x${string}`,
+        abi: GENERATOR_ABI,
+        functionName: 'getHtmlTemplate',
+      }),
+      publicClient.readContract({
+        address: GENERATOR_ADDRESS as `0x${string}`,
+        abi: GENERATOR_ABI,
+        functionName: 'getSpattersScript',
+      }),
+      publicClient.readContract({
+        address: GENERATOR_ADDRESS as `0x${string}`,
+        abi: GENERATOR_ABI,
+        functionName: 'getTokenData',
+        args: [BigInt(tokenId)],
+      }),
+    ]);
+  } catch (error: any) {
+    console.error('Error fetching on-chain data:', error);
+    return new NextResponse('Failed to fetch on-chain data', { status: 500 });
+  }
+
+  const [seed, timestamp, palette, mutations] = tokenData;
+
+  // Format mutations for JavaScript
+  const mutationsArray = mutations.map((m: any) => ({
+    mutationType: m.mutationType,
+    seed: m.seed,
+    timestamp: Number(m.timestamp),
+  }));
+
+  // Check if custom palette is set
+  const hasCustomPalette = palette[0] !== '';
+  const paletteArray = hasCustomPalette ? palette : [];
+
+  // Build the full HTML with all on-chain data injected
+  const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spatter #${tokenId} - Generating</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { 
+      width: 100%; 
+      height: 100%; 
+      overflow: hidden; 
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="status" style="position:fixed;top:10px;left:10px;color:#fff;font-family:monospace;z-index:9999;"></div>
+  
+  <!-- p5.js from CDN for generation -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  
+  <!-- Inject spatters.js from on-chain -->
+  <script>
+${spattersScript}
+  </script>
+  
+  <script>
+    // Token data from blockchain
+    const TOKEN_ID = ${tokenId};
+    const MINT_SEED = '${seed}';
+    const MINT_TIMESTAMP = ${timestamp};
+    const CUSTOM_PALETTE = ${JSON.stringify(hasCustomPalette ? [...palette] : [])};
+    const MUTATIONS = ${JSON.stringify(mutationsArray)};
+    
+    // Global canvasHistory that spatters.js populates
+    let canvasHistory = [];
+    let generationComplete = false;
+    
+    function updateStatus(msg) {
+      const el = document.getElementById('status');
+      if (el) el.textContent = msg;
+      console.log('[Generation]', msg);
+    }
+    
+    function setup() {
+      updateStatus('Starting generation...');
+      
+      // Generate the artwork - this populates canvasHistory
+      try {
+        generate(MINT_SEED, MUTATIONS, CUSTOM_PALETTE);
+        updateStatus('Generation complete! Frames: ' + canvasHistory.length);
+        generationComplete = true;
+      } catch (e) {
+        updateStatus('Generation error: ' + e.message);
+        console.error('Generation error:', e);
+      }
+    }
+    
+    function draw() {
+      // spatters.js handles drawing
+    }
+  </script>
+</body>
+</html>`;
+
+  return new NextResponse(fullHtml, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store', // Don't cache generation pages
+    },
+  });
+}
+

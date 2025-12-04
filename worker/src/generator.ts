@@ -79,9 +79,10 @@ export async function generatePixelData(
   tokenId: number,
   fullHtmlUrl?: string
 ): Promise<TokenPixelData> {
-  // Remove trailing slash from base URL and use /api/token/ path
+  // Remove trailing slash from base URL and use /api/generate/ path
+  // This endpoint serves the FULL on-chain HTML that runs p5.js generation
   const baseUrl = API_BASE_URL.replace(/\/$/, '');
-  const url = fullHtmlUrl || `${baseUrl}/api/token/${tokenId}`;
+  const url = fullHtmlUrl || `${baseUrl}/api/generate/${tokenId}`;
   
   console.log(`[Token ${tokenId}] Starting generation from ${url}`);
   
@@ -97,16 +98,18 @@ export async function generatePixelData(
     
     console.log(`[Token ${tokenId}] Page loaded, waiting for canvas generation...`);
     
-    // Wait for canvasHistory to be populated
-    // This is the key - we wait for the slow p5.js generation to complete
+    // Wait for generation to complete
+    // The /api/generate/ endpoint sets generationComplete = true when done
     await page.waitForFunction(
       () => {
-        // Check if canvasHistory exists and has content
         const w = window as any;
-        return w.canvasHistory && 
-               w.canvasHistory.length > 0 && 
-               w.canvasHistory[0] && 
-               w.canvasHistory[0].length > 0;
+        // Check for generationComplete flag (set by /api/generate/ endpoint)
+        // OR check if canvasHistory has content (fallback)
+        return (w.generationComplete === true) || 
+               (w.canvasHistory && 
+                w.canvasHistory.length > 0 && 
+                w.canvasHistory[0] && 
+                w.canvasHistory[0].length > 0);
       },
       { timeout: 180000 } // 3 minute timeout for complex generations
     );
