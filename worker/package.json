@@ -1,0 +1,31 @@
+{
+  "name": "spatters-worker",
+  "version": "1.0.0",
+  "description": "Puppeteer worker for pre-rendering Spatters pixel data",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "generate": "tsx src/generate.ts",
+    "sync": "tsx src/sync.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.2",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pako": "^2.1.0",
+    "puppeteer": "^23.8.0",
+    "viem": "^2.39.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "@types/pako": "^2.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
+
+

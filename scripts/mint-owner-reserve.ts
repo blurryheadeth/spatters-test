@@ -1,88 +1,102 @@
 import { ethers } from "hardhat";
 
-// Sample metadata for owner mints
-// In production, generate these properly with the p5.js script
-const sampleMetadata = JSON.stringify({
-  circles: 2,
-  lines: 1,
-  selectedColors: ["#FF5733", "#33FF57"],
-  palette: "warm",
-  backgroundColor: "#FFFFFF",
-  mutation: "",
-  changeHistory: []
-});
-
+/**
+ * Mint owner reserve tokens (first 25) with optional custom palettes
+ * Usage: 
+ * - Without custom palette: npx hardhat run scripts/mint-owner-reserve.ts --network sepolia
+ * - With custom palette: Set CUSTOM_PALETTE env var as comma-separated hex colors
+ */
 async function main() {
-  // Get contract address from command line argument
-  const contractAddress = process.argv[2];
-  
+  const contractAddress = process.env.CONTRACT_ADDRESS;
   if (!contractAddress) {
-    console.error("❌ Please provide contract address as argument");
-    console.log("Usage: npx hardhat run scripts/mint-owner-reserve.ts --network sepolia <CONTRACT_ADDRESS>");
-    process.exit(1);
+    throw new Error("CONTRACT_ADDRESS environment variable not set");
   }
 
-  console.log("Minting Owner Reserve Tokens...");
-  console.log("Contract:", contractAddress);
+  console.log("Minting owner reserve tokens...");
 
-  // Connect to contract
   const [owner] = await ethers.getSigners();
-  console.log("Owner address:", owner.address);
+  console.log("Minting with owner account:", owner.address);
 
   const Spatters = await ethers.getContractFactory("Spatters");
   const spatters = Spatters.attach(contractAddress);
 
   // Check current supply
-  const currentSupply = await spatters.totalSupply();
-  console.log("Current supply:", currentSupply.toString());
-
-  if (currentSupply >= 25n) {
-    console.log("✅ Owner reserve already minted");
+  const totalSupply = await spatters.totalSupply();
+  const ownerReserve = await spatters.OWNER_RESERVE();
+  
+  console.log("\nCurrent supply:", totalSupply.toString());
+  console.log("Owner reserve:", ownerReserve.toString());
+  
+  if (totalSupply >= ownerReserve) {
+    console.log("⚠️  Owner reserve period has ended");
     return;
   }
 
-  // Mint remaining owner reserve tokens
-  const tokensToMint = 25 - Number(currentSupply);
-  console.log(`\nMinting ${tokensToMint} tokens...`);
+  // Parse recipient address (defaults to owner)
+  const recipient = process.env.MINT_TO || owner.address;
+  console.log("Minting to:", recipient);
 
-  for (let i = 0; i < tokensToMint; i++) {
-    const tokenId = Number(currentSupply) + i + 1;
-    console.log(`\nMinting token #${tokenId}...`);
+  // Parse custom palette if provided
+  const customPaletteEnv = process.env.CUSTOM_PALETTE;
+  let customPalette: [string, string, string, string, string, string];
+  
+  if (customPaletteEnv) {
+    const colors = customPaletteEnv.split(",").map(c => c.trim());
+    if (colors.length !== 6) {
+      throw new Error("Custom palette must have exactly 6 colors");
+    }
     
-    try {
-      // In production, generate proper metadata for each token
-      // You can pass custom metadata here or leave empty for client generation
-      const tx = await spatters.ownerMint(owner.address, sampleMetadata);
-      console.log("Transaction:", tx.hash);
-      
-      const receipt = await tx.wait();
-      console.log("✅ Minted! Gas used:", receipt!.gasUsed.toString());
-      
-      // Check if collection launch date was set (first mint)
-      if (tokenId === 1) {
-        const launchDate = await spatters.collectionLaunchDate();
-        console.log("🚀 Collection launch date set:", new Date(Number(launchDate) * 1000));
+    // Validate hex colors
+    for (const color of colors) {
+      if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+        throw new Error(`Invalid hex color: ${color}`);
       }
-    } catch (error: any) {
-      console.error(`❌ Failed to mint token #${tokenId}:`, error.message);
-      break;
     }
     
-    // Add delay to avoid rate limiting
-    if (i < tokensToMint - 1) {
-      console.log("Waiting 2 seconds...");
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+    customPalette = colors as [string, string, string, string, string, string];
+    console.log("\nUsing custom palette:");
+    customPalette.forEach((color, i) => console.log(`  Color ${i + 1}: ${color}`));
+  } else {
+    // Empty palette = use default
+    customPalette = ["", "", "", "", "", ""];
+    console.log("\nUsing default palette");
   }
 
-  // Final check
-  const finalSupply = await spatters.totalSupply();
-  console.log("\n✅ Owner reserve minting complete!");
-  console.log("Final supply:", finalSupply.toString());
+  // Mint token
+  console.log("\nMinting token...");
+  const tx = await spatters.ownerMint(recipient, customPalette);
+  console.log("Transaction sent:", tx.hash);
   
-  // Show mint price for first public token
-  const publicMintPrice = await spatters.getMintPrice();
-  console.log("Token #26 price:", ethers.formatEther(publicMintPrice), "ETH");
+  const receipt = await tx.wait();
+  console.log("✅ Token minted! Gas used:", receipt?.gasUsed.toString());
+
+  // Get the new token ID
+  const newSupply = await spatters.totalSupply();
+  const tokenId = newSupply;
+  
+  console.log("\nMinted Token ID:", tokenId.toString());
+  
+  // Get token data
+  const tokenData = await spatters.tokens(tokenId);
+  console.log("\nToken Data:");
+  console.log("- Mint Seed:", tokenData.mintSeed);
+  console.log("- Mint Timestamp:", new Date(Number(tokenData.mintTimestamp) * 1000).toISOString());
+  console.log("- Has Custom Palette:", tokenData.customPalette[0] !== "");
+  
+  if (tokenData.customPalette[0] !== "") {
+    console.log("- Custom Palette:");
+    tokenData.customPalette.forEach((color: string, i: number) => {
+      console.log(`  Color ${i + 1}: ${color}`);
+    });
+  }
+
+  console.log("\n📝 Next steps:");
+  console.log("1. View token on OpenSea (once indexed)");
+  console.log("2. Mint more owner reserve tokens (", (ownerReserve - newSupply), "remaining )");
+  console.log("3. When ready, open public minting");
+  
+  console.log("\n💡 To mint with custom palette:");
+  console.log('   CUSTOM_PALETTE="#ed0caa,#069133,#DF9849,#EDECF0,#eddcab,#cfa6fc" npx hardhat run scripts/mint-owner-reserve.ts --network sepolia');
 }
 
 main()
@@ -91,5 +105,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
-
