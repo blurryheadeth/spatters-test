@@ -79,7 +79,9 @@ export async function generatePixelData(
   tokenId: number,
   fullHtmlUrl?: string
 ): Promise<TokenPixelData> {
-  const url = fullHtmlUrl || `${API_BASE_URL}/token/${tokenId}`;
+  // Remove trailing slash from base URL and use /api/token/ path
+  const baseUrl = API_BASE_URL.replace(/\/$/, '');
+  const url = fullHtmlUrl || `${baseUrl}/api/token/${tokenId}`;
   
   console.log(`[Token ${tokenId}] Starting generation from ${url}`);
   

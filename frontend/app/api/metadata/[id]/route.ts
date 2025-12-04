@@ -16,7 +16,8 @@ import { sepolia, mainnet } from 'viem/chains';
 
 const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+// Remove trailing slash to prevent double slashes in URLs
+const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 const chain = NETWORK === 'mainnet' ? mainnet : sepolia;
 const rpcUrl = NETWORK === 'mainnet' 
