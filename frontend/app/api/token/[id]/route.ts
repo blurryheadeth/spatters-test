@@ -108,6 +108,10 @@ export async function GET(
         canvasWidth = pixelData.width;
         canvasHeight = pixelData.height;
         historicalIndex = canvasHistory.length - 1;
+        
+        // Resize canvas to match pixel data dimensions
+        resizeCanvas(canvasWidth, canvasHeight);
+        
         loaded = true;
         redraw();
       } catch (e) {
