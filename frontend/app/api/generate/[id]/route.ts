@@ -10,7 +10,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, toHex, fromHex } from 'viem';
+import { createPublicClient, http } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
 
 const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
@@ -27,25 +27,20 @@ const publicClient = createPublicClient({
   transport: http(rpcUrl),
 });
 
-// Art Blocks Dependency Registry on Ethereum Mainnet
-const ART_BLOCKS_REGISTRY = '0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF';
-const P5_DEPENDENCY_BYTES32 = '0x70356a732d76312e302e3000000000000000000000000000000000000000000a';
-const P5_CHUNK_COUNT = 10;
-
 const GENERATOR_ABI = [
   {
-    name: 'getHtmlTemplate',
+    name: 'getStorageAddresses',
     type: 'function',
     stateMutability: 'view',
     inputs: [],
-    outputs: [{ name: '', type: 'string' }],
+    outputs: [{ name: '', type: 'address[]' }],
   },
   {
-    name: 'getSpattersScript',
+    name: 'readStorageChunk',
     type: 'function',
     stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'string' }],
+    inputs: [{ name: 'storageAddress', type: 'address' }],
+    outputs: [{ name: '', type: 'bytes' }],
   },
   {
     name: 'getTokenData',
@@ -54,17 +49,9 @@ const GENERATOR_ABI = [
     inputs: [{ name: 'tokenId', type: 'uint256' }],
     outputs: [
       { name: 'seed', type: 'bytes32' },
-      { name: 'timestamp', type: 'uint256' },
-      { name: 'palette', type: 'string[6]' },
-      {
-        name: 'mutations',
-        type: 'tuple[]',
-        components: [
-          { name: 'mutationType', type: 'string' },
-          { name: 'seed', type: 'bytes32' },
-          { name: 'timestamp', type: 'uint256' },
-        ],
-      },
+      { name: 'mutationSeeds', type: 'bytes32[]' },
+      { name: 'mutationTypes', type: 'string[]' },
+      { name: 'customPalette', type: 'string[6]' },
     ],
   },
 ] as const;
@@ -106,21 +93,15 @@ export async function GET(
   }
 
   // Fetch on-chain data
-  let htmlTemplate: string;
-  let spattersScript: string;
-  let tokenData: any;
+  let storageAddresses: readonly `0x${string}`[];
+  let tokenData: readonly [string, readonly string[], readonly string[], readonly [string, string, string, string, string, string]];
 
   try {
-    [htmlTemplate, spattersScript, tokenData] = await Promise.all([
+    [storageAddresses, tokenData] = await Promise.all([
       publicClient.readContract({
         address: GENERATOR_ADDRESS as `0x${string}`,
         abi: GENERATOR_ABI,
-        functionName: 'getHtmlTemplate',
-      }),
-      publicClient.readContract({
-        address: GENERATOR_ADDRESS as `0x${string}`,
-        abi: GENERATOR_ABI,
-        functionName: 'getSpattersScript',
+        functionName: 'getStorageAddresses',
       }),
       publicClient.readContract({
         address: GENERATOR_ADDRESS as `0x${string}`,
@@ -131,21 +112,39 @@ export async function GET(
     ]);
   } catch (error: any) {
     console.error('Error fetching on-chain data:', error);
-    return new NextResponse('Failed to fetch on-chain data', { status: 500 });
+    return new NextResponse('Failed to fetch on-chain data: ' + error.message, { status: 500 });
   }
 
-  const [seed, timestamp, palette, mutations] = tokenData;
+  // Read spatters.js chunks from SSTORE2
+  let spattersScript = '';
+  try {
+    for (const addr of storageAddresses) {
+      const chunk = await publicClient.readContract({
+        address: GENERATOR_ADDRESS as `0x${string}`,
+        abi: GENERATOR_ABI,
+        functionName: 'readStorageChunk',
+        args: [addr],
+      });
+      // Convert bytes to string
+      const decoder = new TextDecoder();
+      spattersScript += decoder.decode(Buffer.from(chunk.slice(2), 'hex'));
+    }
+  } catch (error: any) {
+    console.error('Error reading spatters.js chunks:', error);
+    return new NextResponse('Failed to read spatters.js: ' + error.message, { status: 500 });
+  }
+
+  const [seed, mutationSeeds, mutationTypes, customPalette] = tokenData;
 
   // Format mutations for JavaScript
-  const mutationsArray = mutations.map((m: any) => ({
-    mutationType: m.mutationType,
-    seed: m.seed,
-    timestamp: Number(m.timestamp),
+  const mutationsArray = mutationSeeds.map((mSeed: string, i: number) => ({
+    mutationType: mutationTypes[i],
+    seed: mSeed,
   }));
 
   // Check if custom palette is set
-  const hasCustomPalette = palette[0] !== '';
-  const paletteArray = hasCustomPalette ? palette : [];
+  const hasCustomPalette = customPalette[0] !== '';
+  const paletteArray = hasCustomPalette ? [...customPalette] : [];
 
   // Build the full HTML with all on-chain data injected
   const fullHtml = `<!DOCTYPE html>
@@ -179,8 +178,7 @@ ${spattersScript}
     // Token data from blockchain
     const TOKEN_ID = ${tokenId};
     const MINT_SEED = '${seed}';
-    const MINT_TIMESTAMP = ${timestamp};
-    const CUSTOM_PALETTE = ${JSON.stringify(hasCustomPalette ? [...palette] : [])};
+    const CUSTOM_PALETTE = ${JSON.stringify(paletteArray)};
     const MUTATIONS = ${JSON.stringify(mutationsArray)};
     
     // Global canvasHistory that spatters.js populates
