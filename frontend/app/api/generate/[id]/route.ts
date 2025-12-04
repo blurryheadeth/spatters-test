@@ -181,9 +181,8 @@ ${spattersScript}
     const CUSTOM_PALETTE = ${JSON.stringify(paletteArray)};
     const MUTATIONS = ${JSON.stringify(mutationsArray)};
     
-    // Global canvasHistory that spatters.js populates
-    let canvasHistory = [];
-    let generationComplete = false;
+    // Flag to indicate generation is complete (canvasHistory is declared in spatters.js)
+    var generationComplete = false;
     
     function updateStatus(msg) {
       const el = document.getElementById('status');
@@ -194,10 +193,10 @@ ${spattersScript}
     function setup() {
       updateStatus('Starting generation...');
       
-      // Generate the artwork - this populates canvasHistory
+      // Generate the artwork - spatters.js populates canvasHistory
       try {
         generate(MINT_SEED, MUTATIONS, CUSTOM_PALETTE);
-        updateStatus('Generation complete! Frames: ' + canvasHistory.length);
+        updateStatus('Generation complete! Frames: ' + (typeof canvasHistory !== 'undefined' ? canvasHistory.length : 0));
         generationComplete = true;
       } catch (e) {
         updateStatus('Generation error: ' + e.message);
