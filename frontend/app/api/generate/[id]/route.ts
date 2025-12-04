@@ -206,6 +206,11 @@ ${spattersScript}
       // Generate the artwork - spatters.js populates canvasHistory
       try {
         generate(MINT_SEED, MUTATIONS, CUSTOM_PALETTE);
+        
+        // Expose canvasHistory to window for Puppeteer extraction
+        // (spatters.js uses 'let' which doesn't attach to window automatically)
+        window.canvasHistory = canvasHistory;
+        
         updateStatus('Generation complete! Frames: ' + (typeof canvasHistory !== 'undefined' ? canvasHistory.length : 0));
         generationComplete = true;
       } catch (e) {
