@@ -125,10 +125,26 @@ export async function generatePixelData(
       const width = canvas?.width || 1200;
       const height = canvas?.height || 600;
       
-      // Convert Uint8ClampedArray to regular arrays for JSON serialization
-      const canvasHistory = w.canvasHistory.map((frame: Uint8ClampedArray | number[]) => 
-        Array.from(frame)
-      );
+      // Check if canvasHistory exists and is valid
+      if (!w.canvasHistory) {
+        throw new Error('canvasHistory is undefined');
+      }
+      if (!Array.isArray(w.canvasHistory)) {
+        throw new Error('canvasHistory is not an array: ' + typeof w.canvasHistory);
+      }
+      if (w.canvasHistory.length === 0) {
+        throw new Error('canvasHistory is empty');
+      }
+      
+      // Convert to regular arrays for JSON serialization
+      // Handle various formats: Uint8ClampedArray, regular arrays, or other typed arrays
+      const canvasHistory = w.canvasHistory.map((frame: any, idx: number) => {
+        if (!frame) {
+          throw new Error(`Frame ${idx} is undefined`);
+        }
+        // Use Array.from which works on any iterable/array-like
+        return Array.from(frame);
+      });
       
       return {
         width,

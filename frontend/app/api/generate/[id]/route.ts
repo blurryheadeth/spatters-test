@@ -136,11 +136,21 @@ export async function GET(
 
   const [seed, mutationSeeds, mutationTypes, customPalette] = tokenData;
 
-  // Format mutations for JavaScript
-  const mutationsArray = mutationSeeds.map((mSeed: string, i: number) => ({
-    mutationType: mutationTypes[i],
-    seed: mSeed,
-  }));
+  // Convert bytes32 hex seed to truncated decimal (matching on-chain template)
+  // Takes first 8 bytes (18 chars including 0x) and converts to decimal
+  function hexToSeed(hexString: string): number {
+    const truncated = hexString.slice(0, 18);
+    return parseInt(truncated, 16);
+  }
+
+  // Convert mint seed to decimal
+  const mintSeedDecimal = hexToSeed(seed);
+
+  // Format mutations for JavaScript - convert seeds to decimal and pair with types
+  const mutationsArray = mutationSeeds.map((mSeed: string, i: number) => [
+    hexToSeed(mSeed),
+    mutationTypes[i]
+  ]);
 
   // Check if custom palette is set
   const hasCustomPalette = customPalette[0] !== '';
@@ -175,9 +185,9 @@ ${spattersScript}
   </script>
   
   <script>
-    // Token data from blockchain
+    // Token data from blockchain (seed converted to decimal, matching on-chain template)
     const TOKEN_ID = ${tokenId};
-    const MINT_SEED = '${seed}';
+    const MINT_SEED = ${mintSeedDecimal};
     const CUSTOM_PALETTE = ${JSON.stringify(paletteArray)};
     const MUTATIONS = ${JSON.stringify(mutationsArray)};
     
@@ -191,7 +201,7 @@ ${spattersScript}
     }
     
     function setup() {
-      updateStatus('Starting generation...');
+      updateStatus('Starting generation with seed: ' + MINT_SEED);
       
       // Generate the artwork - spatters.js populates canvasHistory
       try {
