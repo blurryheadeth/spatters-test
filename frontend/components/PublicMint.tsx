@@ -35,13 +35,13 @@ export default function PublicMint() {
     functionName: 'totalSupply',
   });
 
-  // Read pending request
+  // Read pending request - returns tuple: [seeds[3], timestamp, completed]
   const { data: pendingRequest } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
     functionName: 'pendingRequests',
     args: address ? [address] : undefined,
-  });
+  }) as { data: [[string, string, string], bigint, boolean] | undefined };
 
   // Request mint transaction
   const { 
