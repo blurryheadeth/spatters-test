@@ -116,8 +116,8 @@ export async function GET(
     }
 
     function setup() {
+      pixelDensity(1);  // Must be BEFORE createCanvas for retina displays
       createCanvas(canvasWidth, canvasHeight);
-      pixelDensity(1);
       noLoop();
       loadPixelData();
     }
