@@ -14,7 +14,19 @@ export function getContractAddress(chainId: number): string {
     case 1: // Mainnet
       return CONTRACT_ADDRESSES.mainnet;
     default:
-      return "";
+      return CONTRACT_ADDRESSES.sepolia; // Default to Sepolia
+  }
+}
+
+// Get Etherscan base URL for current network
+export function getEtherscanBaseUrl(chainId: number): string {
+  switch (chainId) {
+    case 11155111: // Sepolia
+      return 'https://sepolia.etherscan.io';
+    case 1: // Mainnet
+      return 'https://etherscan.io';
+    default:
+      return 'https://sepolia.etherscan.io';
   }
 }
 

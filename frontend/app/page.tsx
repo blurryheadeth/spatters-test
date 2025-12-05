@@ -3,6 +3,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useState } from 'react';
+import Link from 'next/link';
 import PublicMint from '@/components/PublicMint';
 import OwnerMint from '@/components/OwnerMint';
 import { COLLECTION_CONFIG } from '@/lib/config';
@@ -25,7 +26,15 @@ export default function Home() {
                 Fully On-Chain Seed-Based Generative Art
               </p>
             </div>
-            <ConnectButton />
+            <div className="flex items-center gap-6">
+              <Link 
+                href="/collection" 
+                className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
+              >
+                Collection
+              </Link>
+              <ConnectButton />
+            </div>
           </div>
         </div>
       </header>

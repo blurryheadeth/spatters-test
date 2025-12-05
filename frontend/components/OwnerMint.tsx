@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
@@ -36,6 +37,7 @@ function isValidSeedInteger(value: string): boolean {
 }
 
 export default function OwnerMint() {
+  const router = useRouter();
   const { address, chainId } = useAccount();
   const [recipient, setRecipient] = useState('');
   const [useCustomPalette, setUseCustomPalette] = useState(false);
@@ -150,20 +152,22 @@ export default function OwnerMint() {
   // Handle completion confirmation
   useEffect(() => {
     if (isCompleteConfirmed || isDirectConfirmed) {
-      refetchSupply();
-      
-      // Trigger pixel generation
+      // Calculate new token ID before refetch
       const newTokenId = Number(totalSupply) + 1;
+      
+      // Trigger pixel generation in background
       fetch('/api/trigger-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: newTokenId, event: 'token-minted' }),
       }).catch(console.error);
       
-      // Reset form
-      resetForm();
+      // Redirect to the new token's page after a short delay
+      setTimeout(() => {
+        router.push(`/token/${newTokenId}`);
+      }, 1500);
     }
-  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, refetchSupply]);
+  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router]);
 
   // Validate hex color
   const isValidHexColor = (color: string): boolean => {
