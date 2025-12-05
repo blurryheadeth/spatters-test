@@ -1,5 +1,5 @@
 {
-  "address": "0x98dF264EE21FCEcED7D64bAcC7CAAAeE78A4eE9f",
+  "address": "0xDfa7C049Ee9733FE42C4e091E248FFff84180c70",
   "abi": [
     {
       "type": "constructor",
@@ -198,6 +198,23 @@
           "type": "string",
           "name": "newURI",
           "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "GeneratorContractUpdated",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "oldGenerator",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "newGenerator",
+          "indexed": true
         }
       ]
     },
@@ -876,6 +893,20 @@
     },
     {
       "type": "function",
+      "name": "generatorContract",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getAllowedMutations",
       "constant": true,
       "stateMutability": "view",
@@ -1517,6 +1548,19 @@
         {
           "type": "string",
           "name": "newURI"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "setGeneratorContract",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_generator"
         }
       ],
       "outputs": []

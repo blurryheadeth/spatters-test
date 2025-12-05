@@ -74,6 +74,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /// @notice baseURI for tokenURI (can be updated by owner or community governance)
     string public baseURI;
     
+    /// @notice Reference to the Generator contract (informational - for discoverability)
+    /// @dev The Generator stores spatters.js and HTML template in SSTORE2
+    /// This value is not used by this contract but provides an on-chain link
+    /// for anyone reconstructing the rendering infrastructure
+    address public generatorContract;
+    
+    /// @notice Emitted when the generator contract reference is updated
+    event GeneratorContractUpdated(address indexed oldGenerator, address indexed newGenerator);
+    
     struct CommunityProposal {
         address proposer;                // Address that created the proposal
         string proposedBaseURI;          // The proposed new baseURI
@@ -1135,6 +1144,17 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     function setBaseURI(string memory newURI) external onlyOwner {
         baseURI = newURI;
         emit BaseURIUpdatedByOwner(newURI);
+    }
+    
+    /**
+     * @notice Update the Generator contract reference (informational only)
+     * @dev This is purely for discoverability - this contract never calls the Generator
+     * @param _generator Address of the new Generator contract
+     */
+    function setGeneratorContract(address _generator) external onlyOwner {
+        address oldGenerator = generatorContract;
+        generatorContract = _generator;
+        emit GeneratorContractUpdated(oldGenerator, _generator);
     }
     
     /**

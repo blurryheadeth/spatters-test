@@ -15,7 +15,7 @@ import { sepolia, mainnet } from 'viem/chains';
 
 const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-const GENERATOR_ADDRESS = process.env.NEXT_PUBLIC_GENERATOR_ADDRESS || '0x2de2a899313a67bB7753167Fa62dAe9E5FF115fE';
+const GENERATOR_ADDRESS = process.env.NEXT_PUBLIC_GENERATOR_ADDRESS || '0xFad64bbc5b685eEF10bBCc27d82777A90047127c';
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL;
 
