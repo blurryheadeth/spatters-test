@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="p5.js"></script>
+  <script src="spatters.js"></script>
+  <title>Your p5.js Sketch</title>
+</head>
+<body>
+  <script>
+    let currentDate = new Date();
+    //const mintingSeed = currentDate.getTime();
+    //const mintingSeed = hexToSeed("0x059edd72cd353df5106d2b9cc5ab83a52287ac3a");
+    //const mintingSeed = 1764354002678;
+    const mintingSeed = 605102740144052000;
+    const mutations = [
+        /*[1764354066792,"paletteChangeAll"],
+        [1764360031479,"shapeExpand"],
+        [1764410952476,"shapeChangeCurveCenters"]*/
+    ];
+    const customPalette = [/*"#ed0caa", "#069133", "#DF9849", "#EDECF0", "#eddcab", "#cfa6fc"*/];
+    function setup() {
+        generate(mintingSeed, mutations, customPalette);
+    }
+    function hexToSeed (hexString) {
+        return parseInt(hexString.slice(0,18),16);
+    }
+  </script>
+</body>
+</html>

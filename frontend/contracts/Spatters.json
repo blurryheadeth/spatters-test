@@ -1,5 +1,5 @@
 {
-  "address": "0x5f1489FB16766F17567DeA7f7D346b85C30EFFAD",
+  "address": "0x98dF264EE21FCEcED7D64bAcC7CAAAeE78A4eE9f",
   "abi": [
     {
       "type": "constructor",
@@ -219,6 +219,11 @@
           "type": "uint256",
           "name": "timestamp",
           "indexed": false
+        },
+        {
+          "type": "bool",
+          "name": "isOwnerMint",
+          "indexed": false
         }
       ]
     },
@@ -278,6 +283,27 @@
           "type": "bytes32",
           "name": "seed",
           "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "OwnerMintRequested",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "recipient",
+          "indexed": true
+        },
+        {
+          "type": "bytes32[3]",
+          "name": "seeds"
         },
         {
           "type": "uint256",
@@ -580,6 +606,34 @@
     },
     {
       "type": "function",
+      "name": "activeMintRequestTime",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "activeMintRequester",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "allowedMutations",
       "constant": true,
       "stateMutability": "view",
@@ -691,6 +745,19 @@
     {
       "type": "function",
       "name": "completeMint",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint8",
+          "name": "seedChoice"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "completeOwnerMint",
       "constant": false,
       "payable": false,
       "inputs": [
@@ -943,6 +1010,18 @@
             {
               "type": "bool",
               "name": "completed"
+            },
+            {
+              "type": "address",
+              "name": "recipient"
+            },
+            {
+              "type": "bool",
+              "name": "isOwnerMint"
+            },
+            {
+              "type": "bool",
+              "name": "hasCustomPalette"
             }
           ]
         }
@@ -1020,6 +1099,28 @@
         {
           "type": "bool",
           "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "isMintSelectionInProgress",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": "active"
+        },
+        {
+          "type": "address",
+          "name": "requester"
+        },
+        {
+          "type": "uint256",
+          "name": "expiresAt"
         }
       ]
     },
@@ -1190,6 +1291,29 @@
     },
     {
       "type": "function",
+      "name": "pendingPalettes",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        },
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "pendingRequests",
       "constant": true,
       "stateMutability": "view",
@@ -1208,6 +1332,18 @@
         {
           "type": "bool",
           "name": "completed"
+        },
+        {
+          "type": "address",
+          "name": "recipient"
+        },
+        {
+          "type": "bool",
+          "name": "isOwnerMint"
+        },
+        {
+          "type": "bool",
+          "name": "hasCustomPalette"
         }
       ]
     },
@@ -1239,6 +1375,28 @@
       "stateMutability": "payable",
       "payable": true,
       "inputs": [],
+      "outputs": [
+        {
+          "type": "bytes32[3]",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "requestOwnerMint",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "to"
+        },
+        {
+          "type": "string[6]",
+          "name": "customPalette"
+        }
+      ],
       "outputs": [
         {
           "type": "bytes32[3]",

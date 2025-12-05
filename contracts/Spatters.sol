@@ -36,7 +36,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     
     // Minting cooldowns and limits
     uint256 public constant REQUEST_EXPIRATION = 55 minutes;
-    uint256 public constant GLOBAL_COOLDOWN = 1 hours;
+    uint256 public constant GLOBAL_COOLDOWN = 24 hours;  // 24h cooldown for public mint after ANY mint
     uint256 public constant WALLET_COOLDOWN = 24 hours;
     uint256 public constant MAX_PER_WALLET = 10;
     
@@ -122,6 +122,9 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         bytes32[3] seeds;              // 3 seeds for user to preview
         uint256 timestamp;             // When request was made
         bool completed;                // Whether mint was completed
+        address recipient;             // Who receives the minted token
+        bool isOwnerMint;              // Whether this is an owner-initiated mint
+        bool hasCustomPalette;         // Whether a custom palette was stored
     }
 
     // ============ State Variables ============
@@ -130,10 +133,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     mapping(uint256 => MutationRecord[]) public tokenMutations;
     mapping(uint256 => string[6]) public customPalettes;  // Only populated for tokens with custom palettes
     mapping(address => MintRequest) public pendingRequests;
+    mapping(address => string[6]) public pendingPalettes;  // Palette for pending owner mint requests
     
     uint256 private _nextTokenId = 1;
     uint256 public collectionLaunchDate;
     uint256 public lastGlobalMintTime;
+    
+    // Global pending request tracking - blocks ALL minting during selection period
+    address public activeMintRequester;    // Address with active 3-option selection
+    uint256 public activeMintRequestTime;  // When the active request was made
     
     // Anti-whale tracking
     mapping(address => uint256) public mintedPerWallet;
@@ -150,6 +158,13 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
 
     event MintRequested(
         address indexed requester,
+        bytes32[3] seeds,
+        uint256 timestamp,
+        bool isOwnerMint
+    );
+    
+    event OwnerMintRequested(
+        address indexed recipient,
         bytes32[3] seeds,
         uint256 timestamp
     );
@@ -285,6 +300,13 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         require(_nextTokenId > OWNER_RESERVE, "Owner mint period active");
         require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
         
+        // Check if ANY mint selection is in progress (blocks all minting)
+        require(
+            activeMintRequester == address(0) ||
+            block.timestamp > activeMintRequestTime + REQUEST_EXPIRATION,
+            "Mint selection in progress"
+        );
+        
         // Check anti-whale protection
         require(mintedPerWallet[msg.sender] < MAX_PER_WALLET, "Wallet limit reached");
         require(
@@ -318,10 +340,17 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         pendingRequests[msg.sender] = MintRequest({
             seeds: seeds,
             timestamp: block.timestamp,
-            completed: false
+            completed: false,
+            recipient: msg.sender,
+            isOwnerMint: false,
+            hasCustomPalette: false
         });
         
-        emit MintRequested(msg.sender, seeds, block.timestamp);
+        // Set global active request (blocks all other minting)
+        activeMintRequester = msg.sender;
+        activeMintRequestTime = block.timestamp;
+        
+        emit MintRequested(msg.sender, seeds, block.timestamp, false);
         
         return seeds;
     }
@@ -336,6 +365,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         MintRequest storage request = pendingRequests[msg.sender];
         require(request.timestamp > 0, "No pending request");
         require(!request.completed, "Request already completed");
+        require(!request.isOwnerMint, "Use completeOwnerMint for owner mints");
         require(
             block.timestamp <= request.timestamp + REQUEST_EXPIRATION,
             "Request expired"
@@ -344,8 +374,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         // Get chosen seed
         bytes32 chosenSeed = request.seeds[seedChoice];
         
-        // Mark request as completed
+        // Mark request as completed and clear global active request
         request.completed = true;
+        activeMintRequester = address(0);
+        activeMintRequestTime = 0;
         
         // Update tracking
         lastGlobalMintTime = block.timestamp;
@@ -374,24 +406,25 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // ============ Owner Minting Functions ============
 
     /**
-     * @dev Owner mint with optional custom palette and optional custom seed (first 25 tokens)
+     * @dev Step 1 for owner: Request 3 seeds to preview (no custom seed provided)
      * @param to Address to mint to
      * @param customPalette Array of 6 hex colors (empty strings for default)
-     * @param customSeed Optional seed for deterministic minting (bytes32(0) for auto-generation)
      * 
-     * If customSeed is provided (non-zero):
-     *   - Uses the provided seed directly
-     *   - Mints immediately in one transaction (no 3-choice preview)
-     * 
-     * If customSeed is bytes32(0):
-     *   - Auto-generates seed using block data (existing behavior)
+     * This generates 3 seeds BY THE CONTRACT for the owner to preview.
+     * Use ownerMint() with a customSeed if you want to skip the 3-option flow.
      */
-    function ownerMint(
+    function requestOwnerMint(
         address to,
-        string[6] calldata customPalette,
-        bytes32 customSeed
-    ) external onlyOwner nonReentrant {
-        require(_nextTokenId <= OWNER_RESERVE, "Owner reserve exhausted");
+        string[6] calldata customPalette
+    ) external onlyOwner nonReentrant returns (bytes32[3] memory) {
+        require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
+        
+        // Check if ANY mint selection is in progress (blocks all minting)
+        require(
+            activeMintRequester == address(0) ||
+            block.timestamp > activeMintRequestTime + REQUEST_EXPIRATION,
+            "Mint selection in progress"
+        );
         
         // Validate custom palette if provided
         bool hasCustomPalette = bytes(customPalette[0]).length > 0;
@@ -401,10 +434,67 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             }
         }
         
-        // Use custom seed if provided, otherwise auto-generate
-        bytes32 seed = customSeed != bytes32(0) 
-            ? customSeed 
-            : _generateSeed(to, block.timestamp, 0);
+        // Generate 3 unique seeds BY THE CONTRACT
+        bytes32[3] memory seeds;
+        for (uint8 i = 0; i < 3; i++) {
+            seeds[i] = _generateSeed(to, block.timestamp, i);
+        }
+        
+        // Store request with recipient
+        pendingRequests[msg.sender] = MintRequest({
+            seeds: seeds,
+            timestamp: block.timestamp,
+            completed: false,
+            recipient: to,
+            isOwnerMint: true,
+            hasCustomPalette: hasCustomPalette
+        });
+        
+        // Store palette separately if provided
+        if (hasCustomPalette) {
+            for (uint i = 0; i < 6; i++) {
+                pendingPalettes[msg.sender][i] = customPalette[i];
+            }
+        }
+        
+        // Set global active request (blocks all other minting)
+        activeMintRequester = msg.sender;
+        activeMintRequestTime = block.timestamp;
+        
+        emit MintRequested(msg.sender, seeds, block.timestamp, true);
+        emit OwnerMintRequested(to, seeds, block.timestamp);
+        
+        return seeds;
+    }
+
+    /**
+     * @dev Step 2 for owner: Complete mint by choosing from 3 previews
+     * @param seedChoice Index of chosen seed (0, 1, or 2)
+     */
+    function completeOwnerMint(uint8 seedChoice) external onlyOwner nonReentrant {
+        require(seedChoice < 3, "Invalid seed choice");
+        
+        MintRequest storage request = pendingRequests[msg.sender];
+        require(request.timestamp > 0, "No pending request");
+        require(!request.completed, "Request already completed");
+        require(request.isOwnerMint, "Not an owner mint request");
+        require(
+            block.timestamp <= request.timestamp + REQUEST_EXPIRATION,
+            "Request expired"
+        );
+        
+        // Get chosen seed and recipient
+        bytes32 chosenSeed = request.seeds[seedChoice];
+        address recipient = request.recipient;
+        bool hasCustomPalette = request.hasCustomPalette;
+        
+        // Mark request as completed and clear global active request
+        request.completed = true;
+        activeMintRequester = address(0);
+        activeMintRequestTime = 0;
+        
+        // Update global mint time (triggers 24h cooldown for public mints)
+        lastGlobalMintTime = block.timestamp;
         
         // Set collection launch date on first mint
         if (_nextTokenId == 1) {
@@ -414,11 +504,71 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         // Store token data
         uint256 tokenId = _nextTokenId++;
         tokens[tokenId] = TokenData({
-            mintSeed: seed,
+            mintSeed: chosenSeed,
             mintTimestamp: block.timestamp
         });
         
-        // Store custom palette separately if provided (copy element by element)
+        // Copy custom palette from pending to token if provided
+        if (hasCustomPalette) {
+            for (uint i = 0; i < 6; i++) {
+                customPalettes[tokenId][i] = pendingPalettes[msg.sender][i];
+            }
+        }
+        
+        // Mint token
+        _safeMint(recipient, tokenId);
+        
+        emit Minted(tokenId, recipient, chosenSeed, hasCustomPalette, block.timestamp);
+    }
+
+    /**
+     * @dev Direct owner mint with a pre-defined seed (bypasses 3-option flow)
+     * @param to Address to mint to
+     * @param customPalette Array of 6 hex colors (empty strings for default)
+     * @param customSeed Required seed for deterministic minting (must be non-zero)
+     * 
+     * Use this when you have a specific seed you want to use.
+     * For the 3-option preview flow, use requestOwnerMint() + completeOwnerMint().
+     */
+    function ownerMint(
+        address to,
+        string[6] calldata customPalette,
+        bytes32 customSeed
+    ) external onlyOwner nonReentrant {
+        require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
+        require(customSeed != bytes32(0), "Custom seed required - use requestOwnerMint for 3-option flow");
+        
+        // Check if ANY mint selection is in progress (blocks all minting)
+        require(
+            activeMintRequester == address(0) ||
+            block.timestamp > activeMintRequestTime + REQUEST_EXPIRATION,
+            "Mint selection in progress"
+        );
+        
+        // Validate custom palette if provided
+        bool hasCustomPalette = bytes(customPalette[0]).length > 0;
+        if (hasCustomPalette) {
+            for (uint i = 0; i < 6; i++) {
+                require(_isValidHexColor(customPalette[i]), "Invalid hex color");
+            }
+        }
+        
+        // Update global mint time (triggers 24h cooldown for public mints)
+        lastGlobalMintTime = block.timestamp;
+        
+        // Set collection launch date on first mint
+        if (_nextTokenId == 1) {
+            collectionLaunchDate = block.timestamp;
+        }
+        
+        // Store token data
+        uint256 tokenId = _nextTokenId++;
+        tokens[tokenId] = TokenData({
+            mintSeed: customSeed,
+            mintTimestamp: block.timestamp
+        });
+        
+        // Store custom palette if provided
         if (hasCustomPalette) {
             for (uint i = 0; i < 6; i++) {
                 customPalettes[tokenId][i] = customPalette[i];
@@ -428,7 +578,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         // Mint token
         _safeMint(to, tokenId);
         
-        emit Minted(tokenId, to, seed, hasCustomPalette, block.timestamp);
+        emit Minted(tokenId, to, customSeed, hasCustomPalette, block.timestamp);
     }
 
     // ============ Mutation Functions ============
@@ -535,6 +685,24 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
      */
     function getPendingRequest(address minter) external view returns (MintRequest memory) {
         return pendingRequests[minter];
+    }
+
+    /**
+     * @dev Check if a mint selection is currently in progress (blocks all minting)
+     * @return active True if there's an active selection in progress
+     * @return requester Address with the active selection (or address(0))
+     * @return expiresAt Timestamp when the selection window expires
+     */
+    function isMintSelectionInProgress() external view returns (
+        bool active,
+        address requester,
+        uint256 expiresAt
+    ) {
+        if (activeMintRequester != address(0) && 
+            block.timestamp <= activeMintRequestTime + REQUEST_EXPIRATION) {
+            return (true, activeMintRequester, activeMintRequestTime + REQUEST_EXPIRATION);
+        }
+        return (false, address(0), 0);
     }
 
     /**

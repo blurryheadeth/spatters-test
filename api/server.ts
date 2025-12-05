@@ -44,8 +44,8 @@ const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL ||
 // Contract addresses
 const CONTRACTS = {
   sepolia: {
-    spatters: "0x5f1489FB16766F17567DeA7f7D346b85C30EFFAD" as Address,
-    generator: "0x9A0836db227A902575ba904610d2D533AaD7AB56" as Address,
+    spatters: "0x98dF264EE21FCEcED7D64bAcC7CAAAeE78A4eE9f" as Address,
+    generator: "0x4159550F0455B0659eAC8eF29Cac7c5a7fD1F506" as Address,
   },
   mainnet: {
     spatters: "0x..." as Address,

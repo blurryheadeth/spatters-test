@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.2/lib/p5.min.js"></script>
+  <title>Spatters Local Test</title>
+  <style>
+    html { height: 100%; }
+    body { 
+      min-height: 100%; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #EBE5D9;
+    }
+    canvas { 
+      padding: 0; 
+      margin: auto; 
+      display: block; 
+      position: absolute; 
+      top: 0; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+    }
+  </style>
+</head>
+<body>
+  <script src="spatters.js"></script>
+  <script>
+    // Using the EXACT same seed as token 1 on Sepolia
+    // Token 1 seed: 0x0865c1bc76e6d6f8... (first 8 bytes)
+    const mintingSeed = parseInt("0x0865c1bc76e6d6f8", 16);
+    const mutations = [];
+    const customPalette = [];
+    
+    console.log("Testing with LOCAL spatters.js");
+    console.log("Seed:", mintingSeed);
+    
+    function setup() {
+      generate(mintingSeed, mutations, customPalette);
+    }
+  </script>
+</body>
+</html>

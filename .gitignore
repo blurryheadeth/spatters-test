@@ -24,3 +24,6 @@ dist
 build
 
 
+artblocks-contracts/
+artblocks-generator/
+on-chain-generator-viewer/
