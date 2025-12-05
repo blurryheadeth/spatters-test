@@ -2,17 +2,13 @@
  * Puppeteer-based pixel generator
  * 
  * Loads the full on-chain HTML, waits for p5.js to render,
- * extracts canvasHistory, PNG screenshot, and SVG trace,
- * then uploads all to storage.
+ * extracts canvasHistory and PNG screenshot, then uploads to storage.
  */
 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { createPublicClient, http, Address } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
 import { createStorage, TokenPixelData } from './storage.js';
-// @ts-ignore - imagetracerjs doesn't have TypeScript types
-import ImageTracer from 'imagetracerjs';
-import sharp from 'sharp';
 
 // Configuration
 const NETWORK = process.env.NETWORK || 'sepolia';
@@ -30,53 +26,10 @@ const publicClient = createPublicClient({
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS as Address;
 
-// Extended result type including SVG
+// Extended result type including PNG
 export interface GenerationResult {
   pixelData: TokenPixelData;
-  svgString: string;
-}
-
-/**
- * Trace a PNG buffer to SVG using imagetracerjs
- * Uses sharp to decode PNG to raw RGBA pixels for Node.js compatibility
- */
-async function traceToSvg(pngBuffer: Buffer): Promise<string> {
-  // Use sharp to decode PNG to raw RGBA pixel data
-  const image = sharp(pngBuffer);
-  const metadata = await image.metadata();
-  const width = metadata.width!;
-  const height = metadata.height!;
-  
-  // Get raw RGBA pixel data
-  const rawData = await image.raw().ensureAlpha().toBuffer();
-  
-  // Create ImageData-like object for imagetracerjs
-  const imageData = {
-    width,
-    height,
-    data: new Uint8ClampedArray(rawData),
-  };
-  
-  // Tracing options for high quality output
-  const options = {
-    // Color quantization
-    colorsampling: 2,       // Accurate color sampling
-    numberofcolors: 64,     // More colors for better accuracy
-    
-    // Tracing accuracy
-    ltres: 1,               // Line threshold (lower = more detail)
-    qtres: 1,               // Quadratic spline threshold
-    pathomit: 4,            // Omit paths smaller than this
-    
-    // Output options
-    roundcoords: 2,         // Round coordinates to 2 decimal places
-    desc: false,            // No description in output
-    viewbox: true,          // Include viewBox attribute
-  };
-  
-  // Use imagedataToSVG which works in Node.js
-  const svgString = ImageTracer.imagedataToSVG(imageData, options);
-  return svgString;
+  pngBuffer: Buffer;
 }
 
 const SPATTERS_ABI = [
@@ -220,11 +173,6 @@ export async function generatePixelData(
     }
     console.log(`[Token ${tokenId}] PNG captured: ${Math.round(pngBuffer.length / 1024)}KB`);
     
-    // Trace PNG to SVG
-    console.log(`[Token ${tokenId}] Tracing to SVG...`);
-    const svgString = await traceToSvg(pngBuffer);
-    console.log(`[Token ${tokenId}] SVG traced: ${Math.round(svgString.length / 1024)}KB`);
-    
     // Get mutation count from contract
     let mutationCount = 0;
     try {
@@ -250,7 +198,7 @@ export async function generatePixelData(
     
     return {
       pixelData: tokenPixelData,
-      svgString,
+      pngBuffer,
     };
     
   } finally {
@@ -259,30 +207,29 @@ export async function generatePixelData(
 }
 
 /**
- * Generate and upload pixel data and SVG for a token
- * (PNG is generated temporarily for SVG tracing but not stored)
+ * Generate and upload pixel data and PNG for a token
  */
 export async function generateAndUpload(tokenId: number, fullHtmlUrl?: string): Promise<{
   pixelsUrl: string;
-  svgUrl: string;
+  pngUrl: string;
 }> {
-  const { pixelData, svgString } = await generatePixelData(tokenId, fullHtmlUrl);
+  const { pixelData, pngBuffer } = await generatePixelData(tokenId, fullHtmlUrl);
   
   console.log(`[Token ${tokenId}] Uploading to storage...`);
   
   const storage = createStorage();
   
-  // Upload pixels and SVG in parallel (PNG not stored)
-  const [pixelsUrl, svgUrl] = await Promise.all([
+  // Upload pixels and PNG in parallel
+  const [pixelsUrl, pngUrl] = await Promise.all([
     storage.upload(tokenId, pixelData),
-    storage.uploadSvg(tokenId, svgString),
+    storage.uploadPng(tokenId, pngBuffer),
   ]);
   
   console.log(`[Token ${tokenId}] Uploaded pixels to ${pixelsUrl}`);
-  console.log(`[Token ${tokenId}] Uploaded SVG to ${svgUrl}`);
+  console.log(`[Token ${tokenId}] Uploaded PNG to ${pngUrl}`);
   console.log(`[Token ${tokenId}] Pixel data size: ~${Math.round(JSON.stringify(pixelData).length / 1024 / 1024 * 10) / 10}MB uncompressed`);
   
-  return { pixelsUrl, svgUrl };
+  return { pixelsUrl, pngUrl };
 }
 
 

@@ -18,7 +18,7 @@ export interface TokenPixelData {
 
 export interface StorageProvider {
   upload(tokenId: number, data: TokenPixelData): Promise<string>;
-  uploadSvg(tokenId: number, svgString: string): Promise<string>;
+  uploadPng(tokenId: number, pngBuffer: Buffer): Promise<string>;
   download(tokenId: number): Promise<TokenPixelData | null>;
 }
 
@@ -52,18 +52,18 @@ export class SupabaseStorageProvider implements StorageProvider {
     return `${this.publicUrl}/${filePath}`;
   }
 
-  async uploadSvg(tokenId: number, svgString: string): Promise<string> {
-    const filePath = `${tokenId}.svg`;
+  async uploadPng(tokenId: number, pngBuffer: Buffer): Promise<string> {
+    const filePath = `${tokenId}.png`;
 
     const { error } = await this.client.storage
       .from(this.bucket)
-      .upload(filePath, svgString, {
-        contentType: 'image/svg+xml',
+      .upload(filePath, pngBuffer, {
+        contentType: 'image/png',
         upsert: true,
       });
 
     if (error) {
-      throw new Error(`Failed to upload SVG: ${error.message}`);
+      throw new Error(`Failed to upload PNG: ${error.message}`);
     }
 
     return `${this.publicUrl}/${filePath}`;
@@ -122,14 +122,14 @@ export class R2StorageProvider implements StorageProvider {
     return `${this.publicUrl}/${filePath}`;
   }
 
-  async uploadSvg(tokenId: number, svgString: string): Promise<string> {
-    const filePath = `${tokenId}.svg`;
+  async uploadPng(tokenId: number, pngBuffer: Buffer): Promise<string> {
+    const filePath = `${tokenId}.png`;
 
     await this.client.send(new PutObjectCommand({
       Bucket: this.bucket,
       Key: filePath,
-      Body: svgString,
-      ContentType: 'image/svg+xml',
+      Body: pngBuffer,
+      ContentType: 'image/png',
     }));
 
     return `${this.publicUrl}/${filePath}`;

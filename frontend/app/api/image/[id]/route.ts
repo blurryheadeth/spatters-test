@@ -1,13 +1,13 @@
 /**
- * Static Image API - Serves SVG
+ * Static Image API - Serves PNG
  * 
- * Returns a scalable SVG version of the artwork.
- * The SVG is pre-generated and stored in Supabase alongside pixel data.
+ * Returns a PNG thumbnail of the artwork.
+ * The PNG is pre-generated and stored in Supabase alongside pixel data.
  * 
  * URL: /api/image/[id]
  * 
- * For marketplaces and collection grids, SVG scales beautifully at any size.
- * Falls back to interactive viewer if SVG not yet generated.
+ * PNG is widely supported by marketplaces (OpenSea, Etherscan, etc.)
+ * Falls back to interactive viewer if PNG not yet generated.
  */
 
 import { NextResponse } from 'next/server';
@@ -22,8 +22,8 @@ export async function GET(
 ) {
   const { id } = await params;
   
-  // Handle .svg or .png extension if present
-  const tokenIdStr = id.replace(/\.(svg|png)$/i, '');
+  // Handle .png extension if present
+  const tokenIdStr = id.replace(/\.png$/i, '');
   const tokenId = parseInt(tokenIdStr, 10);
 
   if (isNaN(tokenId) || tokenId < 1) {
@@ -34,29 +34,29 @@ export async function GET(
   }
 
   try {
-    // Construct the Supabase storage URL for the SVG
-    const svgUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${tokenId}.svg`;
+    // Construct the Supabase storage URL for the PNG
+    const pngUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${tokenId}.png`;
     
-    // Fetch the SVG from Supabase
-    const response = await fetch(svgUrl);
+    // Fetch the PNG from Supabase
+    const response = await fetch(pngUrl);
     
     if (!response.ok) {
-      // SVG not yet generated, redirect to interactive viewer
-      console.log(`[Token ${tokenId}] SVG not found, redirecting to viewer`);
+      // PNG not yet generated, redirect to interactive viewer
+      console.log(`[Token ${tokenId}] PNG not found, redirecting to viewer`);
       return NextResponse.redirect(`${BASE_URL}/api/token/${tokenId}`, 302);
     }
     
-    const svgContent = await response.text();
+    const pngBuffer = await response.arrayBuffer();
     
-    return new NextResponse(svgContent, {
+    return new NextResponse(pngBuffer, {
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000, immutable', // Cache for 1 year
       },
     });
     
   } catch (error: any) {
-    console.error('Error fetching SVG:', error);
+    console.error('Error fetching PNG:', error);
     
     // Fallback to interactive viewer
     return NextResponse.redirect(`${BASE_URL}/api/token/${tokenId}`, 302);
