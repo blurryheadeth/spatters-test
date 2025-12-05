@@ -101,12 +101,14 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* Full-width Artwork Display */}
-      <div className="w-full bg-gray-100 dark:bg-gray-950">
+      {/* Centered Artwork Display */}
+      <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center">
         <iframe
           src={`${baseUrl}/api/token/${tokenId}`}
-          className="w-full border-0"
+          className="border-0"
           style={{ 
+            width: '100%',
+            maxWidth: '1200px',
             height: 'calc(100vh - 180px)', 
             minHeight: '400px',
           }}

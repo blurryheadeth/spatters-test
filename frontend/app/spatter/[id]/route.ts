@@ -1,12 +1,16 @@
 /**
- * Full On-Chain Generation Viewer
+ * Pure On-Chain Viewer
  * 
- * This endpoint serves the FULL on-chain HTML that actually generates
- * the artwork using p5.js and spatters.js from the blockchain.
+ * This endpoint serves the purest form of the on-chain artwork.
+ * All artwork data comes from the blockchain - the only off-chain
+ * dependency is the RPC provider credentials in the server's env file.
  * 
- * Used by the worker/GitHub Actions to generate pixel data.
+ * Use this URL as the canonical "link to original content".
  * 
- * URL: /api/generate/[id]
+ * URL: /spatter/[id]
+ * 
+ * NO URL parameters accepted - uses default 1200px canvas width
+ * as defined in the on-chain spatters.js code.
  */
 
 import { NextResponse } from 'next/server';
@@ -77,14 +81,8 @@ export async function GET(
     return new NextResponse('Invalid token ID', { status: 400 });
   }
 
-  // Parse optional width parameter (1200-8400, default 1200)
-  const { searchParams } = new URL(request.url);
-  const widthParam = searchParams.get('width');
-  const requestedWidth = widthParam ? parseInt(widthParam, 10) : 1200;
-  const canvasWidth = isNaN(requestedWidth) ? 1200 : Math.max(1200, Math.min(8400, requestedWidth));
-
+  // Verify token exists
   try {
-    // Verify token exists
     await publicClient.readContract({
       address: CONTRACT_ADDRESS as `0x${string}`,
       abi: SPATTERS_ABI,
@@ -98,31 +96,34 @@ export async function GET(
     console.error('Error verifying token:', error);
   }
 
-  // Fetch on-chain data
-  let storageAddresses: readonly `0x${string}`[];
-  let tokenData: readonly [string, readonly string[], readonly string[], readonly [string, string, string, string, string, string]];
-
+  // Fetch token data from blockchain
+  let tokenData;
   try {
-    [storageAddresses, tokenData] = await Promise.all([
-      publicClient.readContract({
-        address: GENERATOR_ADDRESS as `0x${string}`,
-        abi: GENERATOR_ABI,
-        functionName: 'getStorageAddresses',
-      }),
-      publicClient.readContract({
-        address: GENERATOR_ADDRESS as `0x${string}`,
-        abi: GENERATOR_ABI,
-        functionName: 'getTokenData',
-        args: [BigInt(tokenId)],
-      }),
-    ]);
+    tokenData = await publicClient.readContract({
+      address: GENERATOR_ADDRESS as `0x${string}`,
+      abi: GENERATOR_ABI,
+      functionName: 'getTokenData',
+      args: [BigInt(tokenId)],
+    });
   } catch (error: any) {
-    console.error('Error fetching on-chain data:', error);
-    return new NextResponse('Failed to fetch on-chain data: ' + error.message, { status: 500 });
+    console.error('Error fetching token data:', error);
+    return new NextResponse('Failed to fetch token data: ' + error.message, { status: 500 });
   }
 
-  // Read spatters.js chunks from SSTORE2
+  // Fetch spatters.js from blockchain
   let spattersScript = '';
+  let storageAddresses;
+  try {
+    storageAddresses = await publicClient.readContract({
+      address: GENERATOR_ADDRESS as `0x${string}`,
+      abi: GENERATOR_ABI,
+      functionName: 'getStorageAddresses',
+    });
+  } catch (error: any) {
+    console.error('Error fetching storage addresses:', error);
+    return new NextResponse('Failed to fetch storage addresses: ' + error.message, { status: 500 });
+  }
+
   try {
     for (const addr of storageAddresses) {
       const chunk = await publicClient.readContract({
@@ -131,7 +132,6 @@ export async function GET(
         functionName: 'readStorageChunk',
         args: [addr],
       });
-      // Convert bytes to string
       const decoder = new TextDecoder();
       spattersScript += decoder.decode(Buffer.from(chunk.slice(2), 'hex'));
     }
@@ -143,16 +143,14 @@ export async function GET(
   const [seed, mutationSeeds, mutationTypes, customPalette] = tokenData;
 
   // Convert bytes32 hex seed to truncated decimal (matching on-chain template)
-  // Takes first 8 bytes (18 chars including 0x) and converts to decimal
   function hexToSeed(hexString: string): number {
     const truncated = hexString.slice(0, 18);
     return parseInt(truncated, 16);
   }
 
-  // Convert mint seed to decimal
   const mintSeedDecimal = hexToSeed(seed);
 
-  // Format mutations for JavaScript - convert seeds to decimal and pair with types
+  // Format mutations for JavaScript
   const mutationsArray = mutationSeeds.map((mSeed: string, i: number) => [
     hexToSeed(mSeed),
     mutationTypes[i]
@@ -162,19 +160,19 @@ export async function GET(
   const hasCustomPalette = customPalette[0] !== '';
   const paletteArray = hasCustomPalette ? [...customPalette] : [];
 
-  // Art Blocks config for p5.js loading
+  // Art Blocks config for p5.js loading (from Ethereum Mainnet)
   const artBlocksRegistry = '0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF';
   const p5DependencyBytes32 = '0x703540312e302e30000000000000000000000000000000000000000000000000';
   const p5ChunkCount = 10;
 
-  // Build the full HTML with all on-chain data injected
-  // This matches the on-chain template behavior - loads p5.js from Art Blocks
+  // Build the pure on-chain HTML viewer
+  // NO custom width - uses default 1200px from on-chain spatters.js
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spatter #${tokenId} - Generating</title>
+  <title>Spatter #${tokenId} - On-Chain Viewer</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { 
@@ -187,19 +185,16 @@ export async function GET(
 <body>
   <div id="status" style="position:fixed;top:10px;left:10px;color:#fff;font-family:monospace;z-index:9999;background:rgba(0,0,0,0.7);padding:5px 10px;border-radius:4px;"></div>
   
-  <!-- Inject spatters.js from on-chain -->
+  <!-- Inject spatters.js from on-chain (SSTORE2) -->
   <script>
 ${spattersScript}
   </script>
   
-  <!-- Override canvas width if custom value requested -->
-  <script>
-    setupVariables.canvasWidth = ${canvasWidth};
-  </script>
+  <!-- NO width override - uses on-chain default (1200px) -->
   
   <script>
     // ============================================================
-    // ART BLOCKS P5.JS LOADING (Matching on-chain template)
+    // ART BLOCKS P5.JS LOADING (From Ethereum Mainnet)
     // ============================================================
     
     const CONFIG = {
@@ -263,7 +258,7 @@ ${spattersScript}
       
       const chunks = [];
       for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
-        updateStatus('Fetching p5.js chunk ' + (i + 1) + '/' + CONFIG.p5ChunkCount + ' from Art Blocks...');
+        updateStatus('Fetching p5.js chunk ' + (i + 1) + '/' + CONFIG.p5ChunkCount + '...');
         
         const indexHex = encodeUint256(i);
         const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + 
@@ -289,46 +284,36 @@ ${spattersScript}
     }
     
     // ============================================================
-    // GENERATION LOGIC
+    // TOKEN DATA (From Blockchain)
     // ============================================================
     
-    // Token data from blockchain (seed converted to decimal, matching on-chain template)
     const TOKEN_ID = ${tokenId};
     const MINT_SEED = ${mintSeedDecimal};
     const CUSTOM_PALETTE = ${JSON.stringify(paletteArray)};
     const MUTATIONS = ${JSON.stringify(mutationsArray)};
     
-    // Flag to indicate generation is complete (canvasHistory is declared in spatters.js)
-    var generationComplete = false;
-    
     function updateStatus(msg) {
       const el = document.getElementById('status');
       if (el) el.textContent = msg;
-      console.log('[Generation]', msg);
+      console.log('[On-Chain Viewer]', msg);
     }
     
-    // Define setup before p5.js loads (p5.js will call this)
+    // Define setup before p5.js loads
     window.setup = function() {
-      updateStatus('Starting generation with seed: ' + MINT_SEED);
+      updateStatus('Generating artwork from on-chain seed: ' + MINT_SEED);
       
       try {
         generate(MINT_SEED, MUTATIONS, CUSTOM_PALETTE);
         
-        // Expose canvasHistory to window for Puppeteer extraction
-        window.canvasHistory = canvasHistory;
-        
-        // Hide status text so it doesn't appear in screenshots/SVG traces
+        // Hide status after generation
         document.getElementById('status').style.display = 'none';
-        generationComplete = true;
       } catch (e) {
         updateStatus('Generation error: ' + e.message);
         console.error('Generation error:', e);
       }
     };
     
-    window.draw = function() {
-      // spatters.js handles drawing
-    };
+    window.draw = function() {};
     
     // Load p5.js from Art Blocks and execute
     async function init() {
@@ -350,7 +335,7 @@ ${spattersScript}
   return new NextResponse(fullHtml, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store', // Don't cache generation pages
+      'Cache-Control': 'public, max-age=31536000, immutable', // Cache forever - on-chain data is immutable
     },
   });
 }
