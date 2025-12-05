@@ -99,11 +99,12 @@ export default function TokenPage() {
 
         {/* Token Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-          {/* Artwork */}
-          <div className="aspect-[2/1] bg-black">
+          {/* Artwork - responsive container that grows with content */}
+          <div className="w-full" style={{ minHeight: '300px' }}>
             <iframe
               src={`${baseUrl}/api/token/${tokenId}`}
-              className="w-full h-full border-0"
+              className="w-full border-0"
+              style={{ height: '50vw', maxHeight: '600px', minHeight: '300px' }}
               title={`Spatter #${tokenId}`}
             />
           </div>

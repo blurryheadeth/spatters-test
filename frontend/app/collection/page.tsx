@@ -187,7 +187,7 @@ export default function CollectionPage() {
             >
               {/* Thumbnail */}
               <Link href={`/token/${tokenId}`}>
-                <div className="aspect-[2/1] bg-black cursor-pointer">
+                <div className="aspect-[2/1] cursor-pointer overflow-hidden">
                   <iframe
                     src={`${baseUrl}/api/token/${tokenId}`}
                     className="w-full h-full border-0 pointer-events-none"

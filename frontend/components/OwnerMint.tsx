@@ -58,6 +58,9 @@ export default function OwnerMint() {
   const [selectedSeedIndex, setSelectedSeedIndex] = useState<number | null>(null);
   const [isLoadingPreviews, setIsLoadingPreviews] = useState(false);
   
+  // Track if we've already triggered generation (prevent double triggers)
+  const [hasTriggeredGeneration, setHasTriggeredGeneration] = useState(false);
+  
   const contractAddress = chainId ? getContractAddress(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
@@ -158,7 +161,10 @@ export default function OwnerMint() {
 
   // Handle completion confirmation
   useEffect(() => {
-    if (isCompleteConfirmed || isDirectConfirmed) {
+    if ((isCompleteConfirmed || isDirectConfirmed) && !hasTriggeredGeneration) {
+      // Mark as triggered to prevent double triggers
+      setHasTriggeredGeneration(true);
+      
       // Calculate new token ID before refetch
       const newTokenId = Number(totalSupply) + 1;
       
@@ -174,7 +180,7 @@ export default function OwnerMint() {
         router.push(`/token/${newTokenId}`);
       }, 1500);
     }
-  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router]);
+  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router, hasTriggeredGeneration]);
 
   // Validate hex color
   const isValidHexColor = (color: string): boolean => {
@@ -208,6 +214,7 @@ export default function OwnerMint() {
     setPreviewSeeds([]);
     setSelectedSeedIndex(null);
     setIsLoadingPreviews(false);
+    setHasTriggeredGeneration(false);
     setError('');
     resetRequest();
     resetComplete();
