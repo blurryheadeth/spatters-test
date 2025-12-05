@@ -26,11 +26,14 @@ interface DispatchPayload {
 export async function triggerPixelGeneration(
   tokenId: number,
   event: 'token-minted' | 'token-mutated' = 'token-minted'
-): Promise<boolean> {
+): Promise<{ success: boolean; reason?: string }> {
   if (!GITHUB_TOKEN) {
     console.warn('GITHUB_TOKEN not configured - skipping pixel generation trigger');
-    return false;
+    return { success: false, reason: 'GITHUB_TOKEN not configured' };
   }
+  
+  console.log(`Triggering GitHub Action for token ${tokenId}, event: ${event}`);
+  console.log(`Target: ${GITHUB_OWNER}/${GITHUB_REPO}`);
 
   const payload: DispatchPayload = {
     event_type: event,
@@ -54,15 +57,17 @@ export async function triggerPixelGeneration(
     );
 
     if (response.status === 204) {
-      console.log(`Triggered pixel generation for token ${tokenId}`);
-      return true;
+      console.log(`Successfully triggered pixel generation for token ${tokenId}`);
+      return { success: true };
     }
 
-    console.error(`Failed to trigger pixel generation: ${response.status}`);
-    return false;
+    // Log detailed error for debugging
+    const errorText = await response.text();
+    console.error(`Failed to trigger pixel generation: ${response.status}`, errorText);
+    return { success: false, reason: `GitHub API returned ${response.status}: ${errorText}` };
   } catch (error) {
     console.error('Error triggering pixel generation:', error);
-    return false;
+    return { success: false, reason: `Error: ${error}` };
   }
 }
 
@@ -73,14 +78,15 @@ export async function triggerPixelGeneration(
 export async function handlePixelGenerationTrigger(
   tokenId: number,
   event: 'token-minted' | 'token-mutated'
-): Promise<{ success: boolean; message: string }> {
-  const success = await triggerPixelGeneration(tokenId, event);
+): Promise<{ success: boolean; message: string; reason?: string }> {
+  const result = await triggerPixelGeneration(tokenId, event);
   
   return {
-    success,
-    message: success 
+    success: result.success,
+    message: result.success 
       ? `Pixel generation triggered for token ${tokenId}`
       : 'Failed to trigger pixel generation',
+    reason: result.reason,
   };
 }
 
