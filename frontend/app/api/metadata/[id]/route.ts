@@ -130,9 +130,14 @@ export async function GET(
     const metadata = {
       name: `Spatter #${tokenId}`,
       description: 'Fully on-chain generative art with time-based mutations. Click the artwork to cycle through mutation history.',
+      // Static thumbnail (SVG from Supabase cache, fast loading)
       image: `${BASE_URL}/api/image/${tokenId}`,
+      // Interactive HTML viewer (loads pre-computed pixels from Supabase, fast)
       animation_url: `${BASE_URL}/api/token/${tokenId}`,
-      external_url: `${BASE_URL}/api/token/${tokenId}`,
+      // Link to the custom frontend page for this token
+      external_url: `${BASE_URL}/token/${tokenId}`,
+      // Pure on-chain viewer (fetches all data from blockchain, slower but fully decentralized)
+      generator_url: `${BASE_URL}/spatter/${tokenId}`,
       attributes: [
         {
           trait_type: 'Mutations',
