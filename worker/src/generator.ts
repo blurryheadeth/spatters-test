@@ -12,6 +12,7 @@ import { sepolia, mainnet } from 'viem/chains';
 import { createStorage, TokenPixelData } from './storage.js';
 // @ts-ignore - imagetracerjs doesn't have TypeScript types
 import ImageTracer from 'imagetracerjs';
+import sharp from 'sharp';
 
 // Configuration
 const NETWORK = process.env.NETWORK || 'sepolia';
@@ -38,38 +39,45 @@ export interface GenerationResult {
 
 /**
  * Trace a PNG buffer to SVG using imagetracerjs
+ * Uses sharp to decode PNG to raw RGBA pixels for Node.js compatibility
  */
 async function traceToSvg(pngBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // imagetracerjs expects a base64 data URL
-    const base64 = pngBuffer.toString('base64');
-    const dataUrl = `data:image/png;base64,${base64}`;
+  // Use sharp to decode PNG to raw RGBA pixel data
+  const image = sharp(pngBuffer);
+  const metadata = await image.metadata();
+  const width = metadata.width!;
+  const height = metadata.height!;
+  
+  // Get raw RGBA pixel data
+  const rawData = await image.raw().ensureAlpha().toBuffer();
+  
+  // Create ImageData-like object for imagetracerjs
+  const imageData = {
+    width,
+    height,
+    data: new Uint8ClampedArray(rawData),
+  };
+  
+  // Tracing options for high quality output
+  const options = {
+    // Color quantization
+    colorsampling: 2,       // Accurate color sampling
+    numberofcolors: 64,     // More colors for better accuracy
     
-    // Tracing options for high quality output
-    const options = {
-      // Color quantization
-      colorsampling: 2,       // Accurate color sampling
-      numberofcolors: 64,     // More colors for better accuracy
-      
-      // Tracing accuracy
-      ltres: 1,               // Line threshold (lower = more detail)
-      qtres: 1,               // Quadratic spline threshold
-      pathomit: 4,            // Omit paths smaller than this
-      
-      // Output options
-      roundcoords: 2,         // Round coordinates to 2 decimal places
-      desc: false,            // No description in output
-      viewbox: true,          // Include viewBox attribute
-    };
+    // Tracing accuracy
+    ltres: 1,               // Line threshold (lower = more detail)
+    qtres: 1,               // Quadratic spline threshold
+    pathomit: 4,            // Omit paths smaller than this
     
-    ImageTracer.imageToSVG(
-      dataUrl,
-      (svgString: string) => {
-        resolve(svgString);
-      },
-      options
-    );
-  });
+    // Output options
+    roundcoords: 2,         // Round coordinates to 2 decimal places
+    desc: false,            // No description in output
+    viewbox: true,          // Include viewBox attribute
+  };
+  
+  // Use imagedataToSVG which works in Node.js
+  const svgString = ImageTracer.imagedataToSVG(imageData, options);
+  return svgString;
 }
 
 const SPATTERS_ABI = [

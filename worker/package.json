@@ -17,7 +17,9 @@
     "express": "^4.21.1",
     "imagetracerjs": "^1.2.6",
     "pako": "^2.1.0",
+    "png-js": "^1.0.0",
     "puppeteer": "^23.8.0",
+    "sharp": "^0.33.5",
     "viem": "^2.39.3"
   },
   "devDependencies": {
