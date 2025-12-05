@@ -30,10 +30,9 @@ const publicClient = createPublicClient({
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS as Address;
 
-// Extended result type including PNG and SVG
+// Extended result type including SVG
 export interface GenerationResult {
   pixelData: TokenPixelData;
-  pngBuffer: Buffer;
   svgString: string;
 }
 
@@ -251,7 +250,6 @@ export async function generatePixelData(
     
     return {
       pixelData: tokenPixelData,
-      pngBuffer,
       svgString,
     };
     
@@ -261,32 +259,30 @@ export async function generatePixelData(
 }
 
 /**
- * Generate and upload pixel data, PNG, and SVG for a token
+ * Generate and upload pixel data and SVG for a token
+ * (PNG is generated temporarily for SVG tracing but not stored)
  */
 export async function generateAndUpload(tokenId: number, fullHtmlUrl?: string): Promise<{
   pixelsUrl: string;
-  pngUrl: string;
   svgUrl: string;
 }> {
-  const { pixelData, pngBuffer, svgString } = await generatePixelData(tokenId, fullHtmlUrl);
+  const { pixelData, svgString } = await generatePixelData(tokenId, fullHtmlUrl);
   
   console.log(`[Token ${tokenId}] Uploading to storage...`);
   
   const storage = createStorage();
   
-  // Upload all three formats in parallel
-  const [pixelsUrl, pngUrl, svgUrl] = await Promise.all([
+  // Upload pixels and SVG in parallel (PNG not stored)
+  const [pixelsUrl, svgUrl] = await Promise.all([
     storage.upload(tokenId, pixelData),
-    storage.uploadPng(tokenId, pngBuffer),
     storage.uploadSvg(tokenId, svgString),
   ]);
   
   console.log(`[Token ${tokenId}] Uploaded pixels to ${pixelsUrl}`);
-  console.log(`[Token ${tokenId}] Uploaded PNG to ${pngUrl}`);
   console.log(`[Token ${tokenId}] Uploaded SVG to ${svgUrl}`);
   console.log(`[Token ${tokenId}] Pixel data size: ~${Math.round(JSON.stringify(pixelData).length / 1024 / 1024 * 10) / 10}MB uncompressed`);
   
-  return { pixelsUrl, pngUrl, svgUrl };
+  return { pixelsUrl, svgUrl };
 }
 
 

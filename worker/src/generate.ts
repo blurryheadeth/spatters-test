@@ -41,7 +41,7 @@ async function main() {
   console.log(`Storage: ${process.env.STORAGE_PROVIDER || 'supabase'}`);
   console.log('---');
 
-  const results: Array<{ tokenId: number; success: boolean; urls?: { pixelsUrl: string; pngUrl: string; svgUrl: string }; error?: string }> = [];
+  const results: Array<{ tokenId: number; success: boolean; urls?: { pixelsUrl: string; svgUrl: string }; error?: string }> = [];
 
   for (const tokenId of tokenIds) {
     console.log(`\n[Token ${tokenId}] Starting...`);
