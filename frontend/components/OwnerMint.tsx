@@ -6,7 +6,6 @@ import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
-const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const MAX_SAFE_INTEGER = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
 
 type MintMode = 'choose' | 'direct' | 'preview';
@@ -30,7 +29,7 @@ function integerToBytes32(seed: number | bigint): string {
 function isValidSeedInteger(value: string): boolean {
   try {
     const num = BigInt(value);
-    return num >= 0n && num <= BigInt(MAX_SAFE_INTEGER);
+    return num >= BigInt(0) && num <= BigInt(MAX_SAFE_INTEGER);
   } catch {
     return false;
   }
