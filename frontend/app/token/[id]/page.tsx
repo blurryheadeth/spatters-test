@@ -76,17 +76,20 @@ export default function TokenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Navigation */}
-        <div className="mb-6 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header Navigation */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/collection" className="text-blue-600 hover:underline">
             ← Back to Collection
           </Link>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+            Spatter #{tokenId}
+          </h1>
           <div className="flex gap-4">
             {Number(tokenId) > 1 && (
               <Link href={`/token/${Number(tokenId) - 1}`} className="text-blue-600 hover:underline">
-                ← Previous
+                ← Prev
               </Link>
             )}
             {totalSupply && Number(tokenId) < Number(totalSupply) && (
@@ -96,87 +99,64 @@ export default function TokenPage() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Token Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-          {/* Artwork - responsive container that grows with content */}
-          <div className="w-full" style={{ minHeight: '300px' }}>
-            <iframe
-              src={`${baseUrl}/api/token/${tokenId}`}
-              className="w-full border-0"
-              style={{ height: '50vw', maxHeight: '600px', minHeight: '300px' }}
-              title={`Spatter #${tokenId}`}
-            />
-          </div>
+      {/* Full-width Artwork Display */}
+      <div className="w-full bg-gray-100 dark:bg-gray-950">
+        <iframe
+          src={`${baseUrl}/api/token/${tokenId}`}
+          className="w-full border-0"
+          style={{ 
+            height: 'calc(100vh - 180px)', 
+            minHeight: '400px',
+          }}
+          title={`Spatter #${tokenId}`}
+        />
+      </div>
 
-          {/* Token Info */}
-          <div className="p-6">
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">
-              Spatter #{tokenId}
-            </h1>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Owner */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Owner</h3>
-                {typeof ownerAddress === 'string' && (
-                  <a
-                    href={`${etherscanBase}/address/${ownerAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline font-mono"
-                  >
-                    {formatAddress(ownerAddress)}
-                  </a>
-                )}
-              </div>
-
-              {/* Contract */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Contract</h3>
+      {/* Compact Info Bar */}
+      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap gap-6 items-center justify-between">
+            {/* Owner */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Owner:</span>
+              {typeof ownerAddress === 'string' && (
                 <a
-                  href={`${etherscanBase}/token/${contractAddress}?a=${tokenId}`}
+                  href={`${etherscanBase}/address/${ownerAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-mono"
+                  className="text-blue-600 hover:underline font-mono text-sm"
                 >
-                  {formatAddress(contractAddress)}
+                  {formatAddress(ownerAddress)}
                 </a>
-              </div>
+              )}
+            </div>
 
-              {/* Token ID on Etherscan */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">View on Etherscan</h3>
-                <a
-                  href={`${etherscanBase}/nft/${contractAddress}/${tokenId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Token #{tokenId} →
-                </a>
-              </div>
-
-              {/* Metadata */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Metadata</h3>
-                <a
-                  href={`${baseUrl}/api/metadata/${tokenId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View JSON →
-                </a>
-              </div>
+            {/* Links */}
+            <div className="flex gap-4 text-sm">
+              <a
+                href={`${etherscanBase}/nft/${contractAddress}/${tokenId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Etherscan →
+              </a>
+              <a
+                href={`${baseUrl}/api/metadata/${tokenId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Metadata →
+              </a>
             </div>
 
             {/* Interaction hint */}
-            <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                💡 <strong>Tip:</strong> Click on the artwork to cycle through mutation history.
-              </p>
-            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              💡 Click artwork to cycle through mutations
+            </span>
           </div>
         </div>
       </div>

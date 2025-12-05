@@ -75,18 +75,14 @@ export async function GET(
   // Use relative URL so it works regardless of host
   const pixelDataUrl = `/api/pixels/${tokenId}`;
 
-  // Generate minimal viewer HTML - no extra CSS that could interfere with artwork
+  // Generate minimal viewer HTML - ONLY body margin reset, nothing that interferes with p5.js canvas
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spatter #${tokenId}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    canvas { display: block; width: 100% !important; height: auto !important; }
-  </style>
+  <style>body{margin:0}</style>
 </head>
 <body>
   <!-- p5.js from CDN -->
