@@ -7,8 +7,34 @@ import SpattersABI from '@/contracts/Spatters.json';
 
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
 const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const MAX_SAFE_INTEGER = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
 
 type MintMode = 'choose' | 'direct' | 'preview';
+
+/**
+ * Convert a JavaScript integer seed to bytes32 format for contract storage.
+ * The integer is converted to hex and padded with TRAILING zeros to 64 chars.
+ * This ensures hexToSeed() in the renderer recovers the exact original integer.
+ * 
+ * Example: 601234567890123512 → "0x865c1bc76e6d6f80000000000000000000000000000000000000000000000000"
+ */
+function integerToBytes32(seed: number | bigint): string {
+  const hex = BigInt(seed).toString(16);
+  const padded = hex.padEnd(64, '0'); // Pad with TRAILING zeros
+  return '0x' + padded;
+}
+
+/**
+ * Validate that a seed integer is within JavaScript's safe integer range.
+ */
+function isValidSeedInteger(value: string): boolean {
+  try {
+    const num = BigInt(value);
+    return num >= 0n && num <= BigInt(MAX_SAFE_INTEGER);
+  } catch {
+    return false;
+  }
+}
 
 export default function OwnerMint() {
   const { address, chainId } = useAccount();
@@ -145,9 +171,10 @@ export default function OwnerMint() {
     return /^#[0-9A-Fa-f]{6}$/.test(color);
   };
 
-  // Validate bytes32 seed
-  const isValidBytes32 = (value: string): boolean => {
-    return /^0x[0-9A-Fa-f]{64}$/.test(value);
+  // Validate seed as integer (within JavaScript safe range)
+  const isValidSeed = (value: string): boolean => {
+    if (!value || value.trim() === '') return false;
+    return isValidSeedInteger(value.trim());
   };
 
   // Handle palette color change
@@ -240,14 +267,17 @@ export default function OwnerMint() {
     }
   };
 
-  // Handle direct owner mint (with custom seed)
+  // Handle direct owner mint (with custom seed as integer)
   const handleDirectOwnerMint = async () => {
     if (!validateInputs()) return;
     
-    if (!customSeed || !isValidBytes32(customSeed)) {
-      setError('Invalid seed format. Must be 0x followed by 64 hex characters (bytes32)');
+    if (!customSeed || !isValidSeed(customSeed)) {
+      setError(`Invalid seed. Must be a positive integer up to ${MAX_SAFE_INTEGER.toLocaleString()}`);
       return;
     }
+    
+    // Convert integer seed to bytes32 with trailing zeros
+    const seedBytes32 = integerToBytes32(BigInt(customSeed.trim()));
     
     const paletteParam: [string, string, string, string, string, string] = useCustomPalette
       ? customPalette as [string, string, string, string, string, string]
@@ -258,7 +288,7 @@ export default function OwnerMint() {
         address: contractAddress as `0x${string}`,
         abi: SpattersABI.abi,
         functionName: 'ownerMint',
-        args: [recipient as `0x${string}`, paletteParam, customSeed],
+        args: [recipient as `0x${string}`, paletteParam, seedBytes32],
       });
     } catch (err: any) {
       setError(err.message || 'Mint failed');
@@ -338,8 +368,8 @@ export default function OwnerMint() {
             >
               <h3 className="font-bold text-lg mb-2">Direct Mint with Seed</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Provide a specific bytes32 seed to mint a deterministic artwork immediately.
-                Useful for recreating specific pieces.
+                Provide a specific integer seed to mint a deterministic artwork immediately.
+                The seed is stored on-chain and passed directly to spatters.js.
               </p>
             </button>
           </div>
@@ -376,19 +406,22 @@ export default function OwnerMint() {
               />
             </div>
 
-            {/* Custom Seed (Required) */}
+            {/* Custom Seed (Required) - as integer */}
             <div>
-              <label className="block text-sm font-medium mb-2">Custom Seed (bytes32) *</label>
+              <label className="block text-sm font-medium mb-2">Custom Seed (integer) *</label>
               <input
                 type="text"
                 value={customSeed}
                 onChange={(e) => setCustomSeed(e.target.value)}
-                placeholder="0x0000000000000000000000000000000000000000000000000000000000000000"
+                placeholder="601234567890123512"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 font-mono text-sm"
               />
-              {customSeed && !isValidBytes32(customSeed) && (
+              <p className="text-xs text-gray-500 mt-1">
+                Enter a positive integer up to {MAX_SAFE_INTEGER.toLocaleString()}
+              </p>
+              {customSeed && !isValidSeed(customSeed) && (
                 <p className="text-xs text-red-600 mt-1">
-                  Invalid format. Must be 0x followed by 64 hex characters.
+                  Invalid seed. Must be a positive integer within safe range.
                 </p>
               )}
             </div>
