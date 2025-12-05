@@ -18,6 +18,8 @@ export interface TokenPixelData {
 
 export interface StorageProvider {
   upload(tokenId: number, data: TokenPixelData): Promise<string>;
+  uploadPng(tokenId: number, buffer: Buffer): Promise<string>;
+  uploadSvg(tokenId: number, svgString: string): Promise<string>;
   download(tokenId: number): Promise<TokenPixelData | null>;
 }
 
@@ -46,6 +48,40 @@ export class SupabaseStorageProvider implements StorageProvider {
 
     if (error) {
       throw new Error(`Failed to upload: ${error.message}`);
+    }
+
+    return `${this.publicUrl}/${filePath}`;
+  }
+
+  async uploadPng(tokenId: number, buffer: Buffer): Promise<string> {
+    const filePath = `${tokenId}.png`;
+
+    const { error } = await this.client.storage
+      .from(this.bucket)
+      .upload(filePath, buffer, {
+        contentType: 'image/png',
+        upsert: true,
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload PNG: ${error.message}`);
+    }
+
+    return `${this.publicUrl}/${filePath}`;
+  }
+
+  async uploadSvg(tokenId: number, svgString: string): Promise<string> {
+    const filePath = `${tokenId}.svg`;
+
+    const { error } = await this.client.storage
+      .from(this.bucket)
+      .upload(filePath, svgString, {
+        contentType: 'image/svg+xml',
+        upsert: true,
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload SVG: ${error.message}`);
     }
 
     return `${this.publicUrl}/${filePath}`;
@@ -99,6 +135,32 @@ export class R2StorageProvider implements StorageProvider {
       Key: filePath,
       Body: compressed,
       ContentType: 'application/gzip',
+    }));
+
+    return `${this.publicUrl}/${filePath}`;
+  }
+
+  async uploadPng(tokenId: number, buffer: Buffer): Promise<string> {
+    const filePath = `${tokenId}.png`;
+
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: filePath,
+      Body: buffer,
+      ContentType: 'image/png',
+    }));
+
+    return `${this.publicUrl}/${filePath}`;
+  }
+
+  async uploadSvg(tokenId: number, svgString: string): Promise<string> {
+    const filePath = `${tokenId}.svg`;
+
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: filePath,
+      Body: svgString,
+      ContentType: 'image/svg+xml',
     }));
 
     return `${this.publicUrl}/${filePath}`;

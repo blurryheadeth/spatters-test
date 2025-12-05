@@ -185,13 +185,13 @@ export default function CollectionPage() {
               key={tokenId}
               className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {/* Thumbnail */}
+              {/* Thumbnail - SVG for scalable display */}
               <Link href={`/token/${tokenId}`}>
-                <div className="aspect-[2/1] cursor-pointer overflow-hidden">
-                  <iframe
-                    src={`${baseUrl}/api/token/${tokenId}`}
-                    className="w-full h-full border-0 pointer-events-none"
-                    title={`Spatter #${tokenId}`}
+                <div className="aspect-[2/1] cursor-pointer overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  <img
+                    src={`${baseUrl}/api/image/${tokenId}`}
+                    alt={`Spatter #${tokenId}`}
+                    className="w-full h-full object-contain"
                     loading="lazy"
                   />
                 </div>

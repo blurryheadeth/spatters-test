@@ -2,13 +2,16 @@
  * Puppeteer-based pixel generator
  * 
  * Loads the full on-chain HTML, waits for p5.js to render,
- * extracts canvasHistory, and uploads to storage.
+ * extracts canvasHistory, PNG screenshot, and SVG trace,
+ * then uploads all to storage.
  */
 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { createPublicClient, http, Address } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
 import { createStorage, TokenPixelData } from './storage.js';
+// @ts-ignore - imagetracerjs doesn't have TypeScript types
+import ImageTracer from 'imagetracerjs';
 
 // Configuration
 const NETWORK = process.env.NETWORK || 'sepolia';
@@ -25,6 +28,49 @@ const publicClient = createPublicClient({
 });
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS as Address;
+
+// Extended result type including PNG and SVG
+export interface GenerationResult {
+  pixelData: TokenPixelData;
+  pngBuffer: Buffer;
+  svgString: string;
+}
+
+/**
+ * Trace a PNG buffer to SVG using imagetracerjs
+ */
+async function traceToSvg(pngBuffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // imagetracerjs expects a base64 data URL
+    const base64 = pngBuffer.toString('base64');
+    const dataUrl = `data:image/png;base64,${base64}`;
+    
+    // Tracing options for high quality output
+    const options = {
+      // Color quantization
+      colorsampling: 2,       // Accurate color sampling
+      numberofcolors: 64,     // More colors for better accuracy
+      
+      // Tracing accuracy
+      ltres: 1,               // Line threshold (lower = more detail)
+      qtres: 1,               // Quadratic spline threshold
+      pathomit: 4,            // Omit paths smaller than this
+      
+      // Output options
+      roundcoords: 2,         // Round coordinates to 2 decimal places
+      desc: false,            // No description in output
+      viewbox: true,          // Include viewBox attribute
+    };
+    
+    ImageTracer.imageToSVG(
+      dataUrl,
+      (svgString: string) => {
+        resolve(svgString);
+      },
+      options
+    );
+  });
+}
 
 const SPATTERS_ABI = [
   {
@@ -69,16 +115,16 @@ export async function closeBrowser(): Promise<void> {
 }
 
 /**
- * Generate pixel data for a token
+ * Generate pixel data, PNG screenshot, and SVG trace for a token
  * 
- * @param tokenId - The token ID to generate pixels for
+ * @param tokenId - The token ID to generate for
  * @param fullHtmlUrl - URL to the full on-chain HTML viewer (from existing API)
- * @returns The generated pixel data
+ * @returns The generated pixel data, PNG buffer, and SVG string
  */
 export async function generatePixelData(
   tokenId: number,
   fullHtmlUrl?: string
-): Promise<TokenPixelData> {
+): Promise<GenerationResult> {
   // Remove trailing slash from base URL and use /api/generate/ path
   // This endpoint serves the FULL on-chain HTML that runs p5.js generation
   const baseUrl = API_BASE_URL.replace(/\/$/, '');
@@ -155,6 +201,23 @@ export async function generatePixelData(
     
     console.log(`[Token ${tokenId}] Extracted ${pixelData.canvasHistory.length} frames, dimensions: ${pixelData.width}x${pixelData.height}`);
     
+    // Take PNG screenshot of final frame (canvas element)
+    console.log(`[Token ${tokenId}] Taking PNG screenshot...`);
+    const canvasElement = await page.$('canvas');
+    let pngBuffer: Buffer;
+    if (canvasElement) {
+      pngBuffer = await canvasElement.screenshot({ type: 'png' }) as Buffer;
+    } else {
+      // Fallback to full page screenshot
+      pngBuffer = await page.screenshot({ type: 'png' }) as Buffer;
+    }
+    console.log(`[Token ${tokenId}] PNG captured: ${Math.round(pngBuffer.length / 1024)}KB`);
+    
+    // Trace PNG to SVG
+    console.log(`[Token ${tokenId}] Tracing to SVG...`);
+    const svgString = await traceToSvg(pngBuffer);
+    console.log(`[Token ${tokenId}] SVG traced: ${Math.round(svgString.length / 1024)}KB`);
+    
     // Get mutation count from contract
     let mutationCount = 0;
     try {
@@ -169,7 +232,7 @@ export async function generatePixelData(
       console.warn(`[Token ${tokenId}] Could not fetch mutation count:`, e);
     }
     
-    const result: TokenPixelData = {
+    const tokenPixelData: TokenPixelData = {
       tokenId,
       width: pixelData.width,
       height: pixelData.height,
@@ -178,7 +241,11 @@ export async function generatePixelData(
       mutationCount,
     };
     
-    return result;
+    return {
+      pixelData: tokenPixelData,
+      pngBuffer,
+      svgString,
+    };
     
   } finally {
     await page.close();
@@ -186,20 +253,32 @@ export async function generatePixelData(
 }
 
 /**
- * Generate and upload pixel data for a token
+ * Generate and upload pixel data, PNG, and SVG for a token
  */
-export async function generateAndUpload(tokenId: number, fullHtmlUrl?: string): Promise<string> {
-  const pixelData = await generatePixelData(tokenId, fullHtmlUrl);
+export async function generateAndUpload(tokenId: number, fullHtmlUrl?: string): Promise<{
+  pixelsUrl: string;
+  pngUrl: string;
+  svgUrl: string;
+}> {
+  const { pixelData, pngBuffer, svgString } = await generatePixelData(tokenId, fullHtmlUrl);
   
   console.log(`[Token ${tokenId}] Uploading to storage...`);
   
   const storage = createStorage();
-  const url = await storage.upload(tokenId, pixelData);
   
-  console.log(`[Token ${tokenId}] Uploaded to ${url}`);
-  console.log(`[Token ${tokenId}] Data size: ~${Math.round(JSON.stringify(pixelData).length / 1024 / 1024 * 10) / 10}MB uncompressed`);
+  // Upload all three formats in parallel
+  const [pixelsUrl, pngUrl, svgUrl] = await Promise.all([
+    storage.upload(tokenId, pixelData),
+    storage.uploadPng(tokenId, pngBuffer),
+    storage.uploadSvg(tokenId, svgString),
+  ]);
   
-  return url;
+  console.log(`[Token ${tokenId}] Uploaded pixels to ${pixelsUrl}`);
+  console.log(`[Token ${tokenId}] Uploaded PNG to ${pngUrl}`);
+  console.log(`[Token ${tokenId}] Uploaded SVG to ${svgUrl}`);
+  console.log(`[Token ${tokenId}] Pixel data size: ~${Math.round(JSON.stringify(pixelData).length / 1024 / 1024 * 10) / 10}MB uncompressed`);
+  
+  return { pixelsUrl, pngUrl, svgUrl };
 }
 
 

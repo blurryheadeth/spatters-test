@@ -41,14 +41,14 @@ async function main() {
   console.log(`Storage: ${process.env.STORAGE_PROVIDER || 'supabase'}`);
   console.log('---');
 
-  const results: Array<{ tokenId: number; success: boolean; url?: string; error?: string }> = [];
+  const results: Array<{ tokenId: number; success: boolean; urls?: { pixelsUrl: string; pngUrl: string; svgUrl: string }; error?: string }> = [];
 
   for (const tokenId of tokenIds) {
     console.log(`\n[Token ${tokenId}] Starting...`);
     
     try {
-      const url = await generateAndUpload(tokenId);
-      results.push({ tokenId, success: true, url });
+      const urls = await generateAndUpload(tokenId);
+      results.push({ tokenId, success: true, urls });
       console.log(`[Token ${tokenId}] ✅ Success`);
     } catch (error: any) {
       results.push({ tokenId, success: false, error: error.message });
