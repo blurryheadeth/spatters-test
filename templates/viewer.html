@@ -1,271 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spatters #{{TOKEN_ID}}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spatters #{{TOKEN_ID}}</title>
 </head>
 <body>
-  <div id="status" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:1000;">
-    <div id="statusText">Loading from blockchain...</div>
-  </div>
+<script>
+const CONFIG = {
+  sepoliaRpc: "{{SEPOLIA_RPC}}",
+  mainnetRpc: "{{MAINNET_RPC}}",
+  tokenId: {{TOKEN_ID}},
+  generatorContract: "{{GENERATOR_CONTRACT}}",
+  spattersContract: "{{SPATTERS_CONTRACT}}",
+  storageAddresses: {{STORAGE_ADDRESSES}},
+  artBlocksRegistry: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
+  p5DependencyBytes32: "0x703540312e302e30000000000000000000000000000000000000000000000000",
+  p5ChunkCount: 10
+};
 
-  <script>
-    // ============================================================
-    // CONFIGURATION (Injected by server)
-    // ============================================================
-    const CONFIG = {
-      sepoliaRpc: "{{SEPOLIA_RPC}}",
-      mainnetRpc: "{{MAINNET_RPC}}",
-      tokenId: {{TOKEN_ID}},
-      generatorContract: "{{GENERATOR_CONTRACT}}",
-      spattersContract: "{{SPATTERS_CONTRACT}}",
-      storageAddresses: {{STORAGE_ADDRESSES}},
-      // Art Blocks DependencyRegistry (Ethereum Mainnet)
-      artBlocksRegistry: "0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF",
-      // p5@1.0.0 as bytes32 (ASCII padded)
-      p5DependencyBytes32: "0x703540312e302e30000000000000000000000000000000000000000000000000",
-      p5ChunkCount: 10
-    };
+async function ethCall(rpcUrl, to, data) {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{ to, data }, 'latest'],
+      id: Date.now()
+    })
+  });
+  const json = await response.json();
+  if (json.error) throw new Error(json.error.message);
+  return json.result;
+}
 
-    // ============================================================
-    // ETHEREUM RPC HELPERS
-    // ============================================================
-    
-    async function ethCall(rpcUrl, to, data) {
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_call',
-          params: [{ to, data }, 'latest'],
-          id: Date.now()
-        })
-      });
-      const json = await response.json();
-      if (json.error) throw new Error(json.error.message);
-      return json.result;
+async function getBytecode(rpcUrl, address) {
+  const response = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getCode',
+      params: [address, 'latest'],
+      id: Date.now()
+    })
+  });
+  const json = await response.json();
+  if (json.error) throw new Error(json.error.message);
+  return json.result;
+}
+
+function hexToString(hex) {
+  if (!hex || hex === '0x') return '';
+  if (hex.startsWith('0x')) hex = hex.slice(2);
+  let str = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    const code = parseInt(hex.substr(i, 2), 16);
+    if (code === 0) continue;
+    str += String.fromCharCode(code);
+  }
+  return str;
+}
+
+function encodeUint256(num) {
+  return num.toString(16).padStart(64, '0');
+}
+
+function decodeAbiString(hex) {
+  if (hex.startsWith('0x')) hex = hex.slice(2);
+  const offset = parseInt(hex.slice(0, 64), 16) * 2;
+  const length = parseInt(hex.slice(offset, offset + 64), 16);
+  const data = hex.slice(offset + 64, offset + 64 + length * 2);
+  return hexToString('0x' + data);
+}
+
+async function decompressGzip(compressedData) {
+  const ds = new DecompressionStream('gzip');
+  const blob = new Blob([compressedData]);
+  const decompressedStream = blob.stream().pipeThrough(ds);
+  return await new Response(decompressedStream).text();
+}
+
+const GET_DEPENDENCY_SCRIPT_SELECTOR = '0x518cb3df';
+
+async function loadP5jsFromArtBlocks() {
+  const chunks = [];
+  for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
+    const indexHex = encodeUint256(i);
+    const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + CONFIG.p5DependencyBytes32.slice(2) + indexHex;
+    const result = await ethCall(CONFIG.mainnetRpc, CONFIG.artBlocksRegistry, callData);
+    chunks.push(decodeAbiString(result));
+  }
+  const compressedBase64 = chunks.join('');
+  const compressedBinary = atob(compressedBase64);
+  const compressedArray = new Uint8Array(compressedBinary.length);
+  for (let i = 0; i < compressedBinary.length; i++) {
+    compressedArray[i] = compressedBinary.charCodeAt(i);
+  }
+  return await decompressGzip(compressedArray);
+}
+
+async function getTokenData(tokenId) {
+  const selector = '0xb09afec1';
+  const data = selector + encodeUint256(tokenId);
+  const result = await ethCall(CONFIG.sepoliaRpc, CONFIG.generatorContract, data);
+  const hex = result.slice(2);
+  const seed = '0x' + hex.slice(0, 64);
+  const mutationSeedsOffset = parseInt(hex.slice(64, 128), 16) * 2;
+  const mutationTypesOffset = parseInt(hex.slice(128, 192), 16) * 2;
+  const paletteOffset = parseInt(hex.slice(192, 256), 16) * 2;
+  const mutationSeedsLength = parseInt(hex.slice(mutationSeedsOffset, mutationSeedsOffset + 64), 16);
+  const mutationSeeds = [];
+  for (let i = 0; i < mutationSeedsLength; i++) {
+    const pos = mutationSeedsOffset + 64 + (i * 64);
+    mutationSeeds.push('0x' + hex.slice(pos, pos + 64));
+  }
+  const mutationTypesLength = parseInt(hex.slice(mutationTypesOffset, mutationTypesOffset + 64), 16);
+  const mutationTypes = [];
+  for (let i = 0; i < mutationTypesLength; i++) {
+    const offsetPos = mutationTypesOffset + 64 + (i * 64);
+    const strOffset = parseInt(hex.slice(offsetPos, offsetPos + 64), 16) * 2;
+    const absOffset = mutationTypesOffset + 64 + strOffset;
+    const strLength = parseInt(hex.slice(absOffset, absOffset + 64), 16);
+    const strData = hex.slice(absOffset + 64, absOffset + 64 + strLength * 2);
+    mutationTypes.push(hexToString(strData));
+  }
+  const customPalette = [];
+  for (let i = 0; i < 6; i++) {
+    const offsetPos = paletteOffset + (i * 64);
+    const strOffset = parseInt(hex.slice(offsetPos, offsetPos + 64), 16) * 2;
+    const absOffset = paletteOffset + strOffset;
+    const strLength = parseInt(hex.slice(absOffset, absOffset + 64), 16);
+    if (strLength > 0) {
+      const strData = hex.slice(absOffset + 64, absOffset + 64 + strLength * 2);
+      customPalette.push(hexToString(strData));
+    } else {
+      customPalette.push('');
     }
+  }
+  return { seed, mutationSeeds, mutationTypes, customPalette };
+}
 
-    async function getBytecode(rpcUrl, address) {
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_getCode',
-          params: [address, 'latest'],
-          id: Date.now()
-        })
-      });
-      const json = await response.json();
-      if (json.error) throw new Error(json.error.message);
-      return json.result;
-    }
+async function loadSpattersJs() {
+  const chunks = await Promise.all(
+    CONFIG.storageAddresses.map(async (addr) => {
+      const bytecode = await getBytecode(CONFIG.sepoliaRpc, addr);
+      return hexToString(bytecode);
+    })
+  );
+  return chunks.join('');
+}
 
-    function hexToString(hex) {
-      if (!hex || hex === '0x') return '';
-      if (hex.startsWith('0x')) hex = hex.slice(2);
-      let str = '';
-      for (let i = 0; i < hex.length; i += 2) {
-        const code = parseInt(hex.substr(i, 2), 16);
-        if (code === 0) continue;
-        str += String.fromCharCode(code);
-      }
-      return str;
-    }
+function hexToSeed(hexString) {
+  const truncated = hexString.slice(0, 18);
+  return parseInt(truncated, 16);
+}
 
-    function encodeUint256(num) {
-      return num.toString(16).padStart(64, '0');
-    }
+async function loadFromBlockchain() {
+  const spattersJs = await loadSpattersJs();
+  const tokenData = await getTokenData(CONFIG.tokenId);
+  const mintingSeed = hexToSeed(tokenData.seed);
+  const mutations = tokenData.mutationSeeds.map((seed, i) => [hexToSeed(seed), tokenData.mutationTypes[i]]);
+  const customPalette = tokenData.customPalette.filter(c => c && c.length > 0);
+  eval(spattersJs);
+  window.setup = function() {
+    generate(mintingSeed, mutations, customPalette.length > 0 ? customPalette : []);
+  };
+  const p5jsCode = await loadP5jsFromArtBlocks();
+  eval(p5jsCode);
+}
 
-    // Decode a string from ABI-encoded response
-    function decodeAbiString(hex) {
-      if (hex.startsWith('0x')) hex = hex.slice(2);
-      const offset = parseInt(hex.slice(0, 64), 16) * 2;
-      const length = parseInt(hex.slice(offset, offset + 64), 16);
-      const data = hex.slice(offset + 64, offset + 64 + length * 2);
-      return hexToString('0x' + data);
-    }
-
-    // ============================================================
-    // GZIP DECOMPRESSION (Native Browser API)
-    // ============================================================
-
-    async function decompressGzip(compressedData) {
-      const ds = new DecompressionStream('gzip');
-      const blob = new Blob([compressedData]);
-      const decompressedStream = blob.stream().pipeThrough(ds);
-      return await new Response(decompressedStream).text();
-    }
-
-    // ============================================================
-    // ART BLOCKS P5.JS LOADING (Fully On-Chain)
-    // ============================================================
-
-    // Function selector for getDependencyScript(bytes32,uint256)
-    // Computed from keccak256("getDependencyScript(bytes32,uint256)")
-    const GET_DEPENDENCY_SCRIPT_SELECTOR = '0x518cb3df';
-
-    async function loadP5jsFromArtBlocks() {
-      document.getElementById('statusText').textContent = 'Fetching p5.js from Art Blocks (Ethereum Mainnet)...';
-      
-      const chunks = [];
-      
-      // Fetch all 10 chunks from Art Blocks DependencyRegistry
-      for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
-        document.getElementById('statusText').textContent = 
-          `Fetching p5.js chunk ${i + 1}/${CONFIG.p5ChunkCount} from Art Blocks...`;
-        
-        // Encode call data: selector + bytes32 + uint256
-        const indexHex = encodeUint256(i);
-        const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + 
-                         CONFIG.p5DependencyBytes32.slice(2) + 
-                         indexHex;
-        
-        const result = await ethCall(CONFIG.mainnetRpc, CONFIG.artBlocksRegistry, callData);
-        const chunk = decodeAbiString(result);
-        chunks.push(chunk);
-      }
-      
-      // Concatenate all chunks (base64-encoded gzip)
-      const compressedBase64 = chunks.join('');
-      
-      // Decode base64 to binary
-      document.getElementById('statusText').textContent = 'Decompressing p5.js...';
-      const compressedBinary = atob(compressedBase64);
-      const compressedArray = new Uint8Array(compressedBinary.length);
-      for (let i = 0; i < compressedBinary.length; i++) {
-        compressedArray[i] = compressedBinary.charCodeAt(i);
-      }
-      
-      // Decompress using native DecompressionStream API
-      const decompressed = await decompressGzip(compressedArray);
-      
-      return decompressed;
-    }
-
-    // ============================================================
-    // CONTRACT INTERACTION (Sepolia)
-    // ============================================================
-
-    async function getTokenData(tokenId) {
-      const selector = '0xb09afec1';
-      const data = selector + encodeUint256(tokenId);
-      
-      const result = await ethCall(CONFIG.sepoliaRpc, CONFIG.generatorContract, data);
-      const hex = result.slice(2);
-      
-      const seed = '0x' + hex.slice(0, 64);
-      
-      const mutationSeedsOffset = parseInt(hex.slice(64, 128), 16) * 2;
-      const mutationTypesOffset = parseInt(hex.slice(128, 192), 16) * 2;
-      const paletteOffset = parseInt(hex.slice(192, 256), 16) * 2;
-      
-      const mutationSeedsLength = parseInt(hex.slice(mutationSeedsOffset, mutationSeedsOffset + 64), 16);
-      const mutationSeeds = [];
-      for (let i = 0; i < mutationSeedsLength; i++) {
-        const pos = mutationSeedsOffset + 64 + (i * 64);
-        mutationSeeds.push('0x' + hex.slice(pos, pos + 64));
-      }
-      
-      const mutationTypesLength = parseInt(hex.slice(mutationTypesOffset, mutationTypesOffset + 64), 16);
-      const mutationTypes = [];
-      for (let i = 0; i < mutationTypesLength; i++) {
-        const offsetPos = mutationTypesOffset + 64 + (i * 64);
-        const strOffset = parseInt(hex.slice(offsetPos, offsetPos + 64), 16) * 2;
-        const absOffset = mutationTypesOffset + 64 + strOffset;
-        const strLength = parseInt(hex.slice(absOffset, absOffset + 64), 16);
-        const strData = hex.slice(absOffset + 64, absOffset + 64 + strLength * 2);
-        mutationTypes.push(hexToString(strData));
-      }
-      
-      const customPalette = [];
-      for (let i = 0; i < 6; i++) {
-        const offsetPos = paletteOffset + (i * 64);
-        const strOffset = parseInt(hex.slice(offsetPos, offsetPos + 64), 16) * 2;
-        const absOffset = paletteOffset + strOffset;
-        const strLength = parseInt(hex.slice(absOffset, absOffset + 64), 16);
-        if (strLength > 0) {
-          const strData = hex.slice(absOffset + 64, absOffset + 64 + strLength * 2);
-          customPalette.push(hexToString(strData));
-        } else {
-          customPalette.push('');
-        }
-      }
-      
-      return { seed, mutationSeeds, mutationTypes, customPalette };
-    }
-
-    async function loadSpattersJs() {
-      document.getElementById('statusText').textContent = 'Fetching spatters.js from Sepolia...';
-      
-      const chunks = await Promise.all(
-        CONFIG.storageAddresses.map(async (addr, index) => {
-          const bytecode = await getBytecode(CONFIG.sepoliaRpc, addr);
-          document.getElementById('statusText').textContent = 
-            `Loading spatters.js chunk ${index + 1}/${CONFIG.storageAddresses.length}...`;
-          return hexToString(bytecode);
-        })
-      );
-      
-      return chunks.join('');
-    }
-
-    function hexToSeed(hexString) {
-      const truncated = hexString.slice(0, 18);
-      return parseInt(truncated, 16);
-    }
-
-    // ============================================================
-    // MAIN LOADER
-    // ============================================================
-    
-    async function loadFromBlockchain() {
-      try {
-        // 1. Load spatters.js from Sepolia
-        const spattersJs = await loadSpattersJs();
-        
-        // 2. Load token data from Sepolia
-        document.getElementById('statusText').textContent = 'Fetching token data...';
-        const tokenData = await getTokenData(CONFIG.tokenId);
-        
-        // 3. Prepare data
-        const mintingSeed = hexToSeed(tokenData.seed);
-        const mutations = tokenData.mutationSeeds.map((seed, i) => [
-          hexToSeed(seed),
-          tokenData.mutationTypes[i]
-        ]);
-        const customPalette = tokenData.customPalette.filter(c => c && c.length > 0);
-        
-        // 4. Execute spatters.js
-        document.getElementById('statusText').textContent = 'Initializing spatters.js...';
-        eval(spattersJs);
-        
-        // 5. Define setup() BEFORE loading p5.js
-        window.setup = function() {
-          generate(mintingSeed, mutations, customPalette.length > 0 ? customPalette : []);
-        };
-        
-        // 6. Load p5.js from Art Blocks (Ethereum Mainnet) - FULLY ON-CHAIN!
-        const p5jsCode = await loadP5jsFromArtBlocks();
-        
-        // 7. Execute p5.js
-        document.getElementById('statusText').textContent = 'Initializing p5.js...';
-        eval(p5jsCode);
-        
-        // 8. Hide status (p5.js auto-starts via setup())
-        document.getElementById('status').style.display = 'none';
-        
-      } catch (error) {
-        console.error('Error loading from blockchain:', error);
-        document.getElementById('statusText').textContent = 'Error: ' + error.message;
-        document.getElementById('statusText').style.color = '#c00';
-      }
-    }
-
-    window.onload = loadFromBlockchain;
-  </script>
+window.onload = loadFromBlockchain;
+</script>
 </body>
 </html>

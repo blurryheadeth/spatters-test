@@ -16,7 +16,7 @@ import { createPublicClient, http } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
 
 const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
-const GENERATOR_ADDRESS = process.env.NEXT_PUBLIC_GENERATOR_ADDRESS || '0x4159550F0455B0659eAC8eF29Cac7c5a7fD1F506';
+const GENERATOR_ADDRESS = process.env.NEXT_PUBLIC_GENERATOR_ADDRESS || '0x2de2a899313a67bB7753167Fa62dAe9E5FF115fE';
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL;
 
