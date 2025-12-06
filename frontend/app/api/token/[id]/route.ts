@@ -149,15 +149,28 @@ export async function GET(
       if (loaded) displayFrame(historicalIndex);
     }
 
-    function mouseClicked() {
-      if (!loaded || canvasHistory.length === 0) return;
+    // Debounce to prevent double-firing from mouse+touch events
+    let lastClickTime = 0;
+    const CLICK_DEBOUNCE = 100; // ms
+    
+    function cycleFrame() {
+      const now = Date.now();
+      if (now - lastClickTime < CLICK_DEBOUNCE) return false;
+      lastClickTime = now;
+      
+      if (!loaded || canvasHistory.length === 0) return false;
       historicalIndex = (historicalIndex + 1) % canvasHistory.length;
       displayFrame(historicalIndex);
+      return true;
+    }
+
+    function mouseClicked() {
+      cycleFrame();
     }
 
     function touchStarted() {
-      mouseClicked();
-      return false;
+      cycleFrame();
+      return false; // Prevent mouse event from also firing
     }
   </script>
 </body>
