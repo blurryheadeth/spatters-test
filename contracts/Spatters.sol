@@ -243,56 +243,128 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // ============ Initialization ============
 
     /**
-     * @dev Initialize the 92 allowed mutation types from spatters.js
+     * @dev Initialize the 94 allowed mutation types from spatters.js
      */
     function _initializeMutationTypes() private {
-        // Color mutations
-        allowedMutations.push("paletteChangeAll");
-        allowedMutations.push("paletteChangeOne");
-        allowedMutations.push("paletteInvert");
-        allowedMutations.push("paletteSwap");
-        
-        // Shape mutations
-        allowedMutations.push("shapeExpand");
-        allowedMutations.push("shapeContract");
-        allowedMutations.push("shapeRotate");
-        allowedMutations.push("shapeChangeCurveCenters");
-        allowedMutations.push("shapeChangeLineEndpoints");
-        allowedMutations.push("shapeFlip");
-        
-        // Gradient mutations
-        allowedMutations.push("gradientTypeChange");
-        allowedMutations.push("gradientDirectionChange");
-        
-        // Divider mutations
-        allowedMutations.push("dividerAdd");
-        allowedMutations.push("dividerRemove");
-        allowedMutations.push("dividerMove");
-        
-        // Circle mutations
-        allowedMutations.push("circleAdd");
-        allowedMutations.push("circleRemove");
-        allowedMutations.push("circleMove");
-        allowedMutations.push("circleResize");
-        
-        // Line mutations
-        allowedMutations.push("lineAdd");
-        allowedMutations.push("lineRemove");
-        allowedMutations.push("lineMove");
-        allowedMutations.push("lineRotate");
-        
-        // Complex mutations
+        // Base mutations (1-10)
         allowedMutations.push("aspectRatioChange");
-        allowedMutations.push("explode");
-        allowedMutations.push("implode");
-        allowedMutations.push("fade");
-        allowedMutations.push("intensify");
-        allowedMutations.push("scramble");
+        allowedMutations.push("baseRadiusIncrease");
+        allowedMutations.push("baseRadiusDecrease");
+        allowedMutations.push("gradientTypeChange");
+        allowedMutations.push("dividerCountChange");
+        allowedMutations.push("circleCountChange");
+        allowedMutations.push("lineCountChange");
+        allowedMutations.push("circleSizeIncrease");
+        allowedMutations.push("circleSizeDecrease");
+        allowedMutations.push("circlePositionChange");
+        
+        // Circle mutations (11-14)
+        allowedMutations.push("circleMoveLeft");
+        allowedMutations.push("circleMoveRight");
+        allowedMutations.push("circleMoveUp");
+        allowedMutations.push("circleMoveDown");
+        
+        // Line mutations (15-24)
+        allowedMutations.push("lineWidthIncrease");
+        allowedMutations.push("lineWidthDecrease");
+        allowedMutations.push("lineAngleChange");
+        allowedMutations.push("lineLengthIncrease");
+        allowedMutations.push("lineLengthDecrease");
+        allowedMutations.push("linePositionChange");
+        allowedMutations.push("lineMoveLeft");
+        allowedMutations.push("lineMoveRight");
+        allowedMutations.push("lineMoveUp");
+        allowedMutations.push("lineMoveDown");
+        
+        // Palette mutations (25-31)
+        allowedMutations.push("paletteChangeOne");
+        allowedMutations.push("paletteChangeAll");
+        allowedMutations.push("paletteCombineOne");
+        allowedMutations.push("paletteCombineAll");
+        allowedMutations.push("paletteResetOne");
+        allowedMutations.push("paletteResetAll");
+        allowedMutations.push("paletteShuffle");
+        
+        // Divider and rotation (32-34)
+        allowedMutations.push("dividerMove");
+        allowedMutations.push("dividerRotate");
+        allowedMutations.push("rotate");
+        
+        // Seedpoint count (35-36)
+        allowedMutations.push("seedPointCountIncrease");
+        allowedMutations.push("seedPointCountDecrease");
+        
+        // Generic seedpoint mutations (37-45)
+        allowedMutations.push("seedpointMoveRight");
+        allowedMutations.push("seedpointMoveLeft");
+        allowedMutations.push("seedpointMoveUp");
+        allowedMutations.push("seedpointMoveDown");
+        allowedMutations.push("seedpointChangeCurveCenter");
+        allowedMutations.push("seedpointIncreaseConcavity");
+        allowedMutations.push("seedpointDecreaseConcavity");
+        allowedMutations.push("seedpointIncreaseRadius");
+        allowedMutations.push("seedpointDecreaseRadius");
+        
+        // Shape mutations (46-56)
+        allowedMutations.push("shapeExpand");
+        allowedMutations.push("shapeShrink");
+        allowedMutations.push("shapeMakeWider");
+        allowedMutations.push("shapeMakeNarrower");
+        allowedMutations.push("shapeMakeHigher");
+        allowedMutations.push("shapeMakeShorter");
+        allowedMutations.push("shapeChangeCurveCenters");
+        allowedMutations.push("shapeIncreaseConcavity");
+        allowedMutations.push("shapeReduceConcavity");
+        allowedMutations.push("shapeChangeRadiuses");
+        allowedMutations.push("shapeMove");
+        
+        // Undo mutations (57-58)
         allowedMutations.push("undoMutation");
         allowedMutations.push("returnToPreviousVersion");
         
-        // Add remaining mutations to reach 92 total
-        // (These would be the full list from your spatters.js)
+        // Seedpoint-top mutations (59-67)
+        allowedMutations.push("seedpointMoveRight-top");
+        allowedMutations.push("seedpointMoveLeft-top");
+        allowedMutations.push("seedpointMoveUp-top");
+        allowedMutations.push("seedpointMoveDown-top");
+        allowedMutations.push("seedpointChangeCurveCenter-top");
+        allowedMutations.push("seedpointIncreaseConcavity-top");
+        allowedMutations.push("seedpointDecreaseConcavity-top");
+        allowedMutations.push("seedpointIncreaseRadius-top");
+        allowedMutations.push("seedpointDecreaseRadius-top");
+        
+        // Seedpoint-bottom mutations (68-76)
+        allowedMutations.push("seedpointMoveRight-bottom");
+        allowedMutations.push("seedpointMoveLeft-bottom");
+        allowedMutations.push("seedpointMoveUp-bottom");
+        allowedMutations.push("seedpointMoveDown-bottom");
+        allowedMutations.push("seedpointChangeCurveCenter-bottom");
+        allowedMutations.push("seedpointIncreaseConcavity-bottom");
+        allowedMutations.push("seedpointDecreaseConcavity-bottom");
+        allowedMutations.push("seedpointIncreaseRadius-bottom");
+        allowedMutations.push("seedpointDecreaseRadius-bottom");
+        
+        // Seedpoint-left mutations (77-85)
+        allowedMutations.push("seedpointMoveRight-left");
+        allowedMutations.push("seedpointMoveLeft-left");
+        allowedMutations.push("seedpointMoveUp-left");
+        allowedMutations.push("seedpointMoveDown-left");
+        allowedMutations.push("seedpointChangeCurveCenter-left");
+        allowedMutations.push("seedpointIncreaseConcavity-left");
+        allowedMutations.push("seedpointDecreaseConcavity-left");
+        allowedMutations.push("seedpointIncreaseRadius-left");
+        allowedMutations.push("seedpointDecreaseRadius-left");
+        
+        // Seedpoint-right mutations (86-94)
+        allowedMutations.push("seedpointMoveRight-right");
+        allowedMutations.push("seedpointMoveLeft-right");
+        allowedMutations.push("seedpointMoveUp-right");
+        allowedMutations.push("seedpointMoveDown-right");
+        allowedMutations.push("seedpointChangeCurveCenter-right");
+        allowedMutations.push("seedpointIncreaseConcavity-right");
+        allowedMutations.push("seedpointDecreaseConcavity-right");
+        allowedMutations.push("seedpointIncreaseRadius-right");
+        allowedMutations.push("seedpointDecreaseRadius-right");
     }
 
     /**

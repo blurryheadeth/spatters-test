@@ -7,24 +7,47 @@ import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 
-// All 92 mutation types from spatters.js
+// All 94 mutation types from spatters.js
 const MUTATION_TYPES = [
-  // Color mutations
-  'paletteChangeAll', 'paletteChangeOne', 'paletteInvert', 'paletteSwap',
-  // Shape mutations
-  'shapeExpand', 'shapeContract', 'shapeRotate', 'shapeChangeCurveCenters',
-  'shapeChangeLineEndpoints', 'shapeFlip',
-  // Gradient mutations
-  'gradientTypeChange', 'gradientDirectionChange',
-  // Divider mutations
-  'dividerAdd', 'dividerRemove', 'dividerMove',
-  // Circle mutations
-  'circleAdd', 'circleRemove', 'circleMove', 'circleResize',
-  // Line mutations
-  'lineAdd', 'lineRemove', 'lineMove', 'lineRotate',
-  // Complex mutations
-  'aspectRatioChange', 'explode', 'implode', 'fade', 'intensify',
-  'scramble', 'undoMutation', 'returnToPreviousVersion',
+  "aspectRatioChange", "baseRadiusIncrease", "baseRadiusDecrease",
+  "gradientTypeChange", "dividerCountChange", "circleCountChange",
+  "lineCountChange", "circleSizeIncrease", "circleSizeDecrease",
+  "circlePositionChange", "circleMoveLeft", "circleMoveRight",
+  "circleMoveUp", "circleMoveDown", "lineWidthIncrease",
+  "lineWidthDecrease", "lineAngleChange", "lineLengthIncrease",
+  "lineLengthDecrease", "linePositionChange", "lineMoveLeft",
+  "lineMoveRight", "lineMoveUp", "lineMoveDown",
+  "paletteChangeOne", "paletteChangeAll", "paletteCombineOne",
+  "paletteCombineAll", "paletteResetOne", "paletteResetAll",
+  "paletteShuffle", "dividerMove", "dividerRotate", "rotate",
+  "seedPointCountIncrease", "seedPointCountDecrease",
+  "seedpointMoveRight", "seedpointMoveLeft", "seedpointMoveUp",
+  "seedpointMoveDown", "seedpointChangeCurveCenter",
+  "seedpointIncreaseConcavity", "seedpointDecreaseConcavity",
+  "seedpointIncreaseRadius", "seedpointDecreaseRadius",
+  "shapeExpand", "shapeShrink", "shapeMakeWider",
+  "shapeMakeNarrower", "shapeMakeHigher", "shapeMakeShorter",
+  "shapeChangeCurveCenters", "shapeIncreaseConcavity",
+  "shapeReduceConcavity", "shapeChangeRadiuses", "shapeMove",
+  "undoMutation", "returnToPreviousVersion",
+  "seedpointMoveRight-top", "seedpointMoveLeft-top",
+  "seedpointMoveUp-top", "seedpointMoveDown-top",
+  "seedpointChangeCurveCenter-top", "seedpointIncreaseConcavity-top",
+  "seedpointDecreaseConcavity-top", "seedpointIncreaseRadius-top",
+  "seedpointDecreaseRadius-top", "seedpointMoveRight-bottom",
+  "seedpointMoveLeft-bottom", "seedpointMoveUp-bottom",
+  "seedpointMoveDown-bottom", "seedpointChangeCurveCenter-bottom",
+  "seedpointIncreaseConcavity-bottom", "seedpointDecreaseConcavity-bottom",
+  "seedpointIncreaseRadius-bottom", "seedpointDecreaseRadius-bottom",
+  "seedpointMoveRight-left", "seedpointMoveLeft-left",
+  "seedpointMoveUp-left", "seedpointMoveDown-left",
+  "seedpointChangeCurveCenter-left", "seedpointIncreaseConcavity-left",
+  "seedpointDecreaseConcavity-left", "seedpointIncreaseRadius-left",
+  "seedpointDecreaseRadius-left", "seedpointMoveRight-right",
+  "seedpointMoveLeft-right", "seedpointMoveUp-right",
+  "seedpointMoveDown-right", "seedpointChangeCurveCenter-right",
+  "seedpointIncreaseConcavity-right", "seedpointDecreaseConcavity-right",
+  "seedpointIncreaseRadius-right", "seedpointDecreaseRadius-right",
 ];
 
 interface MilestoneData {
@@ -533,7 +556,10 @@ export default function MutatePage() {
           </div>
         </div>
 
-        <div className="flex-1 p-4 xl:p-6 xl:overflow-y-auto xl:max-h-screen space-y-4">
+        <div 
+          className="flex-1 p-4 xl:p-6 xl:overflow-y-auto space-y-4"
+          style={{ maxHeight: iframeHeight ? `${iframeHeight + 40}px` : undefined }}
+        >
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
             <h2 className="text-base font-semibold mb-3 text-gray-800 dark:text-gray-200">
               Next Mutation Dates
