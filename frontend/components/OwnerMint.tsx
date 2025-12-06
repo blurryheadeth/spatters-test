@@ -168,17 +168,37 @@ export default function OwnerMint() {
     }
   }, [address, recipient]);
 
+  // Helper to check if a pending request is still within the 55-minute window
+  const isRequestStillValid = (timestamp: bigint): boolean => {
+    const requestTime = Number(timestamp);
+    if (requestTime === 0) return false;
+    const expirationTime = requestTime + (55 * 60); // 55 minutes
+    const now = Math.floor(Date.now() / 1000);
+    return now < expirationTime;
+  };
+
+  // Track if user's pending request is expired
+  const [isRequestExpired, setIsRequestExpired] = useState(false);
+
   // Check for existing pending request on page load and auto-resume
   useEffect(() => {
     if (pendingRequest && address) {
       const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean };
-      // If user has an uncompleted pending request with seeds, auto-show preview
-      if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > 0) {
+      // If user has an uncompleted pending request with seeds
+      if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > BigInt(0)) {
         // Check if seeds are valid (not all zeros)
         const hasValidSeeds = request.seeds.some(s => s !== '0x0000000000000000000000000000000000000000000000000000000000000000');
         if (hasValidSeeds) {
-          setPreviewSeeds(request.seeds);
-          setMintMode('preview');
+          // Check if the request is still within the time window
+          if (isRequestStillValid(request.timestamp)) {
+            setPreviewSeeds(request.seeds);
+            setMintMode('preview');
+            setIsRequestExpired(false);
+          } else {
+            // Request has expired - show expired message
+            setIsRequestExpired(true);
+            setMintMode('choose'); // Go back to choose mode
+          }
         }
       }
     }
@@ -480,6 +500,19 @@ export default function OwnerMint() {
   if (mintMode === 'choose') {
     return (
       <div className="space-y-6">
+        {/* Show expired request warning */}
+        {isRequestExpired && (
+          <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4 border border-red-300 dark:border-red-700">
+            <h3 className="font-bold text-red-800 dark:text-red-200 mb-2">
+              ⏰ Previous Selection Expired
+            </h3>
+            <p className="text-red-700 dark:text-red-300 text-sm">
+              Your previous 3-option preview has expired (55-minute window passed). 
+              Please generate new options to continue.
+            </p>
+          </div>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
           <h2 className="text-2xl font-bold mb-4">Owner Mint</h2>
           <div className="space-y-2 mb-6">

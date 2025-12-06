@@ -145,16 +145,36 @@ export default function PublicMint() {
     return `${hours}h ${minutes}m`;
   };
 
+  // Helper to check if a pending request is still within the 55-minute window
+  const isRequestStillValid = (timestamp: bigint): boolean => {
+    const requestTime = Number(timestamp);
+    if (requestTime === 0) return false;
+    const expirationTime = requestTime + (55 * 60); // 55 minutes
+    const now = Math.floor(Date.now() / 1000);
+    return now < expirationTime;
+  };
+
+  // Track if user's pending request is expired
+  const [isRequestExpired, setIsRequestExpired] = useState(false);
+
   // Check for existing pending request on page load and auto-resume
   useEffect(() => {
     if (pendingRequest && address) {
       const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean };
-      // If user has an uncompleted pending request with seeds, auto-show preview
+      // If user has an uncompleted pending request with seeds
       if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > BigInt(0)) {
         // Check if seeds are valid (not all zeros)
         const hasValidSeeds = request.seeds.some(s => s !== '0x0000000000000000000000000000000000000000000000000000000000000000');
         if (hasValidSeeds) {
-          setPreviewSeeds(request.seeds);
+          // Check if the request is still within the time window
+          if (isRequestStillValid(request.timestamp)) {
+            setPreviewSeeds(request.seeds);
+            setIsRequestExpired(false);
+          } else {
+            // Request has expired
+            setIsRequestExpired(true);
+            setPreviewSeeds([]); // Clear previews
+          }
         }
       }
     }
@@ -500,6 +520,22 @@ export default function PublicMint() {
   // Initial state - request mint
   return (
     <div className="space-y-6">
+      {/* Show expired request warning */}
+      {isRequestExpired && (
+        <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4 border border-red-300 dark:border-red-700">
+          <h3 className="font-bold text-red-800 dark:text-red-200 mb-2">
+            ⏰ Previous Selection Expired
+          </h3>
+          <p className="text-red-700 dark:text-red-300 text-sm mb-2">
+            Your previous 3-option preview has expired (55-minute window passed). 
+            Unfortunately, your payment for that request cannot be recovered.
+          </p>
+          <p className="text-red-600 dark:text-red-400 text-xs">
+            Please generate new options to mint. We recommend completing your selection promptly next time.
+          </p>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
         <h2 className="text-2xl font-bold mb-4">Public Mint</h2>
         <div className="space-y-2 mb-6">
