@@ -157,43 +157,18 @@ function hexToSeed(hexString) {
   return parseInt(truncated, 16);
 }
 
-let historicalIndex = 0;
-let lastClickTime = 0;
-const CLICK_DEBOUNCE = 100;
-
-function cycleFrame() {
-  const now = Date.now();
-  if (now - lastClickTime < CLICK_DEBOUNCE) return false;
-  lastClickTime = now;
-  
-  if (typeof canvasHistory === 'undefined' || canvasHistory.length === 0) return false;
-  historicalIndex = (historicalIndex + 1) % canvasHistory.length;
-  loadPixels();
-  for (let i = 0; i < canvasHistory[historicalIndex].length; i++) {
-    pixels[i] = canvasHistory[historicalIndex][i];
-  }
-  updatePixels();
-  return true;
-}
-
 async function loadFromBlockchain() {
   const spattersJs = await loadSpattersJs();
   const tokenData = await getTokenData(CONFIG.tokenId);
   const mintingSeed = hexToSeed(tokenData.seed);
   const mutations = tokenData.mutationSeeds.map((seed, i) => [hexToSeed(seed), tokenData.mutationTypes[i]]);
   const customPalette = tokenData.customPalette.filter(c => c && c.length > 0);
-  eval(spattersJs);
+  (1, eval)(spattersJs);
   window.setup = function() {
     generate(mintingSeed, mutations, customPalette.length > 0 ? customPalette : []);
-    // Set initial historical index to the last frame (current state)
-    if (typeof canvasHistory !== 'undefined' && canvasHistory.length > 0) {
-      historicalIndex = canvasHistory.length - 1;
-    }
   };
-  window.mouseClicked = cycleFrame;
-  window.touchStarted = function() { cycleFrame(); return false; };
   const p5jsCode = await loadP5jsFromArtBlocks();
-  eval(p5jsCode);
+  (1, eval)(p5jsCode);
 }
 
 window.onload = loadFromBlockchain;
