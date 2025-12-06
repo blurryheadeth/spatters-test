@@ -104,25 +104,17 @@ export default function OwnerMint() {
   });
 
   // Check if any mint selection is in progress (global block)
-  const { data: mintSelectionInProgress, refetch: refetchMintStatus } = useReadContract({
+  // Returns tuple: [active: boolean, requester: address, expiresAt: uint256]
+  const { data: mintSelectionData, refetch: refetchMintStatus } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
     functionName: 'isMintSelectionInProgress',
   });
 
-  // Get who has the active mint request
-  const { data: activeMintRequester } = useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: SpattersABI.abi,
-    functionName: 'activeMintRequester',
-  });
-
-  // Get when the active mint request was made
-  const { data: activeMintRequestTime } = useReadContract({
-    address: contractAddress as `0x${string}`,
-    abi: SpattersABI.abi,
-    functionName: 'activeMintRequestTime',
-  });
+  // Extract values from the tuple
+  const mintSelectionInProgress = mintSelectionData ? (mintSelectionData as [boolean, string, bigint])[0] : false;
+  const activeMintRequester = mintSelectionData ? (mintSelectionData as [boolean, string, bigint])[1] : null;
+  const activeMintRequestExpiry = mintSelectionData ? (mintSelectionData as [boolean, string, bigint])[2] : BigInt(0);
 
   // Request owner mint transaction (3-option flow)
   const { 
@@ -206,15 +198,13 @@ export default function OwnerMint() {
 
   // Check if current user is the one with the pending mint
   const isCurrentUserPending = activeMintRequester && address && 
-    (activeMintRequester as string).toLowerCase() === address.toLowerCase();
+    activeMintRequester.toLowerCase() === address.toLowerCase();
 
   // Calculate remaining time for pending selection
   const getRemainingTime = (): string => {
-    if (!activeMintRequestTime) return '';
-    const requestTime = Number(activeMintRequestTime);
-    if (requestTime === 0) return '';
+    if (!activeMintRequestExpiry || activeMintRequestExpiry === BigInt(0)) return '';
     
-    const expirationTime = requestTime + (55 * 60); // 55 minutes
+    const expirationTime = Number(activeMintRequestExpiry);
     const now = Math.floor(Date.now() / 1000);
     const remaining = expirationTime - now;
     
