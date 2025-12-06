@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useReadContract } from 'wagmi';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
@@ -14,6 +14,19 @@ export default function TokenPage() {
   const params = useParams();
   const tokenId = params.id as string;
   const [chainId, setChainId] = useState<number>(11155111); // Default to Sepolia
+  const [iframeHeight, setIframeHeight] = useState<number | null>(null);
+
+  // Listen for canvas dimensions from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'spatters-canvas-ready') {
+        setIframeHeight(event.data.height);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
   
   const contractAddress = getContractAddress(chainId);
   const etherscanBase = getEtherscanBaseUrl(chainId);
@@ -101,15 +114,15 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* Centered Artwork Display */}
-      <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center">
+      {/* Centered Artwork Display - Full height based on actual canvas */}
+      <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center py-4">
         <iframe
           src={`${baseUrl}/api/token/${tokenId}`}
-          className="border-0"
+          className="border-0 transition-all duration-300"
           style={{ 
             width: '100%',
             maxWidth: '1200px',
-            height: 'calc(100vh - 180px)', 
+            height: iframeHeight ? `${iframeHeight}px` : 'calc(100vh - 180px)',
             minHeight: '400px',
           }}
           title={`Spatter #${tokenId}`}

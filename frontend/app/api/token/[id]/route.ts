@@ -115,6 +115,15 @@ export async function GET(
         
         loaded = true;
         redraw();
+        
+        // Notify parent of canvas dimensions for dynamic iframe sizing
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'spatters-canvas-ready',
+            width: canvasWidth,
+            height: canvasHeight
+          }, '*');
+        }
       } catch (e) {
         console.error(e);
       }
