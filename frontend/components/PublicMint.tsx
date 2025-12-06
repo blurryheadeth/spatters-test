@@ -224,6 +224,10 @@ export default function PublicMint() {
       // Calculate new token ID
       const newTokenId = Number(totalSupply) + 1;
       
+      // Refetch contract state to clear the "selection in progress" status
+      refetchMintStatus();
+      refetchPendingRequest();
+      
       // Trigger pixel generation in background
       fetch('/api/trigger-generation', {
         method: 'POST',
@@ -236,7 +240,7 @@ export default function PublicMint() {
         router.push(`/token/${newTokenId}`);
       }, 1500);
     }
-  }, [isCompleteConfirmed, totalSupply, router, hasTriggeredGeneration]);
+  }, [isCompleteConfirmed, totalSupply, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest]);
 
   // Handle request mint
   const handleRequestMint = async () => {
@@ -280,8 +284,12 @@ export default function PublicMint() {
     setSelectedIndex(null);
     setError('');
     setHasTriggeredGeneration(false);
+    setIsRequestExpired(false);
     resetRequest();
     resetComplete();
+    // Refetch contract state to get latest status
+    refetchMintStatus();
+    refetchPendingRequest();
   };
 
   if (!address) {

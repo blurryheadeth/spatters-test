@@ -249,6 +249,11 @@ export default function OwnerMint() {
       // Calculate new token ID before refetch
       const newTokenId = Number(totalSupply) + 1;
       
+      // Refetch contract state to clear the "selection in progress" status
+      refetchMintStatus();
+      refetchPendingRequest();
+      refetchSupply();
+      
       // Trigger pixel generation in background
       fetch('/api/trigger-generation', {
         method: 'POST',
@@ -261,7 +266,7 @@ export default function OwnerMint() {
         router.push(`/token/${newTokenId}`);
       }, 1500);
     }
-  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router, hasTriggeredGeneration]);
+  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest, refetchSupply]);
 
   // Listen for canvas dimensions from preview iframes
   useEffect(() => {
@@ -318,10 +323,15 @@ export default function OwnerMint() {
     setSelectedSeedIndex(null);
     setIsLoadingPreviews(false);
     setHasTriggeredGeneration(false);
+    setIsRequestExpired(false);
     setError('');
     resetRequest();
     resetComplete();
     resetDirect();
+    // Refetch contract state to get latest status
+    refetchMintStatus();
+    refetchPendingRequest();
+    refetchSupply();
   };
 
   // Validate common inputs
