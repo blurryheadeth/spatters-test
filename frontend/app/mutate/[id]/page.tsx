@@ -382,20 +382,22 @@ export default function MutatePage() {
     useWaitForTransactionReceipt({ hash: ownerMutateHash });
 
   // Build milestone data array
+  // Token data is returned as array: [mintSeed, mintTimestamp]
   const milestoneData: MilestoneData[] = useMemo(() => {
     const supply = Number(totalSupply || 0);
     return [
-      { tokenId: 1, mintTimestamp: Number((token1Data as any)?.mintTimestamp || 0), exists: supply >= 1 },
-      { tokenId: 100, mintTimestamp: Number((token100Data as any)?.mintTimestamp || 0), exists: supply >= 100 },
-      { tokenId: 500, mintTimestamp: Number((token500Data as any)?.mintTimestamp || 0), exists: supply >= 500 },
-      { tokenId: 750, mintTimestamp: Number((token750Data as any)?.mintTimestamp || 0), exists: supply >= 750 },
-      { tokenId: 999, mintTimestamp: Number((token999Data as any)?.mintTimestamp || 0), exists: supply >= 999 },
+      { tokenId: 1, mintTimestamp: Number((token1Data as any)?.[1] || 0), exists: supply >= 1 },
+      { tokenId: 100, mintTimestamp: Number((token100Data as any)?.[1] || 0), exists: supply >= 100 },
+      { tokenId: 500, mintTimestamp: Number((token500Data as any)?.[1] || 0), exists: supply >= 500 },
+      { tokenId: 750, mintTimestamp: Number((token750Data as any)?.[1] || 0), exists: supply >= 750 },
+      { tokenId: 999, mintTimestamp: Number((token999Data as any)?.[1] || 0), exists: supply >= 999 },
     ];
   }, [totalSupply, token1Data, token100Data, token500Data, token750Data, token999Data]);
 
   // Calculate mutation dates
   const mutationDates = useMemo(() => {
-    const mintTimestamp = tokenData ? Number((tokenData as any).mintTimestamp || 0) : 0;
+    // tokenData is returned as array: [mintSeed, mintTimestamp]
+    const mintTimestamp = tokenData ? Number((tokenData as any)[1] || 0) : 0;
     return getMutationDates(tokenId, mintTimestamp, milestoneData);
   }, [tokenId, tokenData, milestoneData]);
 
