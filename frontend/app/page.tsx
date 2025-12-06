@@ -33,6 +33,14 @@ export default function Home() {
               >
                 Collection
               </Link>
+              {isConnected && (
+                <Link 
+                  href="/my-spatters" 
+                  className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
+                >
+                  My Spatters
+                </Link>
+              )}
               <ConnectButton />
             </div>
           </div>
