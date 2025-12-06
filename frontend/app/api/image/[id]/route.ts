@@ -51,7 +51,7 @@ export async function GET(
     return new NextResponse(pngBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000, immutable', // Cache for 1 year
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400', // Browser: 1hr, CDN: 24hr
       },
     });
     
