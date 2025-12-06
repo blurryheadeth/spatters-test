@@ -22,6 +22,10 @@ export async function GET(
 ) {
   const { id } = await params;
   
+  // Check for cache-busting query parameter
+  const url = new URL(request.url);
+  const bustCache = url.searchParams.has('v');
+  
   // Handle .png extension if present
   const tokenIdStr = id.replace(/\.png$/i, '');
   const tokenId = parseInt(tokenIdStr, 10);
@@ -37,8 +41,8 @@ export async function GET(
     // Construct the Supabase storage URL for the PNG
     const pngUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${tokenId}.png`;
     
-    // Fetch the PNG from Supabase
-    const response = await fetch(pngUrl);
+    // Fetch the PNG from Supabase (bypass cache if cache-busting)
+    const response = await fetch(pngUrl, bustCache ? { cache: 'no-store' } : undefined);
     
     if (!response.ok) {
       // PNG not yet generated, redirect to interactive viewer
@@ -51,7 +55,10 @@ export async function GET(
     return new NextResponse(pngBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600, s-maxage=86400', // Browser: 1hr, CDN: 24hr
+        // Reduce caching when cache-bust parameter is present
+        'Cache-Control': bustCache 
+          ? 'no-cache, no-store, must-revalidate'
+          : 'public, max-age=3600, s-maxage=86400', // Browser: 1hr, CDN: 24hr
       },
     });
     

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useReadContract, useReadContracts } from 'wagmi';
 import Link from 'next/link';
 import { Abi } from 'viem';
@@ -15,6 +15,12 @@ export default function CollectionPage() {
   const [searchId, setSearchId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [chainId] = useState<number>(11155111); // Default to Sepolia
+  const [imageVersion, setImageVersion] = useState(0); // For cache-busting images
+
+  // Force refresh all thumbnails
+  const handleRefreshThumbnails = useCallback(() => {
+    setImageVersion(prev => prev + 1);
+  }, []);
   
   const contractAddress = getContractAddress(chainId);
   const etherscanBase = getEtherscanBaseUrl(chainId);
@@ -134,24 +140,33 @@ export default function CollectionPage() {
               </p>
             </div>
             
-            {/* Search */}
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <input
-                type="number"
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                placeholder="Search by ID..."
-                min="1"
-                max={supply}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-40"
-              />
+            {/* Search and Refresh */}
+            <div className="flex gap-4 items-center">
               <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                onClick={handleRefreshThumbnails}
+                className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-600 dark:hover:border-blue-400 transition-colors"
+                title="Refresh all thumbnails (force reload)"
               >
-                Go
+                ↻ Refresh
               </button>
-            </form>
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <input
+                  type="number"
+                  value={searchId}
+                  onChange={(e) => setSearchId(e.target.value)}
+                  placeholder="Search by ID..."
+                  min="1"
+                  max={supply}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-40"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Go
+                </button>
+              </form>
+            </div>
           </div>
 
           {/* Contract Info */}
@@ -185,11 +200,11 @@ export default function CollectionPage() {
               key={tokenId}
               className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow"
             >
-              {/* Thumbnail - SVG for scalable display */}
+              {/* Thumbnail - PNG from storage */}
               <Link href={`/token/${tokenId}`}>
                 <div className="aspect-[2/1] cursor-pointer overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={`${baseUrl}/api/image/${tokenId}`}
+                    src={`${baseUrl}/api/image/${tokenId}${imageVersion > 0 ? `?v=${imageVersion}` : ''}`}
                     alt={`Spatter #${tokenId}`}
                     className="w-full h-full object-contain"
                     loading="lazy"

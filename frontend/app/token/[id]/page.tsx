@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useReadContract } from 'wagmi';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
@@ -15,6 +15,9 @@ export default function TokenPage() {
   const tokenId = params.id as string;
   const [chainId] = useState<number>(11155111); // Default to Sepolia
   const [iframeHeight, setIframeHeight] = useState<number | null>(null);
+  const [iframeKey, setIframeKey] = useState<number>(0); // For force-reloading
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+  const [initialMutationCount, setInitialMutationCount] = useState<number | null>(null);
 
   // Listen for canvas dimensions from iframe
   useEffect(() => {
@@ -26,6 +29,14 @@ export default function TokenPage() {
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Force refresh function
+  const handleRefresh = useCallback(() => {
+    setIframeKey(prev => prev + 1);
+    setShowUpdateBanner(false);
+    // Also refetch mutation count
+    refetchMutations();
   }, []);
   
   const contractAddress = getContractAddress(chainId);
@@ -54,6 +65,33 @@ export default function TokenPage() {
     abi: contractAbi,
     functionName: 'totalSupply',
   });
+
+  // Get mutation count for this token
+  const { data: mutations, refetch: refetchMutations } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: contractAbi,
+    functionName: 'getTokenMutations',
+    args: [BigInt(tokenId)],
+  });
+
+  const currentMutationCount = Array.isArray(mutations) ? mutations.length : 0;
+
+  // Track initial mutation count and detect changes
+  useEffect(() => {
+    if (initialMutationCount === null && currentMutationCount !== undefined) {
+      setInitialMutationCount(currentMutationCount);
+    } else if (initialMutationCount !== null && currentMutationCount > initialMutationCount) {
+      setShowUpdateBanner(true);
+    }
+  }, [currentMutationCount, initialMutationCount]);
+
+  // Poll for mutation changes every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchMutations();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetchMutations]);
 
   const isValidToken = totalSupply && Number(tokenId) <= Number(totalSupply) && Number(tokenId) > 0;
   const isLoading = isLoadingToken || isLoadingOwner;
@@ -114,10 +152,26 @@ export default function TokenPage() {
         </div>
       </div>
 
+      {/* Update Available Banner */}
+      {showUpdateBanner && (
+        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
+          <div className="flex items-center justify-center gap-3">
+            <span>🎨 Artwork has been mutated! Click to see the latest version.</span>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Refresh Artwork
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Centered Artwork Display - Full height based on actual canvas */}
       <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center py-4">
         <iframe
-          src={`${baseUrl}/api/token/${tokenId}`}
+          key={iframeKey}
+          src={`${baseUrl}/api/token/${tokenId}${iframeKey > 0 ? `?v=${iframeKey}` : ''}`}
           className="border-0 transition-all duration-300"
           style={{ 
             width: '100%',
@@ -166,6 +220,20 @@ export default function TokenPage() {
               >
                 Metadata →
               </a>
+            </div>
+
+            {/* Mutation count */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Mutations: {currentMutationCount} / 200
+              </span>
+              <button
+                onClick={handleRefresh}
+                className="text-xs text-blue-600 hover:text-blue-800 dark:hover:text-blue-400"
+                title="Force refresh artwork"
+              >
+                ↻ Refresh
+              </button>
             </div>
 
             {/* Interaction hint */}
