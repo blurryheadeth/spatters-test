@@ -594,109 +594,124 @@ export default function OwnerMint() {
           </div>
         )}
 
-        {/* Step 2: Show previews and select - Full Screen Carousel */}
+        {/* Step 2: Show all 3 previews stacked - All load simultaneously */}
         {previewSeeds.length === 3 && (
           <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col">
-            {/* Header */}
-            <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 px-4 py-3">
-              <div className="max-w-7xl mx-auto flex justify-between items-center">
+            {/* Sticky Header with Navigation */}
+            <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 px-4 py-3 sticky top-0 z-10">
+              <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
                 <button
                   onClick={resetForm}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   ← Cancel
                 </button>
-                <h2 className="text-xl font-bold text-white">
-                  Select Your Artwork
-                </h2>
-                <div className="text-gray-400">
-                  {selectedSeedIndex !== null ? `Option ${selectedSeedIndex + 1} selected` : 'No selection'}
-                </div>
-              </div>
-            </div>
-
-            {/* Option Tabs */}
-            <div className="flex-shrink-0 bg-gray-800 px-4 py-2 border-b border-gray-700">
-              <div className="max-w-7xl mx-auto flex justify-center gap-2">
-                {[0, 1, 2].map((index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedSeedIndex(index)}
-                    className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                      selectedSeedIndex === index
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    Option {index + 1}
-                    {selectedSeedIndex === index && ' ✓'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Artwork Display - Full Height */}
-            <div className="flex-1 overflow-auto bg-black">
-              {selectedSeedIndex !== null ? (
-                <iframe
-                  src={`${baseUrl}/api/preview?seed=${previewSeeds[selectedSeedIndex]}${useCustomPalette ? `&palette=${customPalette.join(',')}` : ''}`}
-                  className="w-full h-full border-0"
-                  title={`Preview ${selectedSeedIndex + 1}`}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <p className="text-xl">Click an option above to preview the artwork</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer with Navigation and Confirm */}
-            <div className="flex-shrink-0 bg-gray-800 border-t border-gray-700 px-4 py-4">
-              <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
-                {/* Navigation Buttons */}
+                
+                {/* Jump to buttons */}
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedSeedIndex(prev => prev === null ? 0 : (prev - 1 + 3) % 3)}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    ← Previous
-                  </button>
-                  <button
-                    onClick={() => setSelectedSeedIndex(prev => prev === null ? 0 : (prev + 1) % 3)}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    Next →
-                  </button>
+                  {[0, 1, 2].map((index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setSelectedSeedIndex(index);
+                        document.getElementById(`preview-${index}`)?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        selectedSeedIndex === index
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      Option {index + 1}
+                      {selectedSeedIndex === index && ' ✓'}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Confirm Button */}
+                {/* Mint Button */}
                 <button
                   onClick={handleCompleteOwnerMint}
                   disabled={selectedSeedIndex === null || isCompletePending || isCompleteConfirming}
-                  className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                 >
                   {isCompletePending || isCompleteConfirming 
                     ? 'Minting...' 
                     : selectedSeedIndex !== null 
                       ? `✓ Mint Option ${selectedSeedIndex + 1}`
-                      : 'Select an Option First'
+                      : 'Select Below'
                   }
                 </button>
               </div>
 
               {error && (
-                <div className="max-w-7xl mx-auto mt-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
-                  <p className="text-red-200 text-center">{error}</p>
+                <div className="max-w-7xl mx-auto mt-2 p-2 bg-red-900/50 border border-red-700 rounded-lg">
+                  <p className="text-red-200 text-center text-sm">{error}</p>
                 </div>
               )}
 
               {isCompleteConfirmed && (
-                <div className="max-w-7xl mx-auto mt-4 p-3 bg-green-900/50 border border-green-700 rounded-lg">
+                <div className="max-w-7xl mx-auto mt-2 p-2 bg-green-900/50 border border-green-700 rounded-lg">
                   <p className="text-green-200 text-center font-semibold">
                     ✅ Token minted successfully! Redirecting...
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* All 3 Artworks Stacked - All load simultaneously */}
+            <div className="flex-1 overflow-auto bg-black">
+              {previewSeeds.map((seed, index) => {
+                const paletteQuery = useCustomPalette ? `&palette=${customPalette.join(',')}` : '';
+                const previewUrl = `${baseUrl}/api/preview?seed=${seed}${paletteQuery}`;
+                
+                return (
+                  <div 
+                    key={index} 
+                    id={`preview-${index}`}
+                    className="border-b-4 border-gray-700 last:border-b-0"
+                  >
+                    {/* Option Header - Clickable to select */}
+                    <div 
+                      className={`sticky top-0 z-5 py-3 px-6 flex justify-between items-center cursor-pointer transition-colors ${
+                        selectedSeedIndex === index 
+                          ? 'bg-green-800' 
+                          : 'bg-gray-800 hover:bg-gray-700'
+                      }`}
+                      onClick={() => setSelectedSeedIndex(index)}
+                    >
+                      <h2 className="text-xl font-bold text-white">
+                        Option {index + 1}
+                        {selectedSeedIndex === index && (
+                          <span className="ml-3 text-green-400">✓ Selected</span>
+                        )}
+                      </h2>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSeedIndex(index);
+                        }}
+                        className={`px-4 py-1 rounded transition-colors ${
+                          selectedSeedIndex === index
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-600 hover:bg-green-600 text-white'
+                        }`}
+                      >
+                        {selectedSeedIndex === index ? 'Selected' : 'Select This'}
+                      </button>
+                    </div>
+                    
+                    {/* Artwork iframe - centered */}
+                    <div className="flex justify-center bg-black min-h-[600px]">
+                      <iframe
+                        src={previewUrl}
+                        className="w-full max-w-[1200px] min-h-[600px] border-0"
+                        style={{ height: 'auto', aspectRatio: '4/3' }}
+                        title={`Preview Option ${index + 1}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

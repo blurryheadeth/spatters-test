@@ -106,7 +106,7 @@ export async function GET(request: Request) {
   const p5DependencyBytes32 = '0x703540312e302e30000000000000000000000000000000000000000000000000';
   const p5ChunkCount = 10;
 
-  // Build preview HTML
+  // Build preview HTML - clean, centered, no status overlay
   const previewHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -119,11 +119,16 @@ export async function GET(request: Request) {
       width: 100%; 
       min-height: 100%; 
       background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    canvas {
+      display: block;
     }
   </style>
 </head>
 <body>
-  <div id="status" style="position:fixed;top:10px;left:10px;color:#fff;font-family:monospace;z-index:9999;background:rgba(0,0,0,0.7);padding:5px 10px;border-radius:4px;"></div>
   
   <!-- Inject spatters.js from on-chain -->
   <script>
@@ -188,25 +193,17 @@ ${spattersScript}
     const GET_DEPENDENCY_SCRIPT_SELECTOR = '0x518cb3df';
     
     async function loadP5jsFromArtBlocks() {
-      updateStatus('Fetching p5.js from Art Blocks...');
-      
       const chunks = [];
       for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
-        updateStatus('Fetching p5.js chunk ' + (i + 1) + '/' + CONFIG.p5ChunkCount + '...');
-        
         const indexHex = encodeUint256(i);
         const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + 
                          CONFIG.p5DependencyBytes32.slice(2) + 
                          indexHex;
-        
         const result = await ethCall(CONFIG.mainnetRpc, CONFIG.artBlocksRegistry, callData);
-        const chunk = decodeAbiString(result);
-        chunks.push(chunk);
+        chunks.push(decodeAbiString(result));
       }
       
       const compressedBase64 = chunks.join('');
-      
-      updateStatus('Decompressing p5.js...');
       const compressedBinary = atob(compressedBase64);
       const compressedArray = new Uint8Array(compressedBinary.length);
       for (let i = 0; i < compressedBinary.length; i++) {
@@ -222,27 +219,12 @@ ${spattersScript}
     
     var previewComplete = false;
     
-    function updateStatus(msg) {
-      const el = document.getElementById('status');
-      if (el) el.textContent = msg;
-      console.log('[Preview]', msg);
-    }
-    
     window.setup = function() {
-      updateStatus('Generating preview with seed: ' + SEED);
-      
       try {
         generate(SEED, [], PALETTE);
         window.canvasHistory = canvasHistory;
-        updateStatus('Preview complete!');
         previewComplete = true;
-        
-        // Hide status after a moment
-        setTimeout(() => {
-          document.getElementById('status').style.display = 'none';
-        }, 2000);
       } catch (e) {
-        updateStatus('Error: ' + e.message);
         console.error('Preview error:', e);
       }
     };
@@ -252,11 +234,9 @@ ${spattersScript}
     async function init() {
       try {
         const p5jsCode = await loadP5jsFromArtBlocks();
-        updateStatus('Initializing p5.js...');
         eval(p5jsCode);
       } catch (e) {
-        updateStatus('Error: ' + e.message);
-        console.error(e);
+        console.error('Init error:', e);
       }
     }
     
