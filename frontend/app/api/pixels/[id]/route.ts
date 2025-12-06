@@ -19,6 +19,10 @@ export async function GET(
 ) {
   const { id } = await params;
   const tokenId = parseInt(id, 10);
+  
+  // Check for cache-busting query parameter
+  const url = new URL(request.url);
+  const bustCache = url.searchParams.has('v');
 
   if (isNaN(tokenId) || tokenId < 1) {
     return NextResponse.json(
@@ -50,7 +54,10 @@ export async function GET(
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        // Reduce caching when cache-bust parameter is present
+        'Cache-Control': bustCache 
+          ? 'no-cache, no-store, must-revalidate'
+          : 'public, max-age=31536000, immutable',
         'Content-Type': 'application/json',
       },
     });

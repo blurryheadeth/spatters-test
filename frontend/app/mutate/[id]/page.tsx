@@ -275,6 +275,11 @@ export default function MutatePage() {
   const [selectedMutation, setSelectedMutation] = useState<string>('');
   const [ownerSelectedMutation, setOwnerSelectedMutation] = useState<string>('');
   const [iframeHeight, setIframeHeight] = useState<number>(600);
+  
+  // Regeneration tracking
+  const [regenerationStatus, setRegenerationStatus] = useState<'idle' | 'waiting' | 'ready' | 'error'>('idle');
+  const [regenerationMessage, setRegenerationMessage] = useState<string>('');
+  const [iframeKey, setIframeKey] = useState<number>(0); // Force iframe reload
 
   // Listen for iframe dimensions
   useEffect(() => {
@@ -465,15 +470,82 @@ export default function MutatePage() {
   // After successful mutation (regular or owner)
   useEffect(() => {
     if (isMutateConfirmed || isOwnerMutateConfirmed) {
+      // Set waiting status
+      setRegenerationStatus('waiting');
+      setRegenerationMessage('Triggering artwork regeneration...');
+      
+      // Capture the time we started (to compare against file timestamps)
+      const mutationTime = new Date().toISOString();
+      
       // Trigger pixel regeneration
       fetch('/api/trigger-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId, event: 'token-mutated' }),
-      }).catch(console.error);
-
-      // Refetch mutation eligibility
-      refetchCanMutate();
+      }).then(() => {
+        setRegenerationMessage('Waiting for artwork to regenerate (this may take 1-2 minutes)...');
+        
+        // Start polling for completion
+        let pollCount = 0;
+        const maxPolls = 60; // Poll for up to 5 minutes (60 * 5s)
+        
+        const pollInterval = setInterval(async () => {
+          pollCount++;
+          
+          try {
+            const response = await fetch(`/api/pixel-status/${tokenId}`, { cache: 'no-store' });
+            const data = await response.json();
+            
+            // Check if the file was updated AFTER we triggered the mutation
+            if (data.exists && data.lastModified) {
+              const fileTime = new Date(data.lastModified);
+              const mutTime = new Date(mutationTime);
+              
+              if (fileTime > mutTime) {
+                // File was regenerated after our mutation!
+                clearInterval(pollInterval);
+                setRegenerationStatus('ready');
+                setRegenerationMessage('Artwork regenerated successfully!');
+                
+                // Force iframe reload with cache-busting
+                setIframeKey(prev => prev + 1);
+                
+                // Refetch mutation eligibility
+                refetchCanMutate();
+                
+                // Clear success message after a few seconds
+                setTimeout(() => {
+                  setRegenerationStatus('idle');
+                  setRegenerationMessage('');
+                }, 5000);
+              }
+            }
+            
+            // Update progress message
+            if (pollCount % 6 === 0) { // Every 30 seconds
+              setRegenerationMessage(`Still waiting for regeneration... (${Math.floor(pollCount * 5 / 60)} min elapsed)`);
+            }
+            
+          } catch (error) {
+            console.error('Polling error:', error);
+          }
+          
+          // Stop polling after max attempts
+          if (pollCount >= maxPolls) {
+            clearInterval(pollInterval);
+            setRegenerationStatus('error');
+            setRegenerationMessage('Regeneration taking longer than expected. Please refresh manually in a few minutes.');
+          }
+        }, 5000); // Poll every 5 seconds
+        
+        // Cleanup on unmount
+        return () => clearInterval(pollInterval);
+        
+      }).catch((error) => {
+        console.error('Trigger error:', error);
+        setRegenerationStatus('error');
+        setRegenerationMessage('Failed to trigger regeneration. Please try refreshing the page.');
+      });
     }
   }, [isMutateConfirmed, isOwnerMutateConfirmed, tokenId, refetchCanMutate]);
 
@@ -540,10 +612,32 @@ export default function MutatePage() {
         </div>
       </header>
 
+      {/* Regeneration Status Banner */}
+      {regenerationStatus !== 'idle' && (
+        <div className={`px-4 py-3 text-center ${
+          regenerationStatus === 'waiting' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' :
+          regenerationStatus === 'ready' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
+          'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200'
+        }`}>
+          <div className="flex items-center justify-center gap-2">
+            {regenerationStatus === 'waiting' && (
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {regenerationStatus === 'ready' && <span>✓</span>}
+            {regenerationStatus === 'error' && <span>⚠</span>}
+            <span>{regenerationMessage}</span>
+          </div>
+        </div>
+      )}
+
       <main className="flex flex-col xl:flex-row">
         <div className="w-full xl:w-[1200px] xl:flex-shrink-0 bg-black">
           <iframe
-            src={`${baseUrl}/api/token/${tokenId}`}
+            key={iframeKey}
+            src={`${baseUrl}/api/token/${tokenId}?v=${iframeKey}`}
             className="border-0 w-full"
             style={{ 
               height: `${iframeHeight}px`,

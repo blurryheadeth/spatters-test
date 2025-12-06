@@ -46,6 +46,10 @@ export async function GET(
 ) {
   const { id } = await params;
   const tokenId = parseInt(id, 10);
+  
+  // Check for cache-busting query parameter
+  const url = new URL(request.url);
+  const bustCache = url.searchParams.has('v');
 
   if (isNaN(tokenId) || tokenId < 1) {
     return new NextResponse('Invalid token ID', { status: 400 });
@@ -67,7 +71,9 @@ export async function GET(
   }
 
   // Use relative URL so it works regardless of host
-  const pixelDataUrl = `/api/pixels/${tokenId}`;
+  // Pass through version param for cache-busting if present
+  const versionParam = bustCache ? `?v=${Date.now()}` : '';
+  const pixelDataUrl = `/api/pixels/${tokenId}${versionParam}`;
 
   // Generate minimal viewer HTML - ONLY body margin reset, nothing that interferes with p5.js canvas
   const html = `<!DOCTYPE html>
@@ -160,7 +166,10 @@ export async function GET(
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      // Reduce caching when cache-bust parameter is present
+      'Cache-Control': bustCache 
+        ? 'no-cache, no-store, must-revalidate'
+        : 'public, max-age=3600, stale-while-revalidate=86400',
     },
   });
 }
