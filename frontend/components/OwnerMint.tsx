@@ -700,12 +700,12 @@ export default function OwnerMint() {
                       </button>
                     </div>
                     
-                    {/* Artwork iframe - centered */}
-                    <div className="flex justify-center bg-black min-h-[600px]">
+                    {/* Artwork iframe - centered, full height (no internal scroll) */}
+                    <div className="flex justify-center bg-black">
                       <iframe
                         src={previewUrl}
-                        className="w-full max-w-[1200px] min-h-[600px] border-0"
-                        style={{ height: 'auto', aspectRatio: '4/3' }}
+                        className="w-full max-w-[1200px] border-0"
+                        style={{ height: '2400px' }}
                         title={`Preview Option ${index + 1}`}
                       />
                     </div>
