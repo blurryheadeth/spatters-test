@@ -244,6 +244,18 @@ ${spattersScript}
         setTimeout(() => {
           document.getElementById('status').style.display = 'none';
         }, 1500);
+        
+        // Notify parent of canvas dimensions for dynamic iframe sizing
+        setTimeout(() => {
+          const canvas = document.querySelector('canvas');
+          if (canvas && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'spatters-canvas-ready',
+              width: canvas.width,
+              height: canvas.height
+            }, '*');
+          }
+        }, 100);
       } catch (e) {
         updateStatus('Error: ' + e.message);
         console.error('Preview error:', e);

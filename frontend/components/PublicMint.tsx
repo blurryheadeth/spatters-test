@@ -15,6 +15,9 @@ export default function PublicMint() {
   const [error, setError] = useState('');
   const [hasTriggeredGeneration, setHasTriggeredGeneration] = useState(false);
   
+  // Dynamic iframe heights based on canvas dimensions from postMessage
+  const [iframeHeights, setIframeHeights] = useState<{ [key: string]: number }>({});
+  
   const contractAddress = chainId ? getContractAddress(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
@@ -170,6 +173,28 @@ export default function PublicMint() {
       });
     }
   }, [isRequestConfirmed, refetchPendingRequest]);
+
+  // Listen for canvas dimensions from preview iframes
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'spatters-canvas-ready') {
+        const { height } = event.data;
+        // Find which iframe sent this message by checking the source
+        const iframes = document.querySelectorAll('iframe[data-preview-seed]');
+        iframes.forEach((iframe) => {
+          if ((iframe as HTMLIFrameElement).contentWindow === event.source) {
+            const seed = iframe.getAttribute('data-preview-seed');
+            if (seed) {
+              setIframeHeights(prev => ({ ...prev, [seed]: height }));
+            }
+          }
+        });
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   // Handle completion confirmation
   useEffect(() => {
@@ -454,12 +479,13 @@ export default function PublicMint() {
                   </button>
                 </div>
                 
-                {/* Artwork iframe - centered, full height */}
+                {/* Artwork iframe - centered, dynamic height based on canvas */}
                 <div className="flex justify-center bg-black">
                   <iframe
                     src={previewUrl}
-                    className="w-full max-w-[1200px] border-0"
-                    style={{ height: '2400px' }}
+                    data-preview-seed={seed}
+                    className="w-full max-w-[1200px] border-0 transition-all duration-300"
+                    style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px' }}
                     title={`Preview Option ${index + 1}`}
                   />
                 </div>
