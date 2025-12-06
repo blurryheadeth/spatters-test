@@ -1,5 +1,5 @@
 {
-  "address": "0xDfa7C049Ee9733FE42C4e091E248FFff84180c70",
+  "address": "0x294949BA59348514C65ca48c82E6ADd87696A6Ed",
   "abi": [
     {
       "type": "constructor",
@@ -540,6 +540,62 @@
     {
       "type": "function",
       "name": "MAX_SUPPLY",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "MILESTONE_100",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "MILESTONE_500",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "MILESTONE_750",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "MILESTONE_999",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
@@ -1190,6 +1246,25 @@
     },
     {
       "type": "function",
+      "name": "lastMutationDay",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "lastProposalTime",
       "constant": true,
       "stateMutability": "view",
@@ -1283,6 +1358,23 @@
         {
           "type": "bytes32",
           "name": "customSeed"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "ownerMutate",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "tokenId"
+        },
+        {
+          "type": "string",
+          "name": "mutationType"
         }
       ],
       "outputs": []

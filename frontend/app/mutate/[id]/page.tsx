@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
@@ -27,8 +27,20 @@ const MUTATION_TYPES = [
   'scramble', 'undoMutation', 'returnToPreviousVersion',
 ];
 
-// Calculate mutation-eligible dates for a token
-function getMutationDates(tokenId: number, mintTimestamp: number, collectionLaunchDate: number): {
+// Milestone token IDs for anniversary-based mutations (1, 100, 500, 750, 999)
+
+interface MilestoneData {
+  tokenId: number;
+  mintTimestamp: number;
+  exists: boolean;
+}
+
+// Calculate mutation-eligible dates for a token based on milestone anniversaries
+function getMutationDates(
+  tokenId: number, 
+  ownMintTimestamp: number, 
+  milestones: MilestoneData[]
+): {
   allDates: { date: Date; reason: string }[];
   upcomingDates: { date: Date; reason: string }[];
   canMutateToday: boolean;
@@ -38,48 +50,41 @@ function getMutationDates(tokenId: number, mintTimestamp: number, collectionLaun
   const currentYear = now.getFullYear();
   const allDates: { date: Date; reason: string }[] = [];
   
-  // Helper to check if same day
-  const isSameDay = (d1: Date, d2: Date) => 
+  // Helper to check if same month and day (for anniversaries)
+  const isSameMonthAndDay = (d1: Date, d2: Date) => 
     d1.getDate() === d2.getDate() && d1.getMonth() === d2.getMonth();
 
-  // 1. Individual Anniversary (mint date)
-  if (mintTimestamp > 0) {
-    const mintDate = new Date(mintTimestamp * 1000);
+  // Add own mint anniversary
+  if (ownMintTimestamp > 0) {
+    const mintDate = new Date(ownMintTimestamp * 1000);
     const anniversaryThisYear = new Date(currentYear, mintDate.getMonth(), mintDate.getDate());
-    allDates.push({ date: anniversaryThisYear, reason: 'Mint Anniversary' });
+    allDates.push({ date: anniversaryThisYear, reason: `Token #${tokenId} Mint Anniversary` });
   }
 
-  // 2. Collection Anniversary
-  if (collectionLaunchDate > 0) {
-    const launchDate = new Date(collectionLaunchDate * 1000);
-    const collectionAnniversary = new Date(currentYear, launchDate.getMonth(), launchDate.getDate());
-    allDates.push({ date: collectionAnniversary, reason: 'Collection Anniversary' });
+  // Add milestone token anniversaries (only if they exist)
+  for (const milestone of milestones) {
+    // Skip if this is the token's own anniversary (already added)
+    if (milestone.tokenId === tokenId) continue;
+    
+    // Only include if the milestone token exists
+    if (milestone.exists && milestone.mintTimestamp > 0) {
+      const milestoneDate = new Date(milestone.mintTimestamp * 1000);
+      const anniversaryThisYear = new Date(currentYear, milestoneDate.getMonth(), milestoneDate.getDate());
+      
+      // Don't add duplicate dates
+      const isDuplicate = allDates.some(d => 
+        d.date.getMonth() === anniversaryThisYear.getMonth() && 
+        d.date.getDate() === anniversaryThisYear.getDate()
+      );
+      
+      if (!isDuplicate) {
+        allDates.push({ 
+          date: anniversaryThisYear, 
+          reason: `Token #${milestone.tokenId} Anniversary` 
+        });
+      }
+    }
   }
-
-  // 3. Quarterly dates based on tokenId
-  const assignedMonth = (tokenId % 12) + 1;
-  // Q1: March 31 (months 1, 5)
-  if (assignedMonth === 1 || assignedMonth === 5) {
-    allDates.push({ date: new Date(currentYear, 2, 31), reason: 'Q1 End (Token Month)' });
-  }
-  // Q2: June 30 (month 2)
-  if (assignedMonth === 2) {
-    allDates.push({ date: new Date(currentYear, 5, 30), reason: 'Q2 End (Token Month)' });
-  }
-  // Q3: September 30 (month 3)
-  if (assignedMonth === 3) {
-    allDates.push({ date: new Date(currentYear, 8, 30), reason: 'Q3 End (Token Month)' });
-  }
-  // Q4: December 31 (month 4)
-  if (assignedMonth === 4) {
-    allDates.push({ date: new Date(currentYear, 11, 31), reason: 'Q4 End (Token Month)' });
-  }
-
-  // 4. Equinoxes and Solstices (using middle dates)
-  allDates.push({ date: new Date(currentYear, 2, 20), reason: 'Vernal Equinox' });
-  allDates.push({ date: new Date(currentYear, 5, 21), reason: 'Summer Solstice' });
-  allDates.push({ date: new Date(currentYear, 8, 23), reason: 'Autumnal Equinox' });
-  allDates.push({ date: new Date(currentYear, 11, 22), reason: 'Winter Solstice' });
 
   // Sort by date
   allDates.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -87,30 +92,12 @@ function getMutationDates(tokenId: number, mintTimestamp: number, collectionLaun
   // Filter upcoming dates
   const upcomingDates = allDates.filter(d => d.date >= now);
 
-  // Check if today is a mutation day
+  // Check if today is a mutation day (based on month/day match)
   let canMutateToday = false;
   let todayReason: string | null = null;
 
-  // Check equinox/solstice ranges
-  const isEquinoxOrSolstice = (date: Date) => {
-    const month = date.getMonth();
-    const day = date.getDate();
-    if (month === 2 && day >= 19 && day <= 21) return 'Vernal Equinox';
-    if (month === 5 && day >= 20 && day <= 22) return 'Summer Solstice';
-    if (month === 8 && day >= 22 && day <= 24) return 'Autumnal Equinox';
-    if (month === 11 && day >= 21 && day <= 23) return 'Winter Solstice';
-    return null;
-  };
-
-  const equinoxReason = isEquinoxOrSolstice(now);
-  if (equinoxReason) {
-    canMutateToday = true;
-    todayReason = equinoxReason;
-  }
-
-  // Check other dates
   for (const { date, reason } of allDates) {
-    if (isSameDay(now, date)) {
+    if (isSameMonthAndDay(now, date)) {
       canMutateToday = true;
       todayReason = reason;
       break;
@@ -122,7 +109,6 @@ function getMutationDates(tokenId: number, mintTimestamp: number, collectionLaun
 
 export default function MutatePage() {
   const params = useParams();
-  const router = useRouter();
   const tokenId = parseInt(params.id as string, 10);
   const { address, chainId, isConnected } = useAccount();
   const contractAddress = chainId ? getContractAddress(chainId) : '';
@@ -160,12 +146,53 @@ export default function MutatePage() {
     query: { enabled: !!contractAddress && !isNaN(tokenId) },
   });
 
-  // Get collection launch date
-  const { data: collectionLaunchDate } = useReadContract({
+  // Get total supply (to know which milestones exist)
+  const { data: totalSupply } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
-    functionName: 'collectionLaunchDate',
+    functionName: 'totalSupply',
     query: { enabled: !!contractAddress },
+  });
+
+  // Get milestone token data (tokens 1, 100, 500, 750, 999)
+  const { data: token1Data } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'tokens',
+    args: [BigInt(1)],
+    query: { enabled: !!contractAddress && Number(totalSupply || 0) >= 1 },
+  });
+
+  const { data: token100Data } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'tokens',
+    args: [BigInt(100)],
+    query: { enabled: !!contractAddress && Number(totalSupply || 0) >= 100 },
+  });
+
+  const { data: token500Data } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'tokens',
+    args: [BigInt(500)],
+    query: { enabled: !!contractAddress && Number(totalSupply || 0) >= 500 },
+  });
+
+  const { data: token750Data } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'tokens',
+    args: [BigInt(750)],
+    query: { enabled: !!contractAddress && Number(totalSupply || 0) >= 750 },
+  });
+
+  const { data: token999Data } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'tokens',
+    args: [BigInt(999)],
+    query: { enabled: !!contractAddress && Number(totalSupply || 0) >= 999 },
   });
 
   // Check if can mutate (from contract)
@@ -197,12 +224,23 @@ export default function MutatePage() {
   const { isLoading: isMutateConfirming, isSuccess: isMutateConfirmed } = 
     useWaitForTransactionReceipt({ hash: mutateHash });
 
+  // Build milestone data array
+  const milestoneData: MilestoneData[] = useMemo(() => {
+    const supply = Number(totalSupply || 0);
+    return [
+      { tokenId: 1, mintTimestamp: Number((token1Data as any)?.mintTimestamp || 0), exists: supply >= 1 },
+      { tokenId: 100, mintTimestamp: Number((token100Data as any)?.mintTimestamp || 0), exists: supply >= 100 },
+      { tokenId: 500, mintTimestamp: Number((token500Data as any)?.mintTimestamp || 0), exists: supply >= 500 },
+      { tokenId: 750, mintTimestamp: Number((token750Data as any)?.mintTimestamp || 0), exists: supply >= 750 },
+      { tokenId: 999, mintTimestamp: Number((token999Data as any)?.mintTimestamp || 0), exists: supply >= 999 },
+    ];
+  }, [totalSupply, token1Data, token100Data, token500Data, token750Data, token999Data]);
+
   // Calculate mutation dates
   const mutationDates = useMemo(() => {
     const mintTimestamp = tokenData ? Number((tokenData as any).mintTimestamp || 0) : 0;
-    const launchDate = collectionLaunchDate ? Number(collectionLaunchDate) : 0;
-    return getMutationDates(tokenId, mintTimestamp, launchDate);
-  }, [tokenId, tokenData, collectionLaunchDate]);
+    return getMutationDates(tokenId, mintTimestamp, milestoneData);
+  }, [tokenId, tokenData, milestoneData]);
 
   // Handle mutate submission
   const handleMutate = async () => {

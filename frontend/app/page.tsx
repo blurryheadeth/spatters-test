@@ -9,7 +9,7 @@ import OwnerMint from '@/components/OwnerMint';
 import { COLLECTION_CONFIG } from '@/lib/config';
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<'public' | 'owner'>('public');
 
   return (

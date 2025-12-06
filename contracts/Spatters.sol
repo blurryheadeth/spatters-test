@@ -162,6 +162,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // Scripty.sol integration (for on-chain code storage)
     address public p5jsScriptAddress;        // Art Blocks p5.js v1.0.0
     address public spattersScriptAddress;    // Our spatters.js code
+    
+    // Per-token mutation cooldown tracking (UTC day number)
+    mapping(uint256 => uint256) public lastMutationDay;
+    
+    // Milestone token IDs for anniversary-based mutations
+    uint256 public constant MILESTONE_100 = 100;
+    uint256 public constant MILESTONE_500 = 500;
+    uint256 public constant MILESTONE_750 = 750;
+    uint256 public constant MILESTONE_999 = 999;
 
     // ============ Events ============
 
@@ -606,6 +615,48 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         require(_isValidMutationType(mutationType), "Invalid mutation type");
         require(canMutate(tokenId), "Cannot mutate today");
         
+        // Record the current UTC day to prevent multiple mutations
+        lastMutationDay[tokenId] = block.timestamp / 1 days;
+        
+        // Generate deterministic seed for this mutation
+        bytes32 mutationSeed = _generateMutationSeed(
+            tokenId,
+            tokenMutations[tokenId].length,
+            mutationType
+        );
+        
+        // Store mutation record
+        tokenMutations[tokenId].push(MutationRecord({
+            mutationType: mutationType,
+            seed: mutationSeed,
+            timestamp: block.timestamp
+        }));
+        
+        emit Mutated(
+            tokenId,
+            tokenMutations[tokenId].length - 1,
+            mutationType,
+            mutationSeed,
+            block.timestamp
+        );
+    }
+
+    /**
+     * @dev Owner bypass for mutation testing (Sepolia only - remove for mainnet)
+     * Allows contract owner to mutate any token without date/cooldown restrictions
+     * @param tokenId Token to mutate
+     * @param mutationType Type of mutation to apply
+     */
+    function ownerMutate(
+        uint256 tokenId,
+        string memory mutationType
+    ) external onlyOwner nonReentrant {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(tokenMutations[tokenId].length < MAX_MUTATIONS, "Mutation limit reached");
+        require(_isValidMutationType(mutationType), "Invalid mutation type");
+        
+        // No date/cooldown checks - owner can mutate anytime for testing
+        
         // Generate deterministic seed for this mutation
         bytes32 mutationSeed = _generateMutationSeed(
             tokenId,
@@ -638,30 +689,77 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         
         TokenData memory token = tokens[tokenId];
-        uint256 today = block.timestamp;
+        uint256 currentDay = block.timestamp / 1 days;
+        uint256 mintDay = token.mintTimestamp / 1 days;
         
-        // Condition 1: Individual anniversary (mint date)
-        if (_isSameDay(today, token.mintTimestamp)) {
+        // Cannot mutate on the same UTC day as minting
+        if (currentDay == mintDay) {
+            return false;
+        }
+        
+        // Cannot mutate if already mutated today (one mutation per UTC day)
+        if (lastMutationDay[tokenId] == currentDay) {
+            return false;
+        }
+        
+        // Check if today is an eligible mutation date (anniversary-based)
+        return _isEligibleMutationDate(tokenId, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if a timestamp falls on an eligible mutation anniversary
+     * @param tokenId Token to check
+     * @param timestamp Current timestamp
+     * @return bool Whether the date is eligible
+     */
+    function _isEligibleMutationDate(uint256 tokenId, uint256 timestamp) internal view returns (bool) {
+        TokenData memory token = tokens[tokenId];
+        
+        // Condition 1: Token 1's mint anniversary (for ALL tokens)
+        // Token 1 always exists if any token exists
+        if (_nextTokenId > 1) {
+            TokenData memory token1 = tokens[1];
+            if (_isSameMonthAndDay(timestamp, token1.mintTimestamp)) {
+                return true;
+            }
+        }
+        
+        // Condition 2: Token's own mint anniversary
+        if (_isSameMonthAndDay(timestamp, token.mintTimestamp)) {
             return true;
         }
         
-        // Condition 2: Collection anniversary (first mint date)
-        if (collectionLaunchDate > 0 && _isSameDay(today, collectionLaunchDate)) {
-            return true;
+        // Condition 3: Milestone token anniversaries (only if those tokens exist)
+        // Token 100
+        if (_nextTokenId > MILESTONE_100) {
+            TokenData memory token100 = tokens[MILESTONE_100];
+            if (_isSameMonthAndDay(timestamp, token100.mintTimestamp)) {
+                return true;
+            }
         }
         
-        // Condition 3: Monthly based on circles/lines count
-        // This requires reading the generated art, so we'll use a simpler check:
-        // Use token ID modulo for month assignment
-        uint256 month = (tokenId % 12) + 1;
-        if (_isLastDayOfQuarter(today, month)) {
-            return true;
+        // Token 500
+        if (_nextTokenId > MILESTONE_500) {
+            TokenData memory token500 = tokens[MILESTONE_500];
+            if (_isSameMonthAndDay(timestamp, token500.mintTimestamp)) {
+                return true;
+            }
         }
         
-        // Condition 4: Equinox/Solstice based on unique colors
-        // Simplified: Check if today is an equinox or solstice date
-        if (_isEquinoxOrSolstice(today)) {
-            return true;
+        // Token 750
+        if (_nextTokenId > MILESTONE_750) {
+            TokenData memory token750 = tokens[MILESTONE_750];
+            if (_isSameMonthAndDay(timestamp, token750.mintTimestamp)) {
+                return true;
+            }
+        }
+        
+        // Token 999
+        if (_nextTokenId > MILESTONE_999) {
+            TokenData memory token999 = tokens[MILESTONE_999];
+            if (_isSameMonthAndDay(timestamp, token999.mintTimestamp)) {
+                return true;
+            }
         }
         
         return false;
@@ -1071,50 +1169,13 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     }
 
     /**
-     * @dev Check if date is last day of relevant quarter
+     * @dev Check if two timestamps have the same month and day (for anniversary checking)
+     * This compares month/day regardless of year
      */
-    function _isLastDayOfQuarter(uint256 timestamp, uint256 assignedMonth) internal pure returns (bool) {
-        DateTime.DateTime memory dt = DateTime.parseTimestamp(timestamp);
-        
-        // Q1: March 31 (month 1 or 5 selected colors)
-        if (dt.month == 3 && dt.day == 31 && (assignedMonth == 1 || assignedMonth == 5)) {
-            return true;
-        }
-        // Q2: June 30 (month 2 selected colors)
-        if (dt.month == 6 && dt.day == 30 && assignedMonth == 2) {
-            return true;
-        }
-        // Q3: September 30 (month 3 selected colors)
-        if (dt.month == 9 && dt.day == 30 && assignedMonth == 3) {
-            return true;
-        }
-        // Q4: December 31 (month 4 selected colors)
-        if (dt.month == 12 && dt.day == 31 && assignedMonth == 4) {
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
-     * @dev Check if date is an equinox or solstice
-     */
-    function _isEquinoxOrSolstice(uint256 timestamp) internal pure returns (bool) {
-        DateTime.DateTime memory dt = DateTime.parseTimestamp(timestamp);
-        
-        // Vernal Equinox (March 19-21)
-        if (dt.month == 3 && dt.day >= 19 && dt.day <= 21) return true;
-        
-        // Summer Solstice (June 20-22)
-        if (dt.month == 6 && dt.day >= 20 && dt.day <= 22) return true;
-        
-        // Autumnal Equinox (September 22-24)
-        if (dt.month == 9 && dt.day >= 22 && dt.day <= 24) return true;
-        
-        // Winter Solstice (December 20-22)
-        if (dt.month == 12 && dt.day >= 20 && dt.day <= 22) return true;
-        
-        return false;
+    function _isSameMonthAndDay(uint256 timestamp1, uint256 timestamp2) internal pure returns (bool) {
+        DateTime.DateTime memory dt1 = DateTime.parseTimestamp(timestamp1);
+        DateTime.DateTime memory dt2 = DateTime.parseTimestamp(timestamp2);
+        return dt1.month == dt2.month && dt1.day == dt2.day;
     }
 
     // ============ Withdrawal ============

@@ -22,7 +22,7 @@ export default function PublicMint() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
   // Read current mint price
-  const { data: mintPrice, refetch: refetchPrice } = useReadContract({
+  const { data: mintPrice } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
     functionName: 'getCurrentPrice',

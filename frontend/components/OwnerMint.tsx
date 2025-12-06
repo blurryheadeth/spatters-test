@@ -262,7 +262,7 @@ export default function OwnerMint() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'spatters-canvas-ready') {
-        const { width, height } = event.data;
+        const { height } = event.data;
         // Find which iframe sent this message by checking the source
         const iframes = document.querySelectorAll('iframe[data-preview-seed]');
         iframes.forEach((iframe) => {

@@ -14,7 +14,7 @@ const TOKENS_PER_PAGE = 24;
 export default function CollectionPage() {
   const [searchId, setSearchId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [chainId, setChainId] = useState<number>(11155111); // Default to Sepolia
+  const [chainId] = useState<number>(11155111); // Default to Sepolia
   
   const contractAddress = getContractAddress(chainId);
   const etherscanBase = getEtherscanBaseUrl(chainId);

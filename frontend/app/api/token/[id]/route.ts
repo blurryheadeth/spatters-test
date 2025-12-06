@@ -16,12 +16,9 @@
 import { NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
-import { getPixelDataBaseUrl } from '@/lib/storage';
 
 const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL;
 
 const chain = NETWORK === 'mainnet' ? mainnet : sepolia;
 const rpcUrl = NETWORK === 'mainnet' 
@@ -32,9 +29,6 @@ const publicClient = createPublicClient({
   chain,
   transport: http(rpcUrl),
 });
-
-// Art Blocks Dependency Registry on Ethereum Mainnet
-const ART_BLOCKS_REGISTRY = '0x37861f95882ACDba2cCD84F5bFc4598e2ECDDdAF';
 
 const SPATTERS_ABI = [
   {

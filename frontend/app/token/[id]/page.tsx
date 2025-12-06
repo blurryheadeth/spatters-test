@@ -13,7 +13,7 @@ const contractAbi = SpattersABI.abi as Abi;
 export default function TokenPage() {
   const params = useParams();
   const tokenId = params.id as string;
-  const [chainId, setChainId] = useState<number>(11155111); // Default to Sepolia
+  const [chainId] = useState<number>(11155111); // Default to Sepolia
   const [iframeHeight, setIframeHeight] = useState<number | null>(null);
 
   // Listen for canvas dimensions from iframe
@@ -33,7 +33,7 @@ export default function TokenPage() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
   // Check if token exists
-  const { data: tokenData, isLoading: isLoadingToken } = useReadContract({
+  const { isLoading: isLoadingToken } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: contractAbi,
     functionName: 'tokens',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
+import { formatEther } from 'viem';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import PreviewCard from './PreviewCard';
@@ -14,7 +14,7 @@ interface PreviewOption {
 }
 
 export default function MintSection() {
-  const { address, chainId } = useAccount();
+  const { chainId } = useAccount();
   const [previews, setPreviews] = useState<PreviewOption[]>([]);
   const [selectedPreview, setSelectedPreview] = useState<number | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);

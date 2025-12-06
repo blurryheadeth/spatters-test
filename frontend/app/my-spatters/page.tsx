@@ -3,13 +3,12 @@
 import { useState, useMemo } from 'react';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import Link from 'next/link';
-import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
+import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 
 export default function MySpattersPage() {
   const { address, chainId, isConnected } = useAccount();
   const contractAddress = chainId ? getContractAddress(chainId) : '';
-  const etherscanBase = chainId ? getEtherscanBaseUrl(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
   // Modal state for Generate Larger Resolution
@@ -37,14 +36,14 @@ export default function MySpattersPage() {
     if (!contractAddress || tokenIds.length === 0) return [];
     return tokenIds.map(id => ({
       address: contractAddress as `0x${string}`,
-      abi: SpattersABI.abi,
+      abi: SpattersABI.abi as readonly unknown[],
       functionName: 'ownerOf',
       args: [BigInt(id)],
     }));
   }, [contractAddress, tokenIds]);
 
   const { data: ownerResults, isLoading: isLoadingOwners } = useReadContracts({
-    contracts: ownerCalls,
+    contracts: ownerCalls as any,
     query: { enabled: ownerCalls.length > 0 },
   });
 
