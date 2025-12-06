@@ -9,6 +9,32 @@ import SpattersABI from '@/contracts/Spatters.json';
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
 const MAX_SAFE_INTEGER = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
 
+/**
+ * Parse a comma-separated string of hex colors into an array of 6 colors.
+ * Handles formats like: "#07B0F0","#140902"... or #07B0F0,#140902...
+ */
+function parsePaletteString(input: string): string[] | null {
+  // Remove all whitespace and quotes
+  const cleaned = input.replace(/[\s"']/g, '');
+  // Split by comma
+  const parts = cleaned.split(',').filter(p => p.length > 0);
+  
+  // Validate we have exactly 6 parts
+  if (parts.length !== 6) return null;
+  
+  // Validate each is a valid hex color
+  const hexRegex = /^#?[0-9A-Fa-f]{6}$/;
+  const colors: string[] = [];
+  
+  for (const part of parts) {
+    if (!hexRegex.test(part)) return null;
+    // Ensure it starts with #
+    colors.push(part.startsWith('#') ? part : '#' + part);
+  }
+  
+  return colors;
+}
+
 type MintMode = 'choose' | 'direct' | 'preview';
 
 /**
@@ -49,6 +75,7 @@ export default function OwnerMint() {
   const [recipient, setRecipient] = useState('');
   const [useCustomPalette, setUseCustomPalette] = useState(false);
   const [customPalette, setCustomPalette] = useState<string[]>(DEFAULT_COLORS);
+  const [bulkPaletteInput, setBulkPaletteInput] = useState('');
   const [customSeed, setCustomSeed] = useState('');
   const [error, setError] = useState('');
   const [mintMode, setMintMode] = useState<MintMode>('choose');
@@ -302,12 +329,24 @@ export default function OwnerMint() {
     }
   };
 
+  // Handle bulk palette populate
+  const handlePopulatePalette = () => {
+    const parsed = parsePaletteString(bulkPaletteInput);
+    if (parsed) {
+      setCustomPalette(parsed);
+      setError('');
+    } else {
+      setError('Invalid palette format. Please enter exactly 6 hex colors (e.g., "#07B0F0","#140902","#F7F2D7","#EDC5D4","#9EE4F7","#E25252")');
+    }
+  };
+
   // Reset form to initial state
   const resetForm = () => {
     setMintMode('choose');
     setRecipient(address || '');
     setUseCustomPalette(false);
     setCustomPalette(DEFAULT_COLORS);
+    setBulkPaletteInput('');
     setCustomSeed('');
     setPreviewSeeds([]);
     setSelectedSeedIndex(null);
@@ -619,26 +658,53 @@ export default function OwnerMint() {
 
             {/* Palette Inputs */}
             {useCustomPalette && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {customPalette.map((color, index) => (
-                  <div key={index} className="space-y-2">
-                    <label className="block text-sm">Color {index + 1}</label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => handleColorChange(index, e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => handleColorChange(index, e.target.value)}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
+              <div className="space-y-4">
+                {/* Bulk Paste Input */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <label className="block text-sm font-medium mb-2">Quick Paste (6 hex colors)</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={bulkPaletteInput}
+                      onChange={(e) => setBulkPaletteInput(e.target.value)}
+                      placeholder={'"#07B0F0","#140902","#F7F2D7","#EDC5D4","#9EE4F7","#E25252"'}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePopulatePalette}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      Populate
+                    </button>
                   </div>
-                ))}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paste comma-separated hex colors to auto-fill below
+                  </p>
+                </div>
+
+                {/* Individual Color Inputs */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {customPalette.map((color, index) => (
+                    <div key={index} className="space-y-2">
+                      <label className="block text-sm">Color {index + 1}</label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="color"
+                          value={color}
+                          onChange={(e) => handleColorChange(index, e.target.value)}
+                          className="w-12 h-10 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={(e) => handleColorChange(index, e.target.value)}
+                          className="flex-1 px-2 py-1 border rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -714,26 +780,53 @@ export default function OwnerMint() {
 
             {/* Palette Inputs */}
             {useCustomPalette && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {customPalette.map((color, index) => (
-                  <div key={index} className="space-y-2">
-                    <label className="block text-sm">Color {index + 1}</label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => handleColorChange(index, e.target.value)}
-                        className="w-12 h-10 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => handleColorChange(index, e.target.value)}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
+              <div className="space-y-4">
+                {/* Bulk Paste Input */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <label className="block text-sm font-medium mb-2">Quick Paste (6 hex colors)</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={bulkPaletteInput}
+                      onChange={(e) => setBulkPaletteInput(e.target.value)}
+                      placeholder={'"#07B0F0","#140902","#F7F2D7","#EDC5D4","#9EE4F7","#E25252"'}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePopulatePalette}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                    >
+                      Populate
+                    </button>
                   </div>
-                ))}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paste comma-separated hex colors to auto-fill below
+                  </p>
+                </div>
+
+                {/* Individual Color Inputs */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {customPalette.map((color, index) => (
+                    <div key={index} className="space-y-2">
+                      <label className="block text-sm">Color {index + 1}</label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="color"
+                          value={color}
+                          onChange={(e) => handleColorChange(index, e.target.value)}
+                          className="w-12 h-10 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={(e) => handleColorChange(index, e.target.value)}
+                          className="flex-1 px-2 py-1 border rounded text-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
