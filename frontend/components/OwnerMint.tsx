@@ -92,12 +92,33 @@ export default function OwnerMint() {
     functionName: 'MAX_SUPPLY',
   });
 
-  // Read pending request
+  // Read pending request for current user
   const { data: pendingRequest, refetch: refetchPendingRequest } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
     functionName: 'getPendingRequest',
     args: [address],
+  });
+
+  // Check if any mint selection is in progress (global block)
+  const { data: mintSelectionInProgress, refetch: refetchMintStatus } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'isMintSelectionInProgress',
+  });
+
+  // Get who has the active mint request
+  const { data: activeMintRequester } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'activeMintRequester',
+  });
+
+  // Get when the active mint request was made
+  const { data: activeMintRequestTime } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'activeMintRequestTime',
   });
 
   // Request owner mint transaction (3-option flow)
@@ -143,6 +164,43 @@ export default function OwnerMint() {
       setRecipient(address);
     }
   }, [address, recipient]);
+
+  // Check for existing pending request on page load and auto-resume
+  useEffect(() => {
+    if (pendingRequest && address) {
+      const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean };
+      // If user has an uncompleted pending request with seeds, auto-show preview
+      if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > 0) {
+        // Check if seeds are valid (not all zeros)
+        const hasValidSeeds = request.seeds.some(s => s !== '0x0000000000000000000000000000000000000000000000000000000000000000');
+        if (hasValidSeeds) {
+          setPreviewSeeds(request.seeds);
+          setMintMode('preview');
+        }
+      }
+    }
+  }, [pendingRequest, address]);
+
+  // Check if current user is the one with the pending mint
+  const isCurrentUserPending = activeMintRequester && address && 
+    (activeMintRequester as string).toLowerCase() === address.toLowerCase();
+
+  // Calculate remaining time for pending selection
+  const getRemainingTime = (): string => {
+    if (!activeMintRequestTime) return '';
+    const requestTime = Number(activeMintRequestTime);
+    if (requestTime === 0) return '';
+    
+    const expirationTime = requestTime + (55 * 60); // 55 minutes
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = expirationTime - now;
+    
+    if (remaining <= 0) return 'Expired';
+    
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    return `${minutes}m ${seconds}s`;
+  };
 
   // Handle request confirmation - extract seeds from pending request
   useEffect(() => {
@@ -345,6 +403,50 @@ export default function OwnerMint() {
         <p className="text-lg text-yellow-800 dark:text-yellow-200">
           Max supply reached
         </p>
+      </div>
+    );
+  }
+
+  // Show blocked message if someone else has a pending selection
+  if (mintSelectionInProgress && !isCurrentUserPending && mintMode === 'choose') {
+    const remainingTime = getRemainingTime();
+    return (
+      <div className="space-y-6">
+        <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-6 shadow-lg border border-orange-300 dark:border-orange-700">
+          <h2 className="text-2xl font-bold mb-4 text-orange-800 dark:text-orange-200">
+            ⏳ Minting Temporarily Blocked
+          </h2>
+          <div className="space-y-4">
+            <p className="text-orange-700 dark:text-orange-300">
+              Another user is currently selecting from 3 preview options. 
+              Minting is blocked until they complete their selection or the 55-minute window expires.
+            </p>
+            <div className="bg-orange-200 dark:bg-orange-800/50 rounded-lg p-4">
+              <p className="text-sm text-orange-800 dark:text-orange-200">
+                <strong>Active requester:</strong>{' '}
+                <span className="font-mono text-xs">
+                  {(activeMintRequester as string)?.slice(0, 6)}...{(activeMintRequester as string)?.slice(-4)}
+                </span>
+              </p>
+              {remainingTime && remainingTime !== 'Expired' && (
+                <p className="text-sm text-orange-800 dark:text-orange-200 mt-2">
+                  <strong>Time remaining:</strong> ~{remainingTime}
+                </p>
+              )}
+              {remainingTime === 'Expired' && (
+                <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                  <strong>Status:</strong> Selection window expired - minting will be available soon
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => refetchMintStatus()}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              Refresh Status
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
