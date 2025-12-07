@@ -135,10 +135,12 @@ export async function GET(
       noLoop();
       loadPixelData();
       
-      // Add touch listener directly on canvas (matches spatters.js approach)
-      // This bypasses p5.js touch handling which can cause double-firing
+      // Add touch listener directly on canvas
+      // Using handleTouch which calls preventDefault to stop mouse emulation
       var el = document.getElementsByTagName("canvas")[0];
-      el.addEventListener("touchstart", mouseClicked, false);
+      el.addEventListener("touchstart", handleTouch, { passive: false });
+      
+      console.log('[Spatters] Setup complete, touch listener added');
     }
 
     function displayFrame(index) {
@@ -156,18 +158,58 @@ export async function GET(
 
     // Debounce to prevent double-firing (touch + emulated mouse events)
     let lastClickTime = 0;
+    let clickCount = 0;
+    let isProcessing = false;
     
-    // p5.js auto-calls this on mouse clicks
-    // Touch is handled by manual event listener above (like spatters.js)
-    // But some browsers/p5.js versions may double-fire, so we debounce
-    function mouseClicked() {
+    // Single handler for all click/touch events
+    function handleInteraction(source) {
+      clickCount++;
       const now = Date.now();
-      if (now - lastClickTime < 300) return; // 300ms debounce
+      const timeSinceLast = now - lastClickTime;
+      
+      console.log('[Spatters Click Debug]', {
+        source: source,
+        clickCount: clickCount,
+        timeSinceLast: timeSinceLast,
+        isProcessing: isProcessing,
+        historicalIndex: historicalIndex,
+        frameCount: canvasHistory.length
+      });
+      
+      // Prevent double-firing
+      if (isProcessing) {
+        console.log('[Spatters] Blocked - already processing');
+        return;
+      }
+      if (timeSinceLast < 400) {
+        console.log('[Spatters] Blocked - debounce (' + timeSinceLast + 'ms)');
+        return;
+      }
+      
+      isProcessing = true;
       lastClickTime = now;
       
-      if (!loaded || canvasHistory.length === 0) return;
+      if (!loaded || canvasHistory.length === 0) {
+        isProcessing = false;
+        return;
+      }
+      
       historicalIndex = (historicalIndex + 1) % canvasHistory.length;
       displayFrame(historicalIndex);
+      
+      // Reset processing flag after a short delay
+      setTimeout(function() { isProcessing = false; }, 100);
+    }
+    
+    // p5.js auto-calls this on mouse clicks
+    function mouseClicked() {
+      handleInteraction('mouseClicked');
+    }
+    
+    // Manual touch handler (added in setup)
+    function handleTouch(e) {
+      e.preventDefault(); // Prevent mouse emulation
+      handleInteraction('touchstart');
     }
   </script>
 </body>
