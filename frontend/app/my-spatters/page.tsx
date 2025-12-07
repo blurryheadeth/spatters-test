@@ -69,6 +69,38 @@ export default function MySpattersPage() {
     query: { enabled: ownerCalls.length > 0 },
   });
 
+  // Batch fetch mutation counts for all tokens (for cache-busting image URLs)
+  const mutationCalls = useMemo(() => {
+    if (!contractAddress || tokenIds.length === 0) return [];
+    return tokenIds.map(id => ({
+      address: contractAddress as `0x${string}`,
+      abi: SpattersABI.abi as readonly unknown[],
+      functionName: 'getTokenMutations',
+      args: [BigInt(id)],
+    }));
+  }, [contractAddress, tokenIds]);
+
+  const { data: mutationResults } = useReadContracts({
+    contracts: mutationCalls as any,
+    query: { enabled: mutationCalls.length > 0 },
+  });
+
+  // Create a map of tokenId -> mutation count
+  const mutationCounts = useMemo(() => {
+    const map: Record<number, number> = {};
+    if (mutationResults) {
+      tokenIds.forEach((id, idx) => {
+        const result = mutationResults[idx];
+        if (result && result.status === 'success' && Array.isArray(result.result)) {
+          map[id] = result.result.length;
+        } else {
+          map[id] = 0;
+        }
+      });
+    }
+    return map;
+  }, [mutationResults, tokenIds]);
+
   // Filter tokens owned by current user
   const myTokens = useMemo(() => {
     if (!ownerResults || !address) return [];
@@ -267,7 +299,7 @@ export default function MySpattersPage() {
                   <Link href={`/token/${tokenId}`}>
                     <div className="w-full aspect-square bg-black">
                       <img
-                        src={`${baseUrl}/api/image/${tokenId}${imageVersion > 0 ? `?v=${imageVersion}` : ''}`}
+                        src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                         alt={`Spatter #${tokenId}`}
                         className="w-full h-full object-contain hover:opacity-90 transition-opacity"
                       />

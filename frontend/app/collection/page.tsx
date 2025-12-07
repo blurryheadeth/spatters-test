@@ -74,6 +74,18 @@ export default function CollectionPage() {
     contracts: ownerCalls,
   });
 
+  // Fetch mutation counts for current page tokens (for cache-busting image URLs)
+  const mutationCalls = tokenIds.map(id => ({
+    address: contractAddress as `0x${string}`,
+    abi: contractAbi,
+    functionName: 'getTokenMutations' as const,
+    args: [BigInt(id)] as const,
+  }));
+
+  const { data: mutationResults } = useReadContracts({
+    contracts: mutationCalls,
+  });
+
   // Create a map of tokenId -> owner
   const owners = useMemo(() => {
     const map: Record<number, string> = {};
@@ -87,6 +99,22 @@ export default function CollectionPage() {
     }
     return map;
   }, [ownerResults, tokenIds]);
+
+  // Create a map of tokenId -> mutation count
+  const mutationCounts = useMemo(() => {
+    const map: Record<number, number> = {};
+    if (mutationResults) {
+      tokenIds.forEach((id, idx) => {
+        const result = mutationResults[idx];
+        if (result && result.status === 'success' && Array.isArray(result.result)) {
+          map[id] = result.result.length;
+        } else {
+          map[id] = 0;
+        }
+      });
+    }
+    return map;
+  }, [mutationResults, tokenIds]);
 
   // Format address for display
   const formatAddress = (addr: string) => {
@@ -231,7 +259,7 @@ export default function CollectionPage() {
               <Link href={`/token/${tokenId}`}>
                 <div className="aspect-[2/1] cursor-pointer overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={`${baseUrl}/api/image/${tokenId}${imageVersion > 0 ? `?v=${imageVersion}` : ''}`}
+                    src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                     alt={`Spatter #${tokenId}`}
                     className="w-full h-full object-contain"
                     loading="lazy"

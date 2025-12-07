@@ -22,9 +22,13 @@ export async function GET(
 ) {
   const { id } = await params;
   
-  // Check for cache-busting query parameter
+  // Check for cache-busting query parameters
+  // m= mutation count makes URL unique per mutation state (safe to cache long)
+  // v= manual refresh forces fresh fetch
   const url = new URL(request.url);
-  const bustCache = url.searchParams.has('v');
+  const hasMutationParam = url.searchParams.has('m');
+  const hasManualRefresh = url.searchParams.has('v');
+  const shouldBypassCache = hasManualRefresh || !hasMutationParam;
   
   // Handle .png extension if present
   const tokenIdStr = id.replace(/\.png$/i, '');
@@ -41,24 +45,37 @@ export async function GET(
     // Construct the Supabase storage URL for the PNG
     const pngUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${tokenId}.png`;
     
-    // Fetch the PNG from Supabase (bypass cache if cache-busting)
-    const response = await fetch(pngUrl, bustCache ? { cache: 'no-store' } : undefined);
+    // Fetch the PNG from Supabase (bypass cache if needed)
+    const response = await fetch(pngUrl, shouldBypassCache ? { cache: 'no-store' } : undefined);
     
     if (!response.ok) {
       // PNG not yet generated, redirect to interactive viewer
       console.log(`[Token ${tokenId}] PNG not found, redirecting to viewer`);
-      return NextResponse.redirect(`${BASE_URL}/api/token/${tokenId}`, 302);
+      const redirectUrl = hasMutationParam 
+        ? `${BASE_URL}/api/token/${tokenId}?m=${url.searchParams.get('m')}`
+        : `${BASE_URL}/api/token/${tokenId}`;
+      return NextResponse.redirect(redirectUrl, 302);
     }
     
     const pngBuffer = await response.arrayBuffer();
     
+    // Cache strategy:
+    // - With ?m= param: URL is unique per mutation count, safe to cache long
+    // - With ?v= param: manual refresh, don't cache
+    // - No params: short cache (might be stale)
+    let cacheControl: string;
+    if (hasManualRefresh) {
+      cacheControl = 'no-cache, no-store, must-revalidate';
+    } else if (hasMutationParam) {
+      cacheControl = 'public, max-age=31536000, immutable'; // 1 year - URL unique per state
+    } else {
+      cacheControl = 'public, max-age=60, s-maxage=300'; // 1 min browser, 5 min CDN
+    }
+    
     return new NextResponse(pngBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        // Reduce caching when cache-bust parameter is present
-        'Cache-Control': bustCache 
-          ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=3600, s-maxage=86400', // Browser: 1hr, CDN: 24hr
+        'Cache-Control': cacheControl,
       },
     });
     
