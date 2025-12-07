@@ -135,12 +135,9 @@ export async function GET(
       noLoop();
       loadPixelData();
       
-      // Add touch listener directly on canvas
-      // Using handleTouch which calls preventDefault to stop mouse emulation
+      // Add touch listener with preventDefault to stop mouse emulation
       var el = document.getElementsByTagName("canvas")[0];
       el.addEventListener("touchstart", handleTouch, { passive: false });
-      
-      console.log('[Spatters] Setup complete, touch listener added');
     }
 
     function displayFrame(index) {
@@ -158,33 +155,14 @@ export async function GET(
 
     // Debounce to prevent double-firing (touch + emulated mouse events)
     let lastClickTime = 0;
-    let clickCount = 0;
     let isProcessing = false;
     
     // Single handler for all click/touch events
-    function handleInteraction(source) {
-      clickCount++;
+    function handleInteraction() {
       const now = Date.now();
-      const timeSinceLast = now - lastClickTime;
-      
-      console.log('[Spatters Click Debug]', {
-        source: source,
-        clickCount: clickCount,
-        timeSinceLast: timeSinceLast,
-        isProcessing: isProcessing,
-        historicalIndex: historicalIndex,
-        frameCount: canvasHistory.length
-      });
       
       // Prevent double-firing
-      if (isProcessing) {
-        console.log('[Spatters] Blocked - already processing');
-        return;
-      }
-      if (timeSinceLast < 400) {
-        console.log('[Spatters] Blocked - debounce (' + timeSinceLast + 'ms)');
-        return;
-      }
+      if (isProcessing || now - lastClickTime < 400) return;
       
       isProcessing = true;
       lastClickTime = now;
@@ -203,13 +181,13 @@ export async function GET(
     
     // p5.js auto-calls this on mouse clicks
     function mouseClicked() {
-      handleInteraction('mouseClicked');
+      handleInteraction();
     }
     
     // Manual touch handler (added in setup)
     function handleTouch(e) {
       e.preventDefault(); // Prevent mouse emulation
-      handleInteraction('touchstart');
+      handleInteraction();
     }
   </script>
 </body>
