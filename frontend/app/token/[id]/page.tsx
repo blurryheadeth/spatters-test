@@ -20,13 +20,29 @@ export default function TokenPage() {
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [initialMutationCount, setInitialMutationCount] = useState<number | null>(null);
   const [showRecentMutationBanner, setShowRecentMutationBanner] = useState(false);
+  const [showStaleCacheBanner, setShowStaleCacheBanner] = useState(false);
+  const [cachedMutationCount, setCachedMutationCount] = useState<number | null>(null);
 
-  // Check if this token was recently mutated (from another page)
+  // Check if this token was recently mutated (from another page in this session)
   useEffect(() => {
     if (tokenId && wasTokenRecentlyMutated(Number(tokenId))) {
       setShowRecentMutationBanner(true);
     }
   }, [tokenId]);
+
+  // Fetch cached pixel status to compare mutation counts
+  useEffect(() => {
+    if (!tokenId) return;
+    
+    fetch(`/api/pixel-status/${tokenId}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.cachedMutationCount !== null && data.cachedMutationCount !== undefined) {
+          setCachedMutationCount(data.cachedMutationCount);
+        }
+      })
+      .catch(err => console.error('Failed to fetch pixel status:', err));
+  }, [tokenId, iframeKey]); // Re-fetch when iframe is refreshed
 
   // Listen for canvas dimensions from iframe
   useEffect(() => {
@@ -45,9 +61,10 @@ export default function TokenPage() {
     setIframeKey(prev => prev + 1);
     setShowUpdateBanner(false);
     setShowRecentMutationBanner(false);
-    // Clear the mutation record so banner doesn't show again
+    setShowStaleCacheBanner(false);
+    // Clear the mutation record so session banner doesn't show again
     clearMutationRecord(Number(tokenId));
-    // Also refetch mutation count
+    // Also refetch mutation count and pixel status
     refetchMutations();
   }, [tokenId, refetchMutations]);
   
@@ -90,7 +107,7 @@ export default function TokenPage() {
   const mutationsLoaded = mutations !== undefined;
   const currentMutationCount = Array.isArray(mutations) ? mutations.length : 0;
 
-  // Track initial mutation count and detect changes
+  // Track initial mutation count and detect changes during this session
   // Only set initial count AFTER data is loaded to avoid false positives
   useEffect(() => {
     if (!mutationsLoaded) return; // Wait for data to load
@@ -103,6 +120,19 @@ export default function TokenPage() {
       setShowUpdateBanner(true);
     }
   }, [currentMutationCount, initialMutationCount, mutationsLoaded]);
+
+  // Compare on-chain mutation count with cached count to detect stale data
+  // This catches cases where someone else mutated, or user visits hours/days later
+  useEffect(() => {
+    if (!mutationsLoaded || cachedMutationCount === null) return;
+    
+    // If on-chain has more mutations than cached, data is stale
+    if (currentMutationCount > cachedMutationCount) {
+      setShowStaleCacheBanner(true);
+    } else {
+      setShowStaleCacheBanner(false);
+    }
+  }, [currentMutationCount, cachedMutationCount, mutationsLoaded]);
 
   // Poll for mutation changes every 30 seconds
   useEffect(() => {
@@ -171,11 +201,18 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* Update Available Banner - shows for recent mutations or detected changes */}
-      {(showUpdateBanner || showRecentMutationBanner) && (
+      {/* Update Available Banner - shows for recent mutations, detected changes, or stale cache */}
+      {(showUpdateBanner || showRecentMutationBanner || showStaleCacheBanner) && (
         <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-3">
-            <span>🎨 {showRecentMutationBanner ? 'This artwork was recently mutated!' : 'Artwork has been mutated!'} Click to see the latest version.</span>
+            <span>
+              🎨 {showStaleCacheBanner 
+                ? `Artwork has been updated! (${currentMutationCount} mutation${currentMutationCount !== 1 ? 's' : ''} on-chain, cached version has ${cachedMutationCount})`
+                : showRecentMutationBanner 
+                  ? 'This artwork was recently mutated!' 
+                  : 'Artwork has been mutated!'
+              } Click to see the latest version.
+            </span>
             <button
               onClick={handleRefresh}
               className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
