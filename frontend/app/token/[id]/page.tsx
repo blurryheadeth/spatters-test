@@ -55,18 +55,6 @@ export default function TokenPage() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
-
-  // Force refresh function
-  const handleRefresh = useCallback(() => {
-    setIframeKey(prev => prev + 1);
-    setShowUpdateBanner(false);
-    setShowRecentMutationBanner(false);
-    setShowStaleCacheBanner(false);
-    // Clear the mutation record so session banner doesn't show again
-    clearMutationRecord(Number(tokenId));
-    // Also refetch mutation count and pixel status
-    refetchMutations();
-  }, [tokenId, refetchMutations]);
   
   const contractAddress = getContractAddress(chainId);
   const etherscanBase = getEtherscanBaseUrl(chainId);
@@ -102,6 +90,18 @@ export default function TokenPage() {
     functionName: 'getTokenMutations',
     args: [BigInt(tokenId)],
   });
+
+  // Force refresh function - must be after refetchMutations is defined
+  const handleRefresh = useCallback(() => {
+    setIframeKey(prev => prev + 1);
+    setShowUpdateBanner(false);
+    setShowRecentMutationBanner(false);
+    setShowStaleCacheBanner(false);
+    // Clear the mutation record so session banner doesn't show again
+    clearMutationRecord(Number(tokenId));
+    // Also refetch mutation count and pixel status
+    refetchMutations();
+  }, [tokenId, refetchMutations]);
 
   // Only count mutations when data is actually loaded (not undefined/loading)
   const mutationsLoaded = mutations !== undefined;

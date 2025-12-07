@@ -34,7 +34,7 @@ export function getRecentMutations(): MutationRecord[] {
     const stored = sessionStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     return JSON.parse(stored) as MutationRecord[];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
