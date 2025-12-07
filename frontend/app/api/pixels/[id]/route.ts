@@ -20,9 +20,12 @@ export async function GET(
   const { id } = await params;
   const tokenId = parseInt(id, 10);
   
-  // Check for cache-busting query parameter
+  // Check for cache-busting query parameters
+  // m= mutation count makes URL unique per mutation state (safe to cache long)
+  // v= manual refresh forces fresh fetch
   const url = new URL(request.url);
-  const bustCache = url.searchParams.has('v');
+  const hasMutationParam = url.searchParams.has('m');
+  const hasManualRefresh = url.searchParams.has('v');
 
   if (isNaN(tokenId) || tokenId < 1) {
     return NextResponse.json(
@@ -52,12 +55,22 @@ export async function GET(
       );
     }
 
+    // Cache strategy:
+    // - With ?m= param: URL is unique per mutation count, safe to cache long
+    // - With ?v= param: manual refresh, don't cache
+    // - No params: short cache (might be stale)
+    let cacheControl: string;
+    if (hasManualRefresh) {
+      cacheControl = 'no-cache, no-store, must-revalidate';
+    } else if (hasMutationParam) {
+      cacheControl = 'public, max-age=31536000, immutable'; // 1 year - URL unique per state
+    } else {
+      cacheControl = 'public, max-age=60, stale-while-revalidate=300'; // 1 min, revalidate 5 min
+    }
+    
     return NextResponse.json(data, {
       headers: {
-        // Reduce caching when cache-bust parameter is present
-        'Cache-Control': bustCache 
-          ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=31536000, immutable',
+        'Cache-Control': cacheControl,
         'Content-Type': 'application/json',
       },
     });

@@ -47,9 +47,10 @@ export async function GET(
   const { id } = await params;
   const tokenId = parseInt(id, 10);
   
-  // Check for cache-busting query parameter (v= or m= mutation count)
+  // Check for cache-busting query parameters
   const url = new URL(request.url);
-  const bustCache = url.searchParams.has('v') || url.searchParams.has('m');
+  const mutationCount = url.searchParams.get('m'); // mutation count from parent page
+  const manualRefresh = url.searchParams.has('v'); // manual refresh
 
   if (isNaN(tokenId) || tokenId < 1) {
     return new NextResponse('Invalid token ID', { status: 400 });
@@ -70,10 +71,18 @@ export async function GET(
     console.error('Error verifying token:', error);
   }
 
-  // Use relative URL so it works regardless of host
-  // Pass through version param for cache-busting if present
-  const versionParam = bustCache ? `?v=${Date.now()}` : '';
-  const pixelDataUrl = `/api/pixels/${tokenId}${versionParam}`;
+  // Build pixels URL with cache-busting based on mutation count
+  // Each unique mutation count = unique URL = fresh fetch
+  // Manual refresh adds timestamp to bypass even mutation-count-based cache
+  let pixelDataUrl = `/api/pixels/${tokenId}`;
+  if (mutationCount !== null) {
+    pixelDataUrl += `?m=${mutationCount}`;
+    if (manualRefresh) {
+      pixelDataUrl += `&v=${Date.now()}`;
+    }
+  } else if (manualRefresh) {
+    pixelDataUrl += `?v=${Date.now()}`;
+  }
 
   // Generate minimal viewer HTML - ONLY body margin reset, nothing that interferes with p5.js canvas
   const html = `<!DOCTYPE html>
@@ -202,13 +211,16 @@ export async function GET(
 </body>
 </html>`;
 
+  // Cache based on mutation count - if m= param present, can cache longer
+  // because URL changes when mutations change
+  const shouldCache = mutationCount !== null && !manualRefresh;
+  
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      // Reduce caching when cache-bust parameter is present
-      'Cache-Control': bustCache 
-        ? 'no-cache, no-store, must-revalidate'
-        : 'public, max-age=3600, stale-while-revalidate=86400',
+      'Cache-Control': shouldCache
+        ? 'public, max-age=86400, stale-while-revalidate=604800' // 1 day, revalidate within 1 week
+        : 'no-cache, no-store, must-revalidate',
     },
   });
 }
