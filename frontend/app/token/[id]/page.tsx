@@ -225,18 +225,27 @@ export default function TokenPage() {
 
       {/* Centered Artwork Display - Full height based on actual canvas */}
       <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center py-4">
-        <iframe
-          key={iframeKey}
-          src={`${baseUrl}/api/token/${tokenId}${iframeKey > 0 ? `?v=${iframeKey}` : ''}`}
-          className="border-0 transition-all duration-300"
-          style={{ 
-            width: '100%',
-            maxWidth: '1200px',
-            height: iframeHeight ? `${iframeHeight}px` : 'calc(100vh - 180px)',
-            minHeight: '400px',
-          }}
-          title={`Spatter #${tokenId}`}
-        />
+        {!mutationsLoaded ? (
+          <div className="flex items-center justify-center" style={{ width: '100%', maxWidth: '1200px', minHeight: '400px' }}>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Loading artwork...</p>
+            </div>
+          </div>
+        ) : (
+          <iframe
+            key={`${iframeKey}-${currentMutationCount}`}
+            src={`${baseUrl}/api/token/${tokenId}?m=${currentMutationCount}${iframeKey > 0 ? `&v=${iframeKey}` : ''}`}
+            className="border-0 transition-all duration-300"
+            style={{ 
+              width: '100%',
+              maxWidth: '1200px',
+              height: iframeHeight ? `${iframeHeight}px` : 'calc(100vh - 180px)',
+              minHeight: '400px',
+            }}
+            title={`Spatter #${tokenId}`}
+          />
+        )}
       </div>
 
       {/* Compact Info Bar */}
