@@ -154,9 +154,17 @@ export async function GET(
       if (loaded) displayFrame(historicalIndex);
     }
 
+    // Debounce to prevent double-firing (touch + emulated mouse events)
+    let lastClickTime = 0;
+    
     // p5.js auto-calls this on mouse clicks
     // Touch is handled by manual event listener above (like spatters.js)
+    // But some browsers/p5.js versions may double-fire, so we debounce
     function mouseClicked() {
+      const now = Date.now();
+      if (now - lastClickTime < 300) return; // 300ms debounce
+      lastClickTime = now;
+      
       if (!loaded || canvasHistory.length === 0) return;
       historicalIndex = (historicalIndex + 1) % canvasHistory.length;
       displayFrame(historicalIndex);

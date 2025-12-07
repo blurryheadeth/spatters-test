@@ -74,16 +74,23 @@ export default function TokenPage() {
     args: [BigInt(tokenId)],
   });
 
+  // Only count mutations when data is actually loaded (not undefined/loading)
+  const mutationsLoaded = mutations !== undefined;
   const currentMutationCount = Array.isArray(mutations) ? mutations.length : 0;
 
   // Track initial mutation count and detect changes
+  // Only set initial count AFTER data is loaded to avoid false positives
   useEffect(() => {
-    if (initialMutationCount === null && currentMutationCount !== undefined) {
+    if (!mutationsLoaded) return; // Wait for data to load
+    
+    if (initialMutationCount === null) {
+      // First time we have real data - set baseline
       setInitialMutationCount(currentMutationCount);
-    } else if (initialMutationCount !== null && currentMutationCount > initialMutationCount) {
+    } else if (currentMutationCount > initialMutationCount) {
+      // Mutations increased since page load - show update banner
       setShowUpdateBanner(true);
     }
-  }, [currentMutationCount, initialMutationCount]);
+  }, [currentMutationCount, initialMutationCount, mutationsLoaded]);
 
   // Poll for mutation changes every 30 seconds
   useEffect(() => {
