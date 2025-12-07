@@ -97,6 +97,7 @@ export async function GET(
 
     async function loadPixelData() {
       try {
+        console.log('[Spatters Debug] Fetching pixel data from:', '${pixelDataUrl}');
         const response = await fetch('${pixelDataUrl}');
         if (response.status === 202) {
           setTimeout(loadPixelData, 10000);
@@ -109,6 +110,15 @@ export async function GET(
         canvasWidth = pixelData.width;
         canvasHeight = pixelData.height;
         historicalIndex = canvasHistory.length - 1;
+        
+        // DEBUG: Log pixel data info
+        console.log('[Spatters Debug] Pixel data loaded:', {
+          mutationCountFromData: pixelData.mutationCount,
+          canvasHistoryLength: canvasHistory.length,
+          expectedFrames: (pixelData.mutationCount || 0) + 1,
+          pixelDataUrl: '${pixelDataUrl}',
+          generatedAt: pixelData.generatedAt
+        });
         
         // Resize canvas to match pixel data dimensions
         resizeCanvas(canvasWidth, canvasHeight);
