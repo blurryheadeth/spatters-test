@@ -134,6 +134,11 @@ export async function GET(
       createCanvas(canvasWidth, canvasHeight);
       noLoop();
       loadPixelData();
+      
+      // Add touch listener directly on canvas (matches spatters.js approach)
+      // This bypasses p5.js touch handling which can cause double-firing
+      var el = document.getElementsByTagName("canvas")[0];
+      el.addEventListener("touchstart", mouseClicked, false);
     }
 
     function displayFrame(index) {
@@ -149,28 +154,12 @@ export async function GET(
       if (loaded) displayFrame(historicalIndex);
     }
 
-    // Debounce to prevent double-firing from mouse+touch events
-    let lastClickTime = 0;
-    const CLICK_DEBOUNCE = 100; // ms
-    
-    function cycleFrame() {
-      const now = Date.now();
-      if (now - lastClickTime < CLICK_DEBOUNCE) return false;
-      lastClickTime = now;
-      
-      if (!loaded || canvasHistory.length === 0) return false;
+    // p5.js auto-calls this on mouse clicks
+    // Touch is handled by manual event listener above (like spatters.js)
+    function mouseClicked() {
+      if (!loaded || canvasHistory.length === 0) return;
       historicalIndex = (historicalIndex + 1) % canvasHistory.length;
       displayFrame(historicalIndex);
-      return true;
-    }
-
-    function mouseClicked() {
-      cycleFrame();
-    }
-
-    function touchStarted() {
-      cycleFrame();
-      return false; // Prevent mouse event from also firing
     }
   </script>
 </body>
