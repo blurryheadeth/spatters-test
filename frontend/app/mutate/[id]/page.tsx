@@ -8,48 +8,123 @@ import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { markTokenMutated } from '@/lib/mutation-tracker';
 
-// All 94 mutation types from spatters.js
-const MUTATION_TYPES = [
-  "aspectRatioChange", "baseRadiusIncrease", "baseRadiusDecrease",
-  "gradientTypeChange", "dividerCountChange", "circleCountChange",
-  "lineCountChange", "circleSizeIncrease", "circleSizeDecrease",
-  "circlePositionChange", "circleMoveLeft", "circleMoveRight",
-  "circleMoveUp", "circleMoveDown", "lineWidthIncrease",
-  "lineWidthDecrease", "lineAngleChange", "lineLengthIncrease",
-  "lineLengthDecrease", "linePositionChange", "lineMoveLeft",
-  "lineMoveRight", "lineMoveUp", "lineMoveDown",
-  "paletteChangeOne", "paletteChangeAll", "paletteCombineOne",
-  "paletteCombineAll", "paletteResetOne", "paletteResetAll",
-  "paletteShuffle", "dividerMove", "dividerRotate", "rotate",
-  "seedPointCountIncrease", "seedPointCountDecrease",
-  "seedpointMoveRight", "seedpointMoveLeft", "seedpointMoveUp",
-  "seedpointMoveDown", "seedpointChangeCurveCenter",
-  "seedpointIncreaseConcavity", "seedpointDecreaseConcavity",
-  "seedpointIncreaseRadius", "seedpointDecreaseRadius",
-  "shapeExpand", "shapeShrink", "shapeMakeWider",
-  "shapeMakeNarrower", "shapeMakeHigher", "shapeMakeShorter",
-  "shapeChangeCurveCenters", "shapeIncreaseConcavity",
-  "shapeReduceConcavity", "shapeChangeRadiuses", "shapeMove",
-  "undoMutation", "returnToPreviousVersion",
-  "seedpointMoveRight-top", "seedpointMoveLeft-top",
-  "seedpointMoveUp-top", "seedpointMoveDown-top",
-  "seedpointChangeCurveCenter-top", "seedpointIncreaseConcavity-top",
-  "seedpointDecreaseConcavity-top", "seedpointIncreaseRadius-top",
-  "seedpointDecreaseRadius-top", "seedpointMoveRight-bottom",
-  "seedpointMoveLeft-bottom", "seedpointMoveUp-bottom",
-  "seedpointMoveDown-bottom", "seedpointChangeCurveCenter-bottom",
-  "seedpointIncreaseConcavity-bottom", "seedpointDecreaseConcavity-bottom",
-  "seedpointIncreaseRadius-bottom", "seedpointDecreaseRadius-bottom",
-  "seedpointMoveRight-left", "seedpointMoveLeft-left",
-  "seedpointMoveUp-left", "seedpointMoveDown-left",
-  "seedpointChangeCurveCenter-left", "seedpointIncreaseConcavity-left",
-  "seedpointDecreaseConcavity-left", "seedpointIncreaseRadius-left",
-  "seedpointDecreaseRadius-left", "seedpointMoveRight-right",
-  "seedpointMoveLeft-right", "seedpointMoveUp-right",
-  "seedpointMoveDown-right", "seedpointChangeCurveCenter-right",
-  "seedpointIncreaseConcavity-right", "seedpointDecreaseConcavity-right",
-  "seedpointIncreaseRadius-right", "seedpointDecreaseRadius-right",
-];
+// Mutation types grouped by category for better UX
+const MUTATION_GROUPS: Record<string, { label: string; emoji: string; mutations: string[] }> = {
+  circles: {
+    label: 'Circles',
+    emoji: '⭕',
+    mutations: [
+      'circleCountChange', 'circleSizeIncrease', 'circleSizeDecrease',
+      'circlePositionChange', 'circleMoveLeft', 'circleMoveRight',
+      'circleMoveUp', 'circleMoveDown',
+    ],
+  },
+  lines: {
+    label: 'Lines',
+    emoji: '📏',
+    mutations: [
+      'lineCountChange', 'lineWidthIncrease', 'lineWidthDecrease',
+      'lineAngleChange', 'lineLengthIncrease', 'lineLengthDecrease',
+      'linePositionChange', 'lineMoveLeft', 'lineMoveRight',
+      'lineMoveUp', 'lineMoveDown',
+    ],
+  },
+  dividers: {
+    label: 'Dividers',
+    emoji: '➗',
+    mutations: ['dividerCountChange', 'dividerMove', 'dividerRotate'],
+  },
+  palette: {
+    label: 'Colors',
+    emoji: '🎨',
+    mutations: [
+      'paletteChangeOne', 'paletteChangeAll', 'paletteCombineOne',
+      'paletteCombineAll', 'paletteResetOne', 'paletteResetAll',
+      'paletteShuffle',
+    ],
+  },
+  shape: {
+    label: 'Shape',
+    emoji: '🔷',
+    mutations: [
+      'shapeExpand', 'shapeShrink', 'shapeMakeWider', 'shapeMakeNarrower',
+      'shapeMakeHigher', 'shapeMakeShorter', 'shapeChangeCurveCenters',
+      'shapeIncreaseConcavity', 'shapeReduceConcavity', 'shapeChangeRadiuses',
+      'shapeMove',
+    ],
+  },
+  seedpoints: {
+    label: 'Seed Points',
+    emoji: '📍',
+    mutations: [
+      'seedPointCountIncrease', 'seedPointCountDecrease',
+      'seedpointMoveRight', 'seedpointMoveLeft', 'seedpointMoveUp',
+      'seedpointMoveDown', 'seedpointChangeCurveCenter',
+      'seedpointIncreaseConcavity', 'seedpointDecreaseConcavity',
+      'seedpointIncreaseRadius', 'seedpointDecreaseRadius',
+    ],
+  },
+  seedpointsTop: {
+    label: 'Points (Top)',
+    emoji: '⬆️',
+    mutations: [
+      'seedpointMoveRight-top', 'seedpointMoveLeft-top',
+      'seedpointMoveUp-top', 'seedpointMoveDown-top',
+      'seedpointChangeCurveCenter-top', 'seedpointIncreaseConcavity-top',
+      'seedpointDecreaseConcavity-top', 'seedpointIncreaseRadius-top',
+      'seedpointDecreaseRadius-top',
+    ],
+  },
+  seedpointsBottom: {
+    label: 'Points (Bottom)',
+    emoji: '⬇️',
+    mutations: [
+      'seedpointMoveRight-bottom', 'seedpointMoveLeft-bottom',
+      'seedpointMoveUp-bottom', 'seedpointMoveDown-bottom',
+      'seedpointChangeCurveCenter-bottom', 'seedpointIncreaseConcavity-bottom',
+      'seedpointDecreaseConcavity-bottom', 'seedpointIncreaseRadius-bottom',
+      'seedpointDecreaseRadius-bottom',
+    ],
+  },
+  seedpointsLeft: {
+    label: 'Points (Left)',
+    emoji: '⬅️',
+    mutations: [
+      'seedpointMoveRight-left', 'seedpointMoveLeft-left',
+      'seedpointMoveUp-left', 'seedpointMoveDown-left',
+      'seedpointChangeCurveCenter-left', 'seedpointIncreaseConcavity-left',
+      'seedpointDecreaseConcavity-left', 'seedpointIncreaseRadius-left',
+      'seedpointDecreaseRadius-left',
+    ],
+  },
+  seedpointsRight: {
+    label: 'Points (Right)',
+    emoji: '➡️',
+    mutations: [
+      'seedpointMoveRight-right', 'seedpointMoveLeft-right',
+      'seedpointMoveUp-right', 'seedpointMoveDown-right',
+      'seedpointChangeCurveCenter-right', 'seedpointIncreaseConcavity-right',
+      'seedpointDecreaseConcavity-right', 'seedpointIncreaseRadius-right',
+      'seedpointDecreaseRadius-right',
+    ],
+  },
+  general: {
+    label: 'General',
+    emoji: '⚙️',
+    mutations: [
+      'aspectRatioChange', 'baseRadiusIncrease', 'baseRadiusDecrease',
+      'gradientTypeChange', 'rotate',
+    ],
+  },
+  history: {
+    label: 'History',
+    emoji: '⏪',
+    mutations: ['undoMutation', 'returnToPreviousVersion'],
+  },
+};
+
+// Flat list for validation (all 94 mutations)
+const MUTATION_TYPES = Object.values(MUTATION_GROUPS).flatMap(g => g.mutations);
 
 interface MilestoneData {
   tokenId: number;
@@ -69,9 +144,7 @@ function formatMutationDate(date: Date): string {
 // Mutation interface component (reusable for both regular and owner)
 interface MutationInterfaceProps {
   isOwnerBypass?: boolean;
-  selectedValue: string;
-  onSelectChange: (value: string) => void;
-  onSubmit: () => void;
+  onMutate: (mutationType: string) => void;
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
@@ -81,15 +154,27 @@ interface MutationInterfaceProps {
 
 function MutationInterface({ 
   isOwnerBypass = false,
-  selectedValue,
-  onSelectChange,
-  onSubmit,
+  onMutate,
   isPending,
   isConfirming,
   isConfirmed,
   error,
   onReset,
 }: MutationInterfaceProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+
+  const handleMutationClick = (mutationType: string) => {
+    onMutate(mutationType);
+    setIsModalOpen(false);
+    setSelectedGroup(null);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedGroup(null);
+  };
+
   return (
     <div className="space-y-4">
       {isOwnerBypass && (
@@ -102,24 +187,6 @@ function MutationInterface({
           </p>
         </div>
       )}
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Mutation Type
-        </label>
-        <select
-          value={selectedValue}
-          onChange={(e) => onSelectChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-        >
-          <option value="">-- Select a mutation --</option>
-          {MUTATION_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
 
       {error && (
         <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-3">
@@ -135,7 +202,7 @@ function MutationInterface({
             ✓ Mutation Applied Successfully!
           </p>
           <p className="text-green-700 dark:text-green-300 text-sm">
-            Refresh the page to see the updated artwork.
+            The artwork will regenerate automatically.
           </p>
           <button 
             onClick={onReset}
@@ -148,16 +215,83 @@ function MutationInterface({
 
       {!isConfirmed && (
         <button
-          onClick={onSubmit}
-          disabled={!selectedValue || isPending || isConfirming}
-          className={`w-full font-bold py-2 px-4 rounded-lg transition-colors text-sm ${
+          onClick={() => setIsModalOpen(true)}
+          disabled={isPending || isConfirming}
+          className={`w-full font-bold py-3 px-4 rounded-lg transition-colors ${
             isOwnerBypass 
               ? 'bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400' 
               : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400'
           } disabled:cursor-not-allowed text-white`}
         >
-          {isPending || isConfirming ? 'Processing...' : 'Apply Mutation'}
+          {isPending || isConfirming ? 'Processing...' : '🧬 Mutate'}
         </button>
+      )}
+
+      {/* Mutation Selection Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                {selectedGroup ? (
+                  <button 
+                    onClick={() => setSelectedGroup(null)}
+                    className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                  >
+                    <span>←</span>
+                    <span>{MUTATION_GROUPS[selectedGroup]?.emoji} {MUTATION_GROUPS[selectedGroup]?.label}</span>
+                  </button>
+                ) : (
+                  'Select Mutation Type'
+                )}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-light w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
+              {!selectedGroup ? (
+                /* Group Selection */
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {Object.entries(MUTATION_GROUPS).map(([key, group]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedGroup(key)}
+                      className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                    >
+                      <span className="text-2xl mb-1">{group.emoji}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{group.label}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{group.mutations.length} options</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                /* Mutation Selection within Group */
+                <div className="space-y-2">
+                  {MUTATION_GROUPS[selectedGroup]?.mutations.map((mutation) => (
+                    <button
+                      key={mutation}
+                      onClick={() => handleMutationClick(mutation)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-medium ${
+                        isOwnerBypass
+                          ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
+                          : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
+                      }`}
+                    >
+                      {mutation}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -273,8 +407,6 @@ export default function MutatePage() {
   const contractAddress = chainId ? getContractAddress(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
-  const [selectedMutation, setSelectedMutation] = useState<string>('');
-  const [ownerSelectedMutation, setOwnerSelectedMutation] = useState<string>('');
   const [iframeHeight, setIframeHeight] = useState<number>(600);
   
   // Regeneration tracking
@@ -431,8 +563,8 @@ export default function MutatePage() {
   }, [tokenId, tokenData, milestoneData]);
 
   // Handle regular mutate submission
-  const handleMutate = async () => {
-    if (!selectedMutation) {
+  const handleMutate = async (mutationType: string) => {
+    if (!mutationType) {
       alert('Please select a mutation type');
       return;
     }
@@ -442,7 +574,7 @@ export default function MutatePage() {
         address: contractAddress as `0x${string}`,
         abi: SpattersABI.abi,
         functionName: 'mutate',
-        args: [BigInt(tokenId), selectedMutation],
+        args: [BigInt(tokenId), mutationType],
       });
     } catch (err) {
       console.error('Mutation error:', err);
@@ -450,8 +582,8 @@ export default function MutatePage() {
   };
 
   // Handle owner mutate submission (bypass)
-  const handleOwnerMutate = async () => {
-    if (!ownerSelectedMutation) {
+  const handleOwnerMutate = async (mutationType: string) => {
+    if (!mutationType) {
       alert('Please select a mutation type');
       return;
     }
@@ -461,7 +593,7 @@ export default function MutatePage() {
         address: contractAddress as `0x${string}`,
         abi: SpattersABI.abi,
         functionName: 'ownerMutate',
-        args: [BigInt(tokenId), ownerSelectedMutation],
+        args: [BigInt(tokenId), mutationType],
       });
     } catch (err) {
       console.error('Owner mutation error:', err);
@@ -681,7 +813,7 @@ export default function MutatePage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
             <h2 className="text-base font-semibold mb-3 text-gray-800 dark:text-gray-200">
-              Regular Mutation
+              Mutations
             </h2>
             {(canMutateContract as boolean) ? (
               <div className="space-y-4">
@@ -696,9 +828,7 @@ export default function MutatePage() {
                   )}
                 </div>
                 <MutationInterface
-                  selectedValue={selectedMutation}
-                  onSelectChange={setSelectedMutation}
-                  onSubmit={handleMutate}
+                  onMutate={handleMutate}
                   isPending={isMutatePending}
                   isConfirming={isMutateConfirming}
                   isConfirmed={isMutateConfirmed}
@@ -725,9 +855,7 @@ export default function MutatePage() {
               </h2>
               <MutationInterface
                 isOwnerBypass
-                selectedValue={ownerSelectedMutation}
-                onSelectChange={setOwnerSelectedMutation}
-                onSubmit={handleOwnerMutate}
+                onMutate={handleOwnerMutate}
                 isPending={isOwnerMutatePending}
                 isConfirming={isOwnerMutateConfirming}
                 isConfirmed={isOwnerMutateConfirmed}
