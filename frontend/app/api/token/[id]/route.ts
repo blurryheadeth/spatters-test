@@ -47,9 +47,9 @@ export async function GET(
   const { id } = await params;
   const tokenId = parseInt(id, 10);
   
-  // Check for cache-busting query parameter
+  // Check for cache-busting query parameter (v= or m= mutation count)
   const url = new URL(request.url);
-  const bustCache = url.searchParams.has('v');
+  const bustCache = url.searchParams.has('v') || url.searchParams.has('m');
 
   if (isNaN(tokenId) || tokenId < 1) {
     return new NextResponse('Invalid token ID', { status: 400 });
@@ -112,13 +112,12 @@ export async function GET(
         historicalIndex = canvasHistory.length - 1;
         
         // DEBUG: Log pixel data info
-        console.log('[Spatters Debug] Pixel data loaded:', {
-          mutationCountFromData: pixelData.mutationCount,
-          canvasHistoryLength: canvasHistory.length,
-          expectedFrames: (pixelData.mutationCount || 0) + 1,
-          pixelDataUrl: '${pixelDataUrl}',
-          generatedAt: pixelData.generatedAt
-        });
+        console.log('[Spatters Debug] Pixel data loaded:');
+        console.log('  - mutationCountFromData:', pixelData.mutationCount);
+        console.log('  - canvasHistoryLength:', canvasHistory.length);
+        console.log('  - expectedFrames:', (pixelData.mutationCount || 0) + 1);
+        console.log('  - pixelDataUrl:', '${pixelDataUrl}');
+        console.log('  - generatedAt:', pixelData.generatedAt);
         
         // Resize canvas to match pixel data dimensions
         resizeCanvas(canvasWidth, canvasHeight);
