@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useReadContract, useReadContracts } from 'wagmi';
 import Link from 'next/link';
 import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
+import { getRecentlyMutatedTokenIds, clearAllMutationRecords } from '@/lib/mutation-tracker';
 
 const contractAbi = SpattersABI.abi as Abi;
 
@@ -16,10 +17,19 @@ export default function CollectionPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [chainId] = useState<number>(11155111); // Default to Sepolia
   const [imageVersion, setImageVersion] = useState(0); // For cache-busting images
+  const [recentlyMutated, setRecentlyMutated] = useState<number[]>([]);
 
-  // Force refresh all thumbnails
+  // Check for recently mutated tokens on mount
+  useEffect(() => {
+    const mutated = getRecentlyMutatedTokenIds();
+    setRecentlyMutated(mutated);
+  }, []);
+
+  // Force refresh all thumbnails and clear mutation records
   const handleRefreshThumbnails = useCallback(() => {
     setImageVersion(prev => prev + 1);
+    clearAllMutationRecords();
+    setRecentlyMutated([]);
   }, []);
   
   const contractAddress = getContractAddress(chainId);
@@ -127,6 +137,23 @@ export default function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      {/* Recently Mutated Banner */}
+      {recentlyMutated.length > 0 && (
+        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center mb-4">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span>
+              🎨 Token{recentlyMutated.length > 1 ? 's' : ''} {recentlyMutated.join(', ')} {recentlyMutated.length > 1 ? 'were' : 'was'} recently mutated!
+            </span>
+            <button
+              onClick={handleRefreshThumbnails}
+              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Refresh Thumbnails
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">

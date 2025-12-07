@@ -6,6 +6,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
+import { markTokenMutated } from '@/lib/mutation-tracker';
 
 // All 94 mutation types from spatters.js
 const MUTATION_TYPES = [
@@ -470,6 +471,9 @@ export default function MutatePage() {
   // After successful mutation (regular or owner)
   useEffect(() => {
     if (isMutateConfirmed || isOwnerMutateConfirmed) {
+      // Mark token as recently mutated (for other pages to detect)
+      markTokenMutated(tokenId);
+      
       // Set waiting status
       setRegenerationStatus('waiting');
       setRegenerationMessage('Triggering artwork regeneration...');

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
+import { getRecentlyMutatedTokenIds, clearAllMutationRecords } from '@/lib/mutation-tracker';
 
 export default function MySpattersPage() {
   const { address, chainId, isConnected } = useAccount();
@@ -19,6 +20,23 @@ export default function MySpattersPage() {
   // Sort and filter state
   const [sortAscending, setSortAscending] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Recently mutated tokens tracking
+  const [recentlyMutated, setRecentlyMutated] = useState<number[]>([]);
+  const [imageVersion, setImageVersion] = useState(0);
+
+  // Check for recently mutated tokens on mount
+  useEffect(() => {
+    const mutated = getRecentlyMutatedTokenIds();
+    setRecentlyMutated(mutated);
+  }, []);
+
+  // Force refresh thumbnails and clear mutation records
+  const handleRefreshThumbnails = useCallback(() => {
+    setImageVersion(prev => prev + 1);
+    clearAllMutationRecords();
+    setRecentlyMutated([]);
+  }, []);
 
   // Get total supply
   const { data: totalSupplyBigInt, isLoading: isLoadingSupply } = useReadContract({
@@ -133,6 +151,23 @@ export default function MySpattersPage() {
         </div>
       </header>
 
+      {/* Recently Mutated Banner */}
+      {recentlyMutated.length > 0 && myTokens.some(t => recentlyMutated.includes(t)) && (
+        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <span>
+              🎨 Some of your Spatters were recently mutated!
+            </span>
+            <button
+              onClick={handleRefreshThumbnails}
+              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Refresh Thumbnails
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 py-8">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -232,7 +267,7 @@ export default function MySpattersPage() {
                   <Link href={`/token/${tokenId}`}>
                     <div className="w-full aspect-square bg-black">
                       <img
-                        src={`${baseUrl}/api/image/${tokenId}`}
+                        src={`${baseUrl}/api/image/${tokenId}${imageVersion > 0 ? `?v=${imageVersion}` : ''}`}
                         alt={`Spatter #${tokenId}`}
                         className="w-full h-full object-contain hover:opacity-90 transition-opacity"
                       />

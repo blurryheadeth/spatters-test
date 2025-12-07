@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
+import { wasTokenRecentlyMutated, clearMutationRecord } from '@/lib/mutation-tracker';
 
 const contractAbi = SpattersABI.abi as Abi;
 
@@ -18,6 +19,14 @@ export default function TokenPage() {
   const [iframeKey, setIframeKey] = useState<number>(0); // For force-reloading
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [initialMutationCount, setInitialMutationCount] = useState<number | null>(null);
+  const [showRecentMutationBanner, setShowRecentMutationBanner] = useState(false);
+
+  // Check if this token was recently mutated (from another page)
+  useEffect(() => {
+    if (tokenId && wasTokenRecentlyMutated(Number(tokenId))) {
+      setShowRecentMutationBanner(true);
+    }
+  }, [tokenId]);
 
   // Listen for canvas dimensions from iframe
   useEffect(() => {
@@ -35,9 +44,12 @@ export default function TokenPage() {
   const handleRefresh = useCallback(() => {
     setIframeKey(prev => prev + 1);
     setShowUpdateBanner(false);
+    setShowRecentMutationBanner(false);
+    // Clear the mutation record so banner doesn't show again
+    clearMutationRecord(Number(tokenId));
     // Also refetch mutation count
     refetchMutations();
-  }, []);
+  }, [tokenId, refetchMutations]);
   
   const contractAddress = getContractAddress(chainId);
   const etherscanBase = getEtherscanBaseUrl(chainId);
@@ -159,11 +171,11 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* Update Available Banner */}
-      {showUpdateBanner && (
+      {/* Update Available Banner - shows for recent mutations or detected changes */}
+      {(showUpdateBanner || showRecentMutationBanner) && (
         <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
           <div className="flex items-center justify-center gap-3">
-            <span>🎨 Artwork has been mutated! Click to see the latest version.</span>
+            <span>🎨 {showRecentMutationBanner ? 'This artwork was recently mutated!' : 'Artwork has been mutated!'} Click to see the latest version.</span>
             <button
               onClick={handleRefresh}
               className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
