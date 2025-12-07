@@ -15,6 +15,10 @@ export default function MySpattersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
   const [customWidth, setCustomWidth] = useState<string>('1200');
+  
+  // Sort and filter state
+  const [sortAscending, setSortAscending] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Get total supply
   const { data: totalSupplyBigInt, isLoading: isLoadingSupply } = useReadContract({
@@ -58,6 +62,25 @@ export default function MySpattersPage() {
       return false;
     });
   }, [ownerResults, tokenIds, address]);
+
+  // Apply search filter and sorting
+  const displayedTokens = useMemo(() => {
+    let filtered = myTokens;
+    
+    // Filter by search query (match token IDs containing the search string)
+    if (searchQuery.trim()) {
+      filtered = myTokens.filter(id => 
+        id.toString().includes(searchQuery.trim())
+      );
+    }
+    
+    // Sort by ID
+    const sorted = [...filtered].sort((a, b) => 
+      sortAscending ? a - b : b - a
+    );
+    
+    return sorted;
+  }, [myTokens, searchQuery, sortAscending]);
 
   // Handle opening the width modal
   const openWidthModal = (tokenId: number) => {
@@ -133,15 +156,74 @@ export default function MySpattersPage() {
           </div>
         ) : (
           <>
-            <div className="mb-6">
+            {/* Controls bar */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-gray-600 dark:text-gray-400">
                 You own <strong className="text-gray-800 dark:text-gray-200">{myTokens.length}</strong> Spatter{myTokens.length !== 1 ? 's' : ''}
+                {searchQuery && displayedTokens.length !== myTokens.length && (
+                  <span> (showing {displayedTokens.length})</span>
+                )}
               </p>
+              
+              <div className="flex items-center gap-3">
+                {/* Search input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search by ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-40 sm:w-48 px-3 py-2 pl-9 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <svg
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                
+                {/* Sort toggle button */}
+                <button
+                  onClick={() => setSortAscending(!sortAscending)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {sortAscending ? (
+                    <>
+                      <span>ID ↑</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">(asc)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>ID ↓</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">(desc)</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
+            {/* No results message */}
+            {displayedTokens.length === 0 && searchQuery && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No Spatters found matching &quot;{searchQuery}&quot;
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4 text-blue-600 hover:underline"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+
             {/* Grid with larger cards - 2 per row on medium, 3 on large */}
+            {displayedTokens.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {myTokens.map((tokenId) => (
+              {displayedTokens.map((tokenId) => (
                 <div
                   key={tokenId}
                   className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700"
@@ -190,6 +272,7 @@ export default function MySpattersPage() {
                 </div>
               ))}
             </div>
+            )}
           </>
         )}
       </main>
