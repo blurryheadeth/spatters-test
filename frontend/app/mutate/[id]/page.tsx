@@ -8,6 +8,128 @@ import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { markTokenMutated } from '@/lib/mutation-tracker';
 
+// Human-readable descriptions for each mutation
+const MUTATION_DESCRIPTIONS: Record<string, string> = {
+  // General
+  aspectRatioChange: 'Change aspect ratio',
+  baseRadiusIncrease: 'Increase base radius',
+  baseRadiusDecrease: 'Decrease base radius',
+  undoMutation: 'Undo last mutation',
+  returnToPreviousVersion: 'Return to previous version',
+  dividerCountChange: 'Change divider count',
+  dividerMove: 'Move dividers',
+  dividerRotate: 'Rotate dividers',
+  seedPointCountIncrease: 'Add seed points',
+  seedPointCountDecrease: 'Remove seed points',
+  
+  // Shape
+  rotate: 'Rotate shape',
+  shapeExpand: 'Expand shape',
+  shapeShrink: 'Shrink shape',
+  shapeMakeWider: 'Make shape wider',
+  shapeMakeNarrower: 'Make shape narrower',
+  shapeMakeHigher: 'Make shape taller',
+  shapeMakeShorter: 'Make shape shorter',
+  shapeChangeCurveCenters: 'Change curve centers',
+  shapeIncreaseConcavity: 'Increase concavity',
+  shapeReduceConcavity: 'Reduce concavity',
+  shapeChangeRadiuses: 'Change radiuses',
+  shapeMove: 'Move shape',
+  
+  // Colors
+  gradientTypeChange: 'Change gradient type',
+  paletteChangeOne: 'Change one color',
+  paletteChangeAll: 'Change all colors',
+  paletteCombineOne: 'Blend one color',
+  paletteCombineAll: 'Blend all colors',
+  paletteResetOne: 'Reset one color',
+  paletteResetAll: 'Reset all colors',
+  paletteShuffle: 'Shuffle palette',
+  
+  // Circles
+  circleCountChange: 'Change circle count',
+  circleSizeIncrease: 'Increase circle size',
+  circleSizeDecrease: 'Decrease circle size',
+  circlePositionChange: 'Randomize position',
+  circleMoveLeft: 'Move circles left',
+  circleMoveRight: 'Move circles right',
+  circleMoveUp: 'Move circles up',
+  circleMoveDown: 'Move circles down',
+  
+  // Lines
+  lineCountChange: 'Change line count',
+  lineWidthIncrease: 'Increase line width',
+  lineWidthDecrease: 'Decrease line width',
+  lineAngleChange: 'Change line angles',
+  lineLengthIncrease: 'Increase line length',
+  lineLengthDecrease: 'Decrease line length',
+  linePositionChange: 'Randomize position',
+  lineMoveLeft: 'Move lines left',
+  lineMoveRight: 'Move lines right',
+  lineMoveUp: 'Move lines up',
+  lineMoveDown: 'Move lines down',
+  
+  // Points - Any
+  seedpointMoveRight: 'Move points right',
+  seedpointMoveLeft: 'Move points left',
+  seedpointMoveUp: 'Move points up',
+  seedpointMoveDown: 'Move points down',
+  seedpointChangeCurveCenter: 'Change curve center',
+  seedpointIncreaseConcavity: 'Increase concavity',
+  seedpointDecreaseConcavity: 'Decrease concavity',
+  seedpointIncreaseRadius: 'Increase radius',
+  seedpointDecreaseRadius: 'Decrease radius',
+  
+  // Points - Top
+  'seedpointMoveRight-top': 'Move right',
+  'seedpointMoveLeft-top': 'Move left',
+  'seedpointMoveUp-top': 'Move up',
+  'seedpointMoveDown-top': 'Move down',
+  'seedpointChangeCurveCenter-top': 'Change curve center',
+  'seedpointIncreaseConcavity-top': 'Increase concavity',
+  'seedpointDecreaseConcavity-top': 'Decrease concavity',
+  'seedpointIncreaseRadius-top': 'Increase radius',
+  'seedpointDecreaseRadius-top': 'Decrease radius',
+  
+  // Points - Bottom
+  'seedpointMoveRight-bottom': 'Move right',
+  'seedpointMoveLeft-bottom': 'Move left',
+  'seedpointMoveUp-bottom': 'Move up',
+  'seedpointMoveDown-bottom': 'Move down',
+  'seedpointChangeCurveCenter-bottom': 'Change curve center',
+  'seedpointIncreaseConcavity-bottom': 'Increase concavity',
+  'seedpointDecreaseConcavity-bottom': 'Decrease concavity',
+  'seedpointIncreaseRadius-bottom': 'Increase radius',
+  'seedpointDecreaseRadius-bottom': 'Decrease radius',
+  
+  // Points - Left
+  'seedpointMoveRight-left': 'Move right',
+  'seedpointMoveLeft-left': 'Move left',
+  'seedpointMoveUp-left': 'Move up',
+  'seedpointMoveDown-left': 'Move down',
+  'seedpointChangeCurveCenter-left': 'Change curve center',
+  'seedpointIncreaseConcavity-left': 'Increase concavity',
+  'seedpointDecreaseConcavity-left': 'Decrease concavity',
+  'seedpointIncreaseRadius-left': 'Increase radius',
+  'seedpointDecreaseRadius-left': 'Decrease radius',
+  
+  // Points - Right
+  'seedpointMoveRight-right': 'Move right',
+  'seedpointMoveLeft-right': 'Move left',
+  'seedpointMoveUp-right': 'Move up',
+  'seedpointMoveDown-right': 'Move down',
+  'seedpointChangeCurveCenter-right': 'Change curve center',
+  'seedpointIncreaseConcavity-right': 'Increase concavity',
+  'seedpointDecreaseConcavity-right': 'Decrease concavity',
+  'seedpointIncreaseRadius-right': 'Increase radius',
+  'seedpointDecreaseRadius-right': 'Decrease radius',
+};
+
+// Helper to get description or fallback to mutation name
+const getMutationLabel = (mutation: string): string => {
+  return MUTATION_DESCRIPTIONS[mutation] || mutation;
+};
+
 // Main mutation categories (6 high-level groups)
 const MUTATION_GROUPS: Record<string, { label: string; emoji: string; mutations: string[] }> = {
   general: {
@@ -317,13 +439,13 @@ function MutationInterface({
                     <button
                       key={mutation}
                       onClick={() => handleMutationClick(mutation)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-medium ${
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                         isOwnerBypass
                           ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
                           : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
                       }`}
                     >
-                      {mutation}
+                      <span className="font-medium">{getMutationLabel(mutation)}</span>
                     </button>
                   ))}
                 </div>
@@ -334,13 +456,13 @@ function MutationInterface({
                     <button
                       key={mutation}
                       onClick={() => handleMutationClick(mutation)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-medium ${
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                         isOwnerBypass
                           ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
                           : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
                       }`}
                     >
-                      {mutation}
+                      <span className="font-medium">{getMutationLabel(mutation)}</span>
                     </button>
                   ))}
                 </div>
