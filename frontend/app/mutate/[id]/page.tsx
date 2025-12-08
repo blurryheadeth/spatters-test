@@ -8,8 +8,34 @@ import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { markTokenMutated } from '@/lib/mutation-tracker';
 
-// Mutation types grouped by category for better UX
+// Main mutation categories (6 high-level groups)
 const MUTATION_GROUPS: Record<string, { label: string; emoji: string; mutations: string[] }> = {
+  general: {
+    label: 'General',
+    emoji: '⚙️',
+    mutations: [
+      'aspectRatioChange', 'baseRadiusIncrease', 'baseRadiusDecrease',
+      'undoMutation', 'returnToPreviousVersion', 'dividerCountChange',
+      'dividerMove', 'dividerRotate', 'seedPointCountIncrease', 'seedPointCountDecrease',
+    ],
+  },
+  shape: {
+    label: 'Shape',
+    emoji: '🔷',
+    mutations: [
+      'rotate', 'shapeExpand', 'shapeShrink', 'shapeMakeWider', 'shapeMakeNarrower',
+      'shapeMakeHigher', 'shapeMakeShorter', 'shapeChangeCurveCenters',
+      'shapeIncreaseConcavity', 'shapeReduceConcavity', 'shapeChangeRadiuses', 'shapeMove',
+    ],
+  },
+  colors: {
+    label: 'Colors',
+    emoji: '🎨',
+    mutations: [
+      'gradientTypeChange', 'paletteChangeOne', 'paletteChangeAll', 'paletteCombineOne',
+      'paletteCombineAll', 'paletteResetOne', 'paletteResetAll', 'paletteShuffle',
+    ],
+  },
   circles: {
     label: 'Circles',
     emoji: '⭕',
@@ -25,106 +51,68 @@ const MUTATION_GROUPS: Record<string, { label: string; emoji: string; mutations:
     mutations: [
       'lineCountChange', 'lineWidthIncrease', 'lineWidthDecrease',
       'lineAngleChange', 'lineLengthIncrease', 'lineLengthDecrease',
-      'linePositionChange', 'lineMoveLeft', 'lineMoveRight',
-      'lineMoveUp', 'lineMoveDown',
+      'linePositionChange', 'lineMoveLeft', 'lineMoveRight', 'lineMoveUp', 'lineMoveDown',
     ],
-  },
-  dividers: {
-    label: 'Dividers',
-    emoji: '➗',
-    mutations: ['dividerCountChange', 'dividerMove', 'dividerRotate'],
-  },
-  palette: {
-    label: 'Colors',
-    emoji: '🎨',
-    mutations: [
-      'paletteChangeOne', 'paletteChangeAll', 'paletteCombineOne',
-      'paletteCombineAll', 'paletteResetOne', 'paletteResetAll',
-      'paletteShuffle',
-    ],
-  },
-  shape: {
-    label: 'Shape',
-    emoji: '🔷',
-    mutations: [
-      'shapeExpand', 'shapeShrink', 'shapeMakeWider', 'shapeMakeNarrower',
-      'shapeMakeHigher', 'shapeMakeShorter', 'shapeChangeCurveCenters',
-      'shapeIncreaseConcavity', 'shapeReduceConcavity', 'shapeChangeRadiuses',
-      'shapeMove',
-    ],
-  },
-  seedpoints: {
-    label: 'Seed Points',
-    emoji: '📍',
-    mutations: [
-      'seedPointCountIncrease', 'seedPointCountDecrease',
-      'seedpointMoveRight', 'seedpointMoveLeft', 'seedpointMoveUp',
-      'seedpointMoveDown', 'seedpointChangeCurveCenter',
-      'seedpointIncreaseConcavity', 'seedpointDecreaseConcavity',
-      'seedpointIncreaseRadius', 'seedpointDecreaseRadius',
-    ],
-  },
-  seedpointsTop: {
-    label: 'Points (Top)',
-    emoji: '⬆️',
-    mutations: [
-      'seedpointMoveRight-top', 'seedpointMoveLeft-top',
-      'seedpointMoveUp-top', 'seedpointMoveDown-top',
-      'seedpointChangeCurveCenter-top', 'seedpointIncreaseConcavity-top',
-      'seedpointDecreaseConcavity-top', 'seedpointIncreaseRadius-top',
-      'seedpointDecreaseRadius-top',
-    ],
-  },
-  seedpointsBottom: {
-    label: 'Points (Bottom)',
-    emoji: '⬇️',
-    mutations: [
-      'seedpointMoveRight-bottom', 'seedpointMoveLeft-bottom',
-      'seedpointMoveUp-bottom', 'seedpointMoveDown-bottom',
-      'seedpointChangeCurveCenter-bottom', 'seedpointIncreaseConcavity-bottom',
-      'seedpointDecreaseConcavity-bottom', 'seedpointIncreaseRadius-bottom',
-      'seedpointDecreaseRadius-bottom',
-    ],
-  },
-  seedpointsLeft: {
-    label: 'Points (Left)',
-    emoji: '⬅️',
-    mutations: [
-      'seedpointMoveRight-left', 'seedpointMoveLeft-left',
-      'seedpointMoveUp-left', 'seedpointMoveDown-left',
-      'seedpointChangeCurveCenter-left', 'seedpointIncreaseConcavity-left',
-      'seedpointDecreaseConcavity-left', 'seedpointIncreaseRadius-left',
-      'seedpointDecreaseRadius-left',
-    ],
-  },
-  seedpointsRight: {
-    label: 'Points (Right)',
-    emoji: '➡️',
-    mutations: [
-      'seedpointMoveRight-right', 'seedpointMoveLeft-right',
-      'seedpointMoveUp-right', 'seedpointMoveDown-right',
-      'seedpointChangeCurveCenter-right', 'seedpointIncreaseConcavity-right',
-      'seedpointDecreaseConcavity-right', 'seedpointIncreaseRadius-right',
-      'seedpointDecreaseRadius-right',
-    ],
-  },
-  general: {
-    label: 'General',
-    emoji: '⚙️',
-    mutations: [
-      'aspectRatioChange', 'baseRadiusIncrease', 'baseRadiusDecrease',
-      'gradientTypeChange', 'rotate',
-    ],
-  },
-  history: {
-    label: 'History',
-    emoji: '⏪',
-    mutations: ['undoMutation', 'returnToPreviousVersion'],
   },
 };
 
+// Points sub-categories (shown when "Points" is selected)
+const POINTS_SUBGROUPS: Record<string, { label: string; emoji: string; mutations: string[] }> = {
+  any: {
+    label: 'Any',
+    emoji: '🎯',
+    mutations: [
+      'seedpointMoveRight', 'seedpointMoveLeft', 'seedpointMoveUp', 'seedpointMoveDown',
+      'seedpointChangeCurveCenter', 'seedpointIncreaseConcavity', 'seedpointDecreaseConcavity',
+      'seedpointIncreaseRadius', 'seedpointDecreaseRadius',
+    ],
+  },
+  top: {
+    label: 'Top',
+    emoji: '⬆️',
+    mutations: [
+      'seedpointMoveRight-top', 'seedpointMoveLeft-top', 'seedpointMoveUp-top', 'seedpointMoveDown-top',
+      'seedpointChangeCurveCenter-top', 'seedpointIncreaseConcavity-top', 'seedpointDecreaseConcavity-top',
+      'seedpointIncreaseRadius-top', 'seedpointDecreaseRadius-top',
+    ],
+  },
+  bottom: {
+    label: 'Bottom',
+    emoji: '⬇️',
+    mutations: [
+      'seedpointMoveRight-bottom', 'seedpointMoveLeft-bottom', 'seedpointMoveUp-bottom', 'seedpointMoveDown-bottom',
+      'seedpointChangeCurveCenter-bottom', 'seedpointIncreaseConcavity-bottom', 'seedpointDecreaseConcavity-bottom',
+      'seedpointIncreaseRadius-bottom', 'seedpointDecreaseRadius-bottom',
+    ],
+  },
+  left: {
+    label: 'Left',
+    emoji: '⬅️',
+    mutations: [
+      'seedpointMoveRight-left', 'seedpointMoveLeft-left', 'seedpointMoveUp-left', 'seedpointMoveDown-left',
+      'seedpointChangeCurveCenter-left', 'seedpointIncreaseConcavity-left', 'seedpointDecreaseConcavity-left',
+      'seedpointIncreaseRadius-left', 'seedpointDecreaseRadius-left',
+    ],
+  },
+  right: {
+    label: 'Right',
+    emoji: '➡️',
+    mutations: [
+      'seedpointMoveRight-right', 'seedpointMoveLeft-right', 'seedpointMoveUp-right', 'seedpointMoveDown-right',
+      'seedpointChangeCurveCenter-right', 'seedpointIncreaseConcavity-right', 'seedpointDecreaseConcavity-right',
+      'seedpointIncreaseRadius-right', 'seedpointDecreaseRadius-right',
+    ],
+  },
+};
+
+// All points mutations count for display
+const POINTS_TOTAL_COUNT = Object.values(POINTS_SUBGROUPS).reduce((sum, g) => sum + g.mutations.length, 0);
+
 // Flat list for validation (all 94 mutations)
-const MUTATION_TYPES = Object.values(MUTATION_GROUPS).flatMap(g => g.mutations);
+const MUTATION_TYPES = [
+  ...Object.values(MUTATION_GROUPS).flatMap(g => g.mutations),
+  ...Object.values(POINTS_SUBGROUPS).flatMap(g => g.mutations),
+];
 
 interface MilestoneData {
   tokenId: number;
@@ -163,16 +151,43 @@ function MutationInterface({
 }: MutationInterfaceProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedPointsSubgroup, setSelectedPointsSubgroup] = useState<string | null>(null);
 
   const handleMutationClick = (mutationType: string) => {
     onMutate(mutationType);
     setIsModalOpen(false);
     setSelectedGroup(null);
+    setSelectedPointsSubgroup(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedGroup(null);
+    setSelectedPointsSubgroup(null);
+  };
+
+  const goBack = () => {
+    if (selectedPointsSubgroup) {
+      setSelectedPointsSubgroup(null);
+    } else if (selectedGroup) {
+      setSelectedGroup(null);
+    }
+  };
+
+  // Determine current title for header
+  const getHeaderTitle = () => {
+    if (selectedPointsSubgroup) {
+      const subgroup = POINTS_SUBGROUPS[selectedPointsSubgroup];
+      return `${subgroup?.emoji} Points - ${subgroup?.label}`;
+    }
+    if (selectedGroup === 'points') {
+      return '📍 Points';
+    }
+    if (selectedGroup) {
+      const group = MUTATION_GROUPS[selectedGroup];
+      return `${group?.emoji} ${group?.label}`;
+    }
+    return 'Select Mutation Type';
   };
 
   return (
@@ -234,13 +249,13 @@ function MutationInterface({
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
-                {selectedGroup ? (
+                {(selectedGroup || selectedPointsSubgroup) ? (
                   <button 
-                    onClick={() => setSelectedGroup(null)}
+                    onClick={goBack}
                     className="flex items-center gap-2 hover:text-blue-600 transition-colors"
                   >
                     <span>←</span>
-                    <span>{MUTATION_GROUPS[selectedGroup]?.emoji} {MUTATION_GROUPS[selectedGroup]?.label}</span>
+                    <span>{getHeaderTitle()}</span>
                   </button>
                 ) : (
                   'Select Mutation Type'
@@ -257,7 +272,7 @@ function MutationInterface({
             {/* Modal Body */}
             <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
               {!selectedGroup ? (
-                /* Group Selection */
+                /* Top-Level Group Selection (6 categories) */
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {Object.entries(MUTATION_GROUPS).map(([key, group]) => (
                     <button
@@ -270,9 +285,50 @@ function MutationInterface({
                       <span className="text-xs text-gray-500 dark:text-gray-400">{group.mutations.length} options</span>
                     </button>
                   ))}
+                  {/* Points - special category with sub-menu */}
+                  <button
+                    onClick={() => setSelectedGroup('points')}
+                    className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                  >
+                    <span className="text-2xl mb-1">📍</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Points</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{POINTS_TOTAL_COUNT} options</span>
+                  </button>
+                </div>
+              ) : selectedGroup === 'points' && !selectedPointsSubgroup ? (
+                /* Points Sub-Group Selection */
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {Object.entries(POINTS_SUBGROUPS).map(([key, subgroup]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedPointsSubgroup(key)}
+                      className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                    >
+                      <span className="text-2xl mb-1">{subgroup.emoji}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{subgroup.label}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{subgroup.mutations.length} options</span>
+                    </button>
+                  ))}
+                </div>
+              ) : selectedGroup === 'points' && selectedPointsSubgroup ? (
+                /* Points Mutation Selection */
+                <div className="space-y-2">
+                  {POINTS_SUBGROUPS[selectedPointsSubgroup]?.mutations.map((mutation) => (
+                    <button
+                      key={mutation}
+                      onClick={() => handleMutationClick(mutation)}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-medium ${
+                        isOwnerBypass
+                          ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
+                          : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
+                      }`}
+                    >
+                      {mutation}
+                    </button>
+                  ))}
                 </div>
               ) : (
-                /* Mutation Selection within Group */
+                /* Regular Group Mutation Selection */
                 <div className="space-y-2">
                   {MUTATION_GROUPS[selectedGroup]?.mutations.map((mutation) => (
                     <button
