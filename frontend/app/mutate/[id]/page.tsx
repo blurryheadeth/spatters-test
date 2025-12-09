@@ -982,14 +982,16 @@ export default function MutatePage() {
       )}
 
       <main className="flex flex-col xl:flex-row">
-        <div className="w-full xl:w-[1200px] xl:flex-shrink-0" style={{ backgroundColor: COLORS.background }}>
+        <div className="w-full xl:w-[1200px] xl:flex-shrink-0" style={{ backgroundColor: COLORS.white }}>
           <iframe
             key={iframeKey}
             src={`${baseUrl}/api/token/${tokenId}?c=${contractAddress?.slice(-8) || ''}&v=${iframeKey}`}
             className="border-0 w-full"
+            scrolling="no"
             style={{ 
               height: `${iframeHeight}px`,
               maxWidth: '1200px',
+              overflow: 'hidden',
             }}
             title={`Spatter #${tokenId}`}
           />

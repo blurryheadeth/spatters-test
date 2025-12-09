@@ -33,7 +33,7 @@ export default function Navbar() {
 
   return (
     <header 
-      className="border-b-2" 
+      className="border-b-2 sticky top-0 z-50" 
       style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}
     >
       <div className="container mx-auto px-4 py-4">

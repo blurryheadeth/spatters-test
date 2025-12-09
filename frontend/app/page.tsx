@@ -24,9 +24,9 @@ function SpattersTitle({ className = '' }: { className?: string }) {
   return (
     <span className={className}>
       <span style={{ color: COLORS.red }}>S</span>
-      <span style={{ color: COLORS.green }}>p</span>
+      <span style={{ color: COLORS.yellow }}>p</span>
       <span style={{ color: COLORS.blue }}>a</span>
-      <span style={{ color: COLORS.yellow }}>t</span>
+      <span style={{ color: COLORS.green }}>t</span>
       <span style={{ color: COLORS.yellow }}>t</span>
       <span style={{ color: COLORS.blue }}>e</span>
       <span style={{ color: COLORS.green }}>r</span>
@@ -78,7 +78,7 @@ export default function Home() {
 
       {/* Mint Section */}
       {isConnected ? (
-        <section className="py-8" style={{ backgroundColor: COLORS.background }}>
+        <section className="py-8" style={{ backgroundColor: COLORS.white }}>
           <div className="container mx-auto px-4 max-w-5xl">
             {/* Tabs */}
             <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
