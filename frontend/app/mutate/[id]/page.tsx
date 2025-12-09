@@ -801,6 +801,9 @@ export default function MutatePage() {
 
   // After successful mutation (regular or owner)
   useEffect(() => {
+    let pollInterval: NodeJS.Timeout | null = null;
+    let isCancelled = false;
+    
     if (isMutateConfirmed || isOwnerMutateConfirmed) {
       // Mark token as recently mutated (for other pages to detect)
       markTokenMutated(tokenId);
@@ -818,13 +821,20 @@ export default function MutatePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId, event: 'token-mutated' }),
       }).then(() => {
+        if (isCancelled) return;
+        
         setRegenerationMessage('Waiting for artwork to regenerate (this may take 1-2 minutes)...');
         
         // Start polling for completion
         let pollCount = 0;
         const maxPolls = 60; // Poll for up to 5 minutes (60 * 5s)
         
-        const pollInterval = setInterval(async () => {
+        pollInterval = setInterval(async () => {
+          if (isCancelled) {
+            if (pollInterval) clearInterval(pollInterval);
+            return;
+          }
+          
           pollCount++;
           
           try {
@@ -838,7 +848,11 @@ export default function MutatePage() {
               
               if (fileTime > mutTime) {
                 // File was regenerated after our mutation!
-                clearInterval(pollInterval);
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = null;
+                
+                if (isCancelled) return;
+                
                 setRegenerationStatus('ready');
                 setRegenerationMessage('Artwork regenerated successfully!');
                 
@@ -850,15 +864,21 @@ export default function MutatePage() {
                 
                 // Clear success message after a few seconds
                 setTimeout(() => {
-                  setRegenerationStatus('idle');
-                  setRegenerationMessage('');
+                  if (!isCancelled) {
+                    setRegenerationStatus('idle');
+                    setRegenerationMessage('');
+                  }
                 }, 5000);
+                
+                return;
               }
             }
             
             // Update progress message
             if (pollCount % 6 === 0) { // Every 30 seconds
-              setRegenerationMessage(`Still waiting for regeneration... (${Math.floor(pollCount * 5 / 60)} min elapsed)`);
+              if (!isCancelled) {
+                setRegenerationMessage(`Still waiting for regeneration... (${Math.floor(pollCount * 5 / 60)} min elapsed)`);
+              }
             }
             
           } catch (error) {
@@ -867,21 +887,31 @@ export default function MutatePage() {
           
           // Stop polling after max attempts
           if (pollCount >= maxPolls) {
-            clearInterval(pollInterval);
-            setRegenerationStatus('error');
-            setRegenerationMessage('Regeneration taking longer than expected. Please refresh manually in a few minutes.');
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = null;
+            if (!isCancelled) {
+              setRegenerationStatus('error');
+              setRegenerationMessage('Regeneration taking longer than expected. Please refresh manually in a few minutes.');
+            }
           }
         }, 5000); // Poll every 5 seconds
         
-        // Cleanup on unmount
-        return () => clearInterval(pollInterval);
-        
       }).catch((error) => {
         console.error('Trigger error:', error);
-        setRegenerationStatus('error');
-        setRegenerationMessage('Failed to trigger regeneration. Please try refreshing the page.');
+        if (!isCancelled) {
+          setRegenerationStatus('error');
+          setRegenerationMessage('Failed to trigger regeneration. Please try refreshing the page.');
+        }
       });
     }
+    
+    // Cleanup on unmount or dependency change
+    return () => {
+      isCancelled = true;
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
   }, [isMutateConfirmed, isOwnerMutateConfirmed, tokenId, refetchCanMutate]);
 
   const isLoading = isLoadingOwner || isLoadingToken;
