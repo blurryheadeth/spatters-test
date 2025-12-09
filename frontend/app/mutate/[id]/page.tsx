@@ -854,21 +854,13 @@ export default function MutatePage() {
                 if (isCancelled) return;
                 
                 setRegenerationStatus('ready');
-                setRegenerationMessage('Artwork regenerated successfully!');
+                setRegenerationMessage('Artwork regenerated! Refreshing page...');
                 
-                // Force iframe reload with cache-busting
-                setIframeKey(prev => prev + 1);
-                
-                // Refetch mutation eligibility
-                refetchCanMutate();
-                
-                // Clear success message after a few seconds
+                // Full page reload to ensure all caches are bypassed
+                // Small delay so user sees the success message
                 setTimeout(() => {
-                  if (!isCancelled) {
-                    setRegenerationStatus('idle');
-                    setRegenerationMessage('');
-                  }
-                }, 5000);
+                  window.location.reload();
+                }, 1500);
                 
                 return;
               }
