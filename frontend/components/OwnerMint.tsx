@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
+import { Abi } from 'viem';
 
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
 const MAX_SEED_VALUE = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
@@ -130,6 +131,21 @@ export default function OwnerMint() {
     args: [address],
   });
 
+  // Read pending palette for current user (all 6 colors, used when resuming a pending request)
+  const pendingPaletteCalls = address ? [0, 1, 2, 3, 4, 5].map(i => ({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi as Abi,
+    functionName: 'pendingPalettes' as const,
+    args: [address, BigInt(i)] as const,
+  })) : [];
+
+  const { data: pendingPaletteResults } = useReadContracts({
+    contracts: pendingPaletteCalls,
+    query: {
+      enabled: !!address && pendingPaletteCalls.length > 0,
+    },
+  });
+
   // Check if any mint selection is in progress (global block)
   // Returns tuple: [active: boolean, requester: address, expiresAt: uint256]
   const { data: mintSelectionData, refetch: refetchMintStatus } = useReadContract({
@@ -202,7 +218,7 @@ export default function OwnerMint() {
   // Check for existing pending request on page load and auto-resume
   useEffect(() => {
     if (pendingRequest && address) {
-      const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean };
+      const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean; hasCustomPalette?: boolean };
       // If user has an uncompleted pending request with seeds
       if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > BigInt(0)) {
         // Check if seeds are valid (not all zeros)
@@ -213,6 +229,18 @@ export default function OwnerMint() {
             setPreviewSeeds(request.seeds);
             setMintMode('preview');
             setIsRequestExpired(false);
+            
+            // Restore custom palette if one was stored with the request
+            if (pendingPaletteResults && pendingPaletteResults.length === 6) {
+              const restoredPalette = pendingPaletteResults.map(result => 
+                result.status === 'success' ? (result.result as string) : ''
+              );
+              // Check if the first color is non-empty (indicates custom palette exists)
+              if (restoredPalette[0] && restoredPalette[0].length > 0) {
+                setCustomPalette(restoredPalette);
+                setUseCustomPalette(true);
+              }
+            }
           } else {
             // Request has expired - show expired message
             setIsRequestExpired(true);
@@ -221,7 +249,7 @@ export default function OwnerMint() {
         }
       }
     }
-  }, [pendingRequest, address]);
+  }, [pendingRequest, address, pendingPaletteResults]);
 
   // Check if current user is the one with the pending mint
   const isCurrentUserPending = activeMintRequester && address && 
