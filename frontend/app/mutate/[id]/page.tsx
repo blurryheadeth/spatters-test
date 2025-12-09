@@ -812,17 +812,22 @@ export default function MutatePage() {
       setRegenerationStatus('waiting');
       setRegenerationMessage('Triggering artwork regeneration...');
       
-      // Capture the time we started (to compare against file timestamps)
-      const mutationTime = new Date().toISOString();
+      // The expected mutation count AFTER this mutation
+      // Current count + 1 (the mutation we just made)
+      const currentMutationCount = existingMutations ? (existingMutations as any[]).length : 0;
+      const expectedMutationCount = currentMutationCount + 1;
+      
+      console.log(`[Mutate] Mutation confirmed. Current: ${currentMutationCount}, Expected after regen: ${expectedMutationCount}`);
       
       // Trigger pixel regeneration
       fetch('/api/trigger-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId, event: 'token-mutated' }),
-      }).then(() => {
+      }).then((response) => {
         if (isCancelled) return;
         
+        console.log('[Mutate] Trigger response:', response.status);
         setRegenerationMessage('Waiting for artwork to regenerate (this may take 1-2 minutes)...');
         
         // Start polling for completion
@@ -838,32 +843,40 @@ export default function MutatePage() {
           pollCount++;
           
           try {
-            const response = await fetch(`/api/pixel-status/${tokenId}`, { cache: 'no-store' });
+            // Add timestamp to prevent any caching
+            const response = await fetch(`/api/pixel-status/${tokenId}?t=${Date.now()}`, { 
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            });
             const data = await response.json();
             
-            // Check if the file was updated AFTER we triggered the mutation
-            if (data.exists && data.lastModified) {
-              const fileTime = new Date(data.lastModified);
-              const mutTime = new Date(mutationTime);
+            console.log(`[Mutate] Poll #${pollCount}:`, {
+              exists: data.exists,
+              cachedMutationCount: data.cachedMutationCount,
+              expectedMutationCount,
+              lastModified: data.lastModified
+            });
+            
+            // Check if cached mutation count matches expected
+            // This is more reliable than timestamp comparison
+            if (data.exists && data.cachedMutationCount !== null && data.cachedMutationCount >= expectedMutationCount) {
+              // File has been regenerated with the new mutation!
+              console.log('[Mutate] Regeneration complete! Cached count matches expected.');
               
-              if (fileTime > mutTime) {
-                // File was regenerated after our mutation!
-                if (pollInterval) clearInterval(pollInterval);
-                pollInterval = null;
-                
-                if (isCancelled) return;
-                
-                setRegenerationStatus('ready');
-                setRegenerationMessage('Artwork regenerated! Refreshing page...');
-                
-                // Full page reload to ensure all caches are bypassed
-                // Small delay so user sees the success message
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1500);
-                
-                return;
-              }
+              if (pollInterval) clearInterval(pollInterval);
+              pollInterval = null;
+              
+              if (isCancelled) return;
+              
+              setRegenerationStatus('ready');
+              setRegenerationMessage('Artwork regenerated! Refreshing page...');
+              
+              // Full page reload to ensure all caches are bypassed
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+              
+              return;
             }
             
             // Update progress message
@@ -874,7 +887,7 @@ export default function MutatePage() {
             }
             
           } catch (error) {
-            console.error('Polling error:', error);
+            console.error('[Mutate] Polling error:', error);
           }
           
           // Stop polling after max attempts
@@ -889,7 +902,7 @@ export default function MutatePage() {
         }, 5000); // Poll every 5 seconds
         
       }).catch((error) => {
-        console.error('Trigger error:', error);
+        console.error('[Mutate] Trigger error:', error);
         if (!isCancelled) {
           setRegenerationStatus('error');
           setRegenerationMessage('Failed to trigger regeneration. Please try refreshing the page.');
@@ -904,7 +917,7 @@ export default function MutatePage() {
         clearInterval(pollInterval);
       }
     };
-  }, [isMutateConfirmed, isOwnerMutateConfirmed, tokenId, refetchCanMutate]);
+  }, [isMutateConfirmed, isOwnerMutateConfirmed, tokenId, existingMutations]);
 
   const isLoading = isLoadingOwner || isLoadingToken;
   const isTokenOwner = ownerAddress && address && 
