@@ -291,7 +291,7 @@ export default function PublicMint() {
   }
 
   const supply = Number(totalSupply || 0);
-  const reserve = Number(ownerReserve || 25);
+  const reserve = Number(ownerReserve || 30);
   const max = Number(maxSupply || 999);
   const cooldownRemaining = getCooldownRemaining();
 

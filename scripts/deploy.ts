@@ -49,14 +49,12 @@ async function main() {
   const symbol = await spatters.symbol();
   const maxSupply = await spatters.MAX_SUPPLY();
   const ownerReserve = await spatters.OWNER_RESERVE();
-  const maxMutations = await spatters.MAX_MUTATIONS();
 
   console.log("\nContract Details:");
   console.log("- Name:", name);
   console.log("- Symbol:", symbol);
   console.log("- Max Supply:", maxSupply.toString());
   console.log("- Owner Reserve:", ownerReserve.toString());
-  console.log("- Max Mutations Per Token:", maxMutations.toString());
   console.log("- Owner:", await spatters.owner());
 
   // Get pricing info
@@ -98,7 +96,7 @@ async function main() {
   console.log("\nNext steps:");
   console.log("1. Verify contract on Etherscan:");
   console.log(`   npx hardhat verify --network ${network.name} ${address} "[${storageConfig.spattersAddresses.map((a: string) => `\\"${a}\\"`).join(",")}]" "${storageConfig.p5jsAddress || ethers.ZeroAddress}"`);
-  console.log("\n2. Mint owner reserve (up to 25 tokens with optional custom palettes):");
+  console.log("\n2. Mint owner reserve (up to 30 tokens with optional custom palettes):");
   console.log(`   npx hardhat run scripts/mint-owner-reserve.ts --network ${network.name}`);
   console.log("\n3. Test tokenURI generation:");
   console.log(`   npx hardhat console --network ${network.name}`);

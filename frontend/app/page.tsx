@@ -151,7 +151,7 @@ export default function Home() {
               <div className="text-4xl mb-4">🎨</div>
               <h4 className="text-xl font-bold mb-2">Custom Palettes</h4>
               <p className="text-gray-600 dark:text-gray-400">
-                First 25 tokens can be minted by owner with optional custom 6-color palettes.
+                First 30 tokens can be minted by owner with optional custom 6-color palettes.
               </p>
             </div>
           </div>

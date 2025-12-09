@@ -290,7 +290,7 @@ export default function TokenPage() {
             {/* Mutation count */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                Mutations: {currentMutationCount} / 200
+                Mutations: {currentMutationCount}
               </span>
               <button
                 onClick={handleRefresh}

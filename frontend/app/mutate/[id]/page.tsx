@@ -960,7 +960,7 @@ export default function MutatePage() {
             title={`Spatter #${tokenId}`}
           />
           <div className="bg-gray-900 text-center text-sm text-gray-400 py-2">
-            Click artwork to cycle through mutation history • Mutations: {mutationCount} / 200
+            Click artwork to cycle through mutation history • Mutations: {mutationCount}
           </div>
         </div>
 

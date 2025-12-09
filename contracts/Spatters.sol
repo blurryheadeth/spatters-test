@@ -31,8 +31,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // ============ Constants ============
 
     uint256 public constant MAX_SUPPLY = 999;
-    uint256 public constant OWNER_RESERVE = 25;
-    uint256 public constant MAX_MUTATIONS = 200;
+    uint256 public constant OWNER_RESERVE = 30;
     
     // Minting cooldowns and limits
     uint256 public constant REQUEST_EXPIRATION = 55 minutes;
@@ -683,7 +682,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         string memory mutationType
     ) external nonReentrant {
         require(ownerOf(tokenId) == msg.sender, "Not token owner");
-        require(tokenMutations[tokenId].length < MAX_MUTATIONS, "Mutation limit reached");
         require(_isValidMutationType(mutationType), "Invalid mutation type");
         require(canMutate(tokenId), "Cannot mutate today");
         
@@ -724,7 +722,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         string memory mutationType
     ) external onlyOwner nonReentrant {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
-        require(tokenMutations[tokenId].length < MAX_MUTATIONS, "Mutation limit reached");
         require(_isValidMutationType(mutationType), "Invalid mutation type");
         
         // No date/cooldown checks - owner can mutate anytime for testing

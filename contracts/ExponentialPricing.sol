@@ -4,15 +4,15 @@ pragma solidity ^0.8.20;
 /**
  * @title ExponentialPricing
  * @dev Library for calculating exponential pricing curve
- * Formula: price = 0.00618 * ((100/0.00618)^((n-25)/(999-25)))
+ * Formula: price = 0.00618 * ((100/0.00618)^((n-30)/(999-30)))
  */
 library ExponentialPricing {
     uint256 private constant PRECISION = 1e18;
     uint256 private constant START_PRICE = 0.00618 ether;  // 6180000000000000 wei
     uint256 private constant END_PRICE = 100 ether;
-    uint256 private constant RESERVE = 25;
+    uint256 private constant RESERVE = 30;
     uint256 private constant MAX_SUPPLY = 999;
-    uint256 private constant RANGE = MAX_SUPPLY - RESERVE; // 974
+    uint256 private constant RANGE = MAX_SUPPLY - RESERVE; // 969
     
     /**
      * @dev Calculate price for token at position n
@@ -23,7 +23,7 @@ library ExponentialPricing {
             return 0;
         }
         
-        // Position in the exponential curve (0 at token 26, 974 at token 999)
+        // Position in the exponential curve (0 at token 31, 969 at token 999)
         uint256 position = n - RESERVE;
         
         if (position == 0) {
