@@ -6,15 +6,22 @@
  * 
  * URL: /api/image/[id]
  * 
- * PNG is widely supported by marketplaces (OpenSea, Etherscan, etc.)
- * Falls back to interactive viewer if PNG not yet generated.
+ * PNG is widely supported by marketplaces (OpenSea, Etherscan, MetaMask, etc.)
+ * Returns a placeholder PNG if not yet generated (wallets don't follow redirects).
  */
 
 import { NextResponse } from 'next/server';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'spatters-pixels';
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// 1x1 transparent PNG placeholder (89 bytes)
+// Used when the actual PNG hasn't been generated yet
+// This ensures wallets like MetaMask always get image data, not redirects
+const PLACEHOLDER_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64'
+);
 
 export async function GET(
   request: Request,
@@ -49,12 +56,15 @@ export async function GET(
     const response = await fetch(pngUrl, shouldBypassCache ? { cache: 'no-store' } : undefined);
     
     if (!response.ok) {
-      // PNG not yet generated, redirect to interactive viewer
-      console.log(`[Token ${tokenId}] PNG not found, redirecting to viewer`);
-      const redirectUrl = hasMutationParam 
-        ? `${BASE_URL}/api/token/${tokenId}?m=${url.searchParams.get('m')}`
-        : `${BASE_URL}/api/token/${tokenId}`;
-      return NextResponse.redirect(redirectUrl, 302);
+      // PNG not yet generated - return placeholder instead of redirect
+      // This ensures wallets (MetaMask, etc.) always get actual image data
+      console.log(`[Token ${tokenId}] PNG not found, returning placeholder`);
+      return new NextResponse(PLACEHOLDER_PNG, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=60', // Short cache - real image will replace soon
+        },
+      });
     }
     
     const pngBuffer = await response.arrayBuffer();
@@ -82,7 +92,12 @@ export async function GET(
   } catch (error: any) {
     console.error('Error fetching PNG:', error);
     
-    // Fallback to interactive viewer
-    return NextResponse.redirect(`${BASE_URL}/api/token/${tokenId}`, 302);
+    // Return placeholder on error - ensures wallets always get image data
+    return new NextResponse(PLACEHOLDER_PNG, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=60',
+      },
+    });
   }
 }

@@ -1,6 +1,6 @@
 // Constructor arguments for SpattersGenerator verification
 module.exports = [
-  "0x6b716e4AB7f3aF8d220f9bcC307959a07866D4F2", // spattersAddress
+  "0x229DBF3Dc1988BDe3a89412EaeB646575eb473B2", // spattersAddress
   [
     "0xF2aF5b85A21B6b4766b4c98beCa0cfeA5eb34A6e",
     "0xAD93A21bE0D04BDEA0F057827FAb0e3685Ee2613",
@@ -13,7 +13,7 @@ module.exports = [
     "0x70c803E898D1ed5dC00dcc081C087578eAb1E5E0"
   ], // storageAddresses
   [
-    "0xaCC01Ebe1B3f906cE96a6ABE351A0E3F06C23f9b"
+    "0xF5E4DFe76a0668a08975E651Bca144707DC201A3"
   ] // htmlTemplateAddresses
 ];
 

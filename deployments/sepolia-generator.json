@@ -1,9 +1,9 @@
 {
   "network": "sepolia",
-  "generatorAddress": "0xd8047A5De14D3A26f452298f497914ABBcF953B7",
-  "spattersAddress": "0x6b716e4AB7f3aF8d220f9bcC307959a07866D4F2",
+  "generatorAddress": "0xAbEd4BD316EB13b072f99e1a6D5DcD271a9c91D9",
+  "spattersAddress": "0x229DBF3Dc1988BDe3a89412EaeB646575eb473B2",
   "htmlTemplateAddresses": [
-    "0xaCC01Ebe1B3f906cE96a6ABE351A0E3F06C23f9b"
+    "0xF5E4DFe76a0668a08975E651Bca144707DC201A3"
   ],
   "storageAddresses": [
     "0xF2aF5b85A21B6b4766b4c98beCa0cfeA5eb34A6e",
@@ -16,6 +16,6 @@
     "0xB904c461a2b2e07B193f0E0C2B34C91eF53fc4D2",
     "0x70c803E898D1ed5dC00dcc081C087578eAb1E5E0"
   ],
-  "deployedAt": "2025-12-09T08:45:49.066Z",
+  "deployedAt": "2025-12-09T10:16:49.507Z",
   "deployer": "0x8b4270311fcb04f6725D5E973bCc1b78B154f6ee"
 }

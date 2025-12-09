@@ -145,7 +145,7 @@ export async function GET(
   // Convert bytes32 hex seed to truncated decimal (matching on-chain template)
   // Takes first 8 bytes (18 chars including 0x) and converts to decimal
   function hexToSeed(hexString: string): number {
-    const truncated = hexString.slice(0, 18);
+    const truncated = hexString.slice(0, 10);
     return parseInt(truncated, 16);
   }
 
