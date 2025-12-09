@@ -270,7 +270,7 @@ export default function TokenPage() {
       )}
 
       {/* Centered Artwork Display - Full height based on actual canvas */}
-      <div className="w-full flex justify-center py-4" style={{ backgroundColor: COLORS.white }}>
+      <div className="w-full flex justify-center" style={{ backgroundColor: COLORS.white }}>
         {!mutationsLoaded ? (
           <div className="flex items-center justify-center" style={{ width: '100%', maxWidth: '1200px', minHeight: '400px' }}>
             <div className="text-center">
