@@ -485,7 +485,7 @@ export default function PublicMint() {
         </div>
 
         {/* All 3 Artworks Stacked - All load simultaneously */}
-        <div className="flex-1 overflow-auto" style={{ backgroundColor: COLORS.white }}
+        <div className="flex-1 overflow-auto" style={{ backgroundColor: COLORS.white }}>
           {previewSeeds.map((seed, index) => {
             const previewUrl = `${baseUrl}/api/preview?seed=${seed}`;
             
