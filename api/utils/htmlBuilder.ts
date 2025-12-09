@@ -20,14 +20,14 @@ export interface TokenData {
 
 /**
  * Convert bytes32 hex to a JavaScript-safe seed number
- * Matches p5.js randomSeed which uses 32-bit unsigned integers
- * Takes first 10 chars of the full hex string (including 0x prefix = 4 bytes = 32 bits)
+ * Takes first 16 chars of the full hex string (including 0x prefix = 7 bytes = 56 bits)
+ * Supports values up to MAX_SAFE_INTEGER for timestamp-based seeds
  */
 function hexToSeedString(hex: string): string {
   // Ensure 0x prefix
   const fullHex = hex.startsWith("0x") ? hex : `0x${hex}`;
-  // Take first 10 characters (0x + 8 hex chars = 4 bytes = 32 bits)
-  const truncated = fullHex.slice(0, 10);
+  // Take first 16 characters (0x + 14 hex chars = 56 bits, covers MAX_SAFE_INTEGER)
+  const truncated = fullHex.slice(0, 16);
   return `parseInt("${truncated}", 16)`;
 }
 

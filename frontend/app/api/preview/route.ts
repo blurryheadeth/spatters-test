@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
   // Convert seed to decimal (matching on-chain template)
   function hexToSeed(hexString: string): number {
-    const truncated = hexString.slice(0, 10);
+    const truncated = hexString.slice(0, 16);
     return parseInt(truncated, 16);
   }
   const seedDecimal = hexToSeed(seedHex);

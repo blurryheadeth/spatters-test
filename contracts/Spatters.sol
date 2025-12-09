@@ -1102,7 +1102,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             'const mutations = ', _buildMutationsArray(mutations), ';',
             paletteJS,
             'function setup() { ', generateCall, ' }',
-            'function hexToSeed(h) { return parseInt(h.slice(0,10),16); }',
+            'function hexToSeed(h) { return parseInt(h.slice(0,16),16); }',
             '</script>'
         ));
     }

@@ -7,7 +7,7 @@ import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
-const MAX_SEED_VALUE = 4294967295; // 2^32 - 1 (matches p5.js randomSeed 32-bit range)
+const MAX_SEED_VALUE = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
 
 /**
  * Parse a comma-separated string of hex colors into an array of 6 colors.
@@ -40,18 +40,18 @@ type MintMode = 'choose' | 'direct' | 'preview';
 /**
  * Convert a JavaScript integer seed to bytes32 format for contract storage.
  * 
- * The renderer's hexToSeed() reads the first 8 hex digits (32 bits) of the bytes32.
+ * The renderer's hexToSeed() reads the first 14 hex digits (56 bits) of the bytes32.
  * To recover the exact original integer:
- * 1. LEFT-pad the hex to 8 digits (so hexToSeed reads the full value)
+ * 1. LEFT-pad the hex to 14 digits (so hexToSeed reads the full value)
  * 2. RIGHT-pad to 64 digits total (to make valid bytes32)
  * 
- * Example: 1234567890 → "0x499602d2000000000000000000000000000000000000000000000000000000"
- *          hexToSeed reads "0x499602d2" → parseInt → 1234567890 ✓
+ * Example: 1763114204158 → "0x0000019a8c8c77fe0000000000000000000000000000000000000000000000"
+ *          hexToSeed reads "0x0000019a8c8c77fe" → parseInt → 1763114204158 ✓
  */
 function integerToBytes32(seed: number | bigint): string {
   const hex = BigInt(seed).toString(16);
-  // LEFT-pad to 8 hex digits (what hexToSeed reads - 32 bits)
-  const leftPadded = hex.padStart(8, '0');
+  // LEFT-pad to 14 hex digits (what hexToSeed reads - 56 bits, covers MAX_SAFE_INTEGER)
+  const leftPadded = hex.padStart(14, '0');
   // RIGHT-pad to 64 hex digits total (valid bytes32)
   const fullPadded = leftPadded.padEnd(64, '0');
   return '0x' + fullPadded;
