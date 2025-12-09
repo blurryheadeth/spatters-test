@@ -951,7 +951,7 @@ export default function MutatePage() {
         <div className="w-full xl:w-[1200px] xl:flex-shrink-0 bg-black">
           <iframe
             key={iframeKey}
-            src={`${baseUrl}/api/token/${tokenId}?v=${iframeKey}`}
+            src={`${baseUrl}/api/token/${tokenId}?c=${contractAddress?.slice(-8) || ''}&v=${iframeKey}`}
             className="border-0 w-full"
             style={{ 
               height: `${iframeHeight}px`,

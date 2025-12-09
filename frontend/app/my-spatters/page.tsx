@@ -299,7 +299,7 @@ export default function MySpattersPage() {
                   <Link href={`/token/${tokenId}`}>
                     <div className="w-full aspect-square bg-black">
                       <img
-                        src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
+                        src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}&c=${contractAddress?.slice(-8) || ''}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                         alt={`Spatter #${tokenId}`}
                         className="w-full h-full object-contain hover:opacity-90 transition-opacity"
                       />

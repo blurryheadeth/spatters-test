@@ -259,7 +259,7 @@ export default function CollectionPage() {
               <Link href={`/token/${tokenId}`}>
                 <div className="aspect-[2/1] cursor-pointer overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
+                    src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}&c=${contractAddress?.slice(-8) || ''}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                     alt={`Spatter #${tokenId}`}
                     className="w-full h-full object-contain"
                     loading="lazy"

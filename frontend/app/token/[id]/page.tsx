@@ -235,7 +235,7 @@ export default function TokenPage() {
         ) : (
           <iframe
             key={`${iframeKey}-${currentMutationCount}`}
-            src={`${baseUrl}/api/token/${tokenId}?m=${currentMutationCount}${iframeKey > 0 ? `&v=${iframeKey}` : ''}`}
+            src={`${baseUrl}/api/token/${tokenId}?m=${currentMutationCount}&c=${contractAddress?.slice(-8) || ''}${iframeKey > 0 ? `&v=${iframeKey}` : ''}`}
             className="border-0 transition-all duration-300"
             style={{ 
               width: '100%',
