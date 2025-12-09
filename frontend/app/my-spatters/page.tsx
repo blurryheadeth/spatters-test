@@ -6,6 +6,18 @@ import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { getRecentlyMutatedTokenIds, clearAllMutationRecords } from '@/lib/mutation-tracker';
+import Navbar from '@/components/Navbar';
+
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
 
 export default function MySpattersPage() {
   const { address, chainId, isConnected } = useAccount();
@@ -155,12 +167,18 @@ export default function MySpattersPage() {
   // Not connected
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">My Spatters</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Please connect your wallet to view your collection.
-          </p>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div 
+            className="text-center p-8 border-2"
+            style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
+          >
+            <h1 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>My Spatters</h1>
+            <p className="mb-6" style={{ color: COLORS.black }}>
+              Please connect your wallet to view your collection.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -169,30 +187,23 @@ export default function MySpattersPage() {
   const isLoading = isLoadingSupply || isLoadingOwners;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-            Spatters
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">My Spatters</h1>
-          <Link href="/collection" className="text-blue-600 hover:underline">
-            View All Collection →
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+      <Navbar />
 
       {/* Recently Mutated Banner */}
       {recentlyMutated.length > 0 && myTokens.some(t => recentlyMutated.includes(t)) && (
-        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
+        <div 
+          className="px-4 py-3 text-center border-b-2"
+          style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
+        >
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span>
+            <span className="font-medium">
               🎨 Some of your Spatters were recently mutated!
             </span>
             <button
               onClick={handleRefreshThumbnails}
-              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-1 text-sm font-bold border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.black, borderColor: COLORS.black, color: COLORS.white }}
             >
               Refresh Thumbnails
             </button>
@@ -201,22 +212,28 @@ export default function MySpattersPage() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-black mb-6" style={{ color: COLORS.black }}>My Spatters</h1>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="ml-4 text-gray-600 dark:text-gray-400">Loading your collection...</p>
+            <div 
+              className="animate-spin h-12 w-12 border-4 border-t-transparent"
+              style={{ borderColor: COLORS.red, borderTopColor: 'transparent' }}
+            ></div>
+            <p className="ml-4" style={{ color: COLORS.black }}>Loading your collection...</p>
           </div>
         ) : myTokens.length === 0 ? (
           <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.black }}>
               No Spatters Found
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="mb-6" style={{ color: COLORS.black }}>
               You don&apos;t own any Spatters yet.
             </p>
             <Link
               href="/"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg"
+              className="inline-block font-bold py-3 px-6 border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.red, borderColor: COLORS.black, color: COLORS.white }}
             >
               Mint Your First Spatter
             </Link>
@@ -225,8 +242,8 @@ export default function MySpattersPage() {
           <>
             {/* Controls bar */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <p className="text-gray-600 dark:text-gray-400">
-                You own <strong className="text-gray-800 dark:text-gray-200">{myTokens.length}</strong> Spatter{myTokens.length !== 1 ? 's' : ''}
+              <p style={{ color: COLORS.black }}>
+                You own <strong>{myTokens.length}</strong> Spatter{myTokens.length !== 1 ? 's' : ''}
                 {searchQuery && displayedTokens.length !== myTokens.length && (
                   <span> (showing {displayedTokens.length})</span>
                 )}
@@ -234,40 +251,22 @@ export default function MySpattersPage() {
               
               <div className="flex items-center gap-3">
                 {/* Search input */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search by ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-40 sm:w-48 px-3 py-2 pl-9 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <svg
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+                <input
+                  type="text"
+                  placeholder="Search by ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-40 sm:w-48 px-3 py-2 border-2 text-sm"
+                  style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
+                />
                 
                 {/* Sort toggle button */}
                 <button
                   onClick={() => setSortAscending(!sortAscending)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 border-2 text-sm font-medium hover:opacity-70 transition-opacity"
+                  style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
                 >
-                  {sortAscending ? (
-                    <>
-                      <span>ID ↑</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">(asc)</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>ID ↓</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">(desc)</span>
-                    </>
-                  )}
+                  {sortAscending ? 'ID ↑ (asc)' : 'ID ↓ (desc)'}
                 </button>
               </div>
             </div>
@@ -275,12 +274,13 @@ export default function MySpattersPage() {
             {/* No results message */}
             {displayedTokens.length === 0 && searchQuery && (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">
+                <p style={{ color: COLORS.black }}>
                   No Spatters found matching &quot;{searchQuery}&quot;
                 </p>
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="mt-4 text-blue-600 hover:underline"
+                  className="mt-4 font-bold hover:opacity-70"
+                  style={{ color: COLORS.blue }}
                 >
                   Clear search
                 </button>
@@ -289,15 +289,16 @@ export default function MySpattersPage() {
 
             {/* Grid with larger cards - 2 per row on medium, 3 on large */}
             {displayedTokens.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayedTokens.map((tokenId) => (
                 <div
                   key={tokenId}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                  className="border-2 overflow-hidden"
+                  style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
                 >
                   {/* Larger image preview */}
                   <Link href={`/token/${tokenId}`}>
-                    <div className="w-full aspect-square bg-black">
+                    <div className="w-full aspect-[4/3]" style={{ backgroundColor: COLORS.background }}>
                       <img
                         src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}&c=${contractAddress?.slice(-8) || ''}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                         alt={`Spatter #${tokenId}`}
@@ -307,8 +308,8 @@ export default function MySpattersPage() {
                   </Link>
 
                   {/* Token info */}
-                  <div className="p-5">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+                  <div className="p-5 border-t-2" style={{ borderColor: COLORS.black }}>
+                    <h3 className="text-xl font-black mb-4" style={{ color: COLORS.black }}>
                       Spatter #{tokenId}
                     </h3>
 
@@ -316,21 +317,24 @@ export default function MySpattersPage() {
                     <div className="space-y-3">
                       <Link
                         href={`/token/${tokenId}`}
-                        className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className="block w-full text-center font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+                        style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black, color: COLORS.white }}
                       >
                         View
                       </Link>
 
                       <button
                         onClick={() => openWidthModal(tokenId)}
-                        className="block w-full text-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className="block w-full text-center font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+                        style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black, color: COLORS.black }}
                       >
                         Generate Larger Resolution
                       </button>
 
                       <Link
                         href={`/mutate/${tokenId}`}
-                        className="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className="block w-full text-center font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+                        style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
                       >
                         Mutate
                       </Link>
@@ -344,19 +348,25 @@ export default function MySpattersPage() {
         )}
       </main>
 
-      {/* Width Input Modal */}
+      {/* Width Input Modal - Fixed overlay opacity */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        >
+          <div 
+            className="w-full max-w-md mx-4 p-6 border-2"
+            style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
+          >
+            <h2 className="text-xl font-black mb-4" style={{ color: COLORS.black }}>
               Generate Larger Resolution
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="mb-4" style={{ color: COLORS.black }}>
               Spatter #{selectedTokenId}
             </p>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>
                 Canvas Width (pixels)
               </label>
               <input
@@ -366,9 +376,10 @@ export default function MySpattersPage() {
                 step="100"
                 value={customWidth}
                 onChange={(e) => setCustomWidth(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border-2"
+                style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs mt-1" style={{ color: COLORS.black, opacity: 0.7 }}>
                 Range: 1200 - 8400 pixels. Higher values will take longer to generate.
               </p>
             </div>
@@ -376,13 +387,15 @@ export default function MySpattersPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+                style={{ backgroundColor: COLORS.background, borderColor: COLORS.black, color: COLORS.black }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleGenerateLarger}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+                style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black, color: COLORS.black }}
               >
                 Generate
               </button>
@@ -393,4 +406,3 @@ export default function MySpattersPage() {
     </div>
   );
 }
-

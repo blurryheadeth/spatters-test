@@ -7,6 +7,18 @@ import Link from 'next/link';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { markTokenMutated } from '@/lib/mutation-tracker';
+import Navbar from '@/components/Navbar';
+
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
 
 // Human-readable descriptions for each mutation
 const MUTATION_DESCRIPTIONS: Record<string, string> = {
@@ -315,35 +327,36 @@ function MutationInterface({
   return (
     <div className="space-y-4">
       {isOwnerBypass && (
-        <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-lg p-3">
-          <p className="text-purple-800 dark:text-purple-200 font-medium">
+        <div className="border-2 p-3" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black, color: COLORS.white }}>
+          <p className="font-medium">
             🔧 Contract Owner Bypass
           </p>
-          <p className="text-purple-700 dark:text-purple-300 text-sm">
+          <p className="text-sm">
             As contract owner, you can mutate at any time (testing only).
           </p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-3">
-          <p className="text-red-800 dark:text-red-200 text-sm">
+        <div className="border-2 p-3" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+          <p className="text-sm" style={{ color: COLORS.white }}>
             Error: {(error as any)?.shortMessage || error?.message || 'Unknown error'}
           </p>
         </div>
       )}
 
       {isConfirmed && (
-        <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3">
-          <p className="text-green-800 dark:text-green-200 font-medium">
+        <div className="border-2 p-3" style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}>
+          <p className="font-medium">
             ✓ Mutation Applied Successfully!
           </p>
-          <p className="text-green-700 dark:text-green-300 text-sm">
+          <p className="text-sm">
             The artwork will regenerate automatically.
           </p>
           <button 
             onClick={onReset}
-            className="mt-2 text-sm text-green-600 dark:text-green-400 underline"
+            className="mt-2 text-sm underline font-medium"
+            style={{ color: COLORS.black }}
           >
             Apply another mutation
           </button>
@@ -354,11 +367,12 @@ function MutationInterface({
         <button
           onClick={() => setIsModalOpen(true)}
           disabled={isPending || isConfirming}
-          className={`w-full font-bold py-3 px-4 rounded-lg transition-colors ${
-            isOwnerBypass 
-              ? 'bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400' 
-              : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400'
-          } disabled:cursor-not-allowed text-white`}
+          className="w-full font-bold py-3 px-4 border-2 transition-opacity hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ 
+            backgroundColor: isOwnerBypass ? COLORS.red : COLORS.green, 
+            borderColor: COLORS.black,
+            color: isOwnerBypass ? COLORS.white : COLORS.black
+          }}
         >
           {isPending || isConfirming ? 'Processing...' : '🧬 Mutate'}
         </button>
@@ -366,15 +380,16 @@ function MutationInterface({
 
       {/* Mutation Selection Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-hidden border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+            <div className="flex items-center justify-between p-4 border-b-2" style={{ borderColor: COLORS.black }}>
+              <h3 className="text-lg font-bold" style={{ color: COLORS.black }}>
                 {(selectedGroup || selectedPointsSubgroup) ? (
                   <button 
                     onClick={goBack}
-                    className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+                    style={{ color: COLORS.black }}
                   >
                     <span>←</span>
                     <span>{getHeaderTitle()}</span>
@@ -385,14 +400,15 @@ function MutationInterface({
               </h3>
               <button
                 onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-light w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="text-2xl font-bold w-8 h-8 flex items-center justify-center hover:opacity-70 transition-opacity"
+                style={{ color: COLORS.black }}
               >
                 ×
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]" style={{ backgroundColor: COLORS.background }}>
               {!selectedGroup ? (
                 /* Top-Level Group Selection (6 categories) */
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -400,21 +416,23 @@ function MutationInterface({
                     <button
                       key={key}
                       onClick={() => setSelectedGroup(key)}
-                      className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                      className="flex flex-col items-center justify-center p-4 border-2 transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
                     >
                       <span className="text-2xl mb-1">{group.emoji}</span>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{group.label}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{group.mutations.length} options</span>
+                      <span className="text-sm font-medium" style={{ color: COLORS.black }}>{group.label}</span>
+                      <span className="text-xs" style={{ color: COLORS.black, opacity: 0.7 }}>{group.mutations.length} options</span>
                     </button>
                   ))}
                   {/* Points - special category with sub-menu */}
                   <button
                     onClick={() => setSelectedGroup('points')}
-                    className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                    className="flex flex-col items-center justify-center p-4 border-2 transition-opacity hover:opacity-80"
+                    style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
                   >
                     <span className="text-2xl mb-1">📍</span>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Points</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{POINTS_TOTAL_COUNT} options</span>
+                    <span className="text-sm font-medium" style={{ color: COLORS.black }}>Points</span>
+                    <span className="text-xs" style={{ color: COLORS.black, opacity: 0.7 }}>{POINTS_TOTAL_COUNT} options</span>
                   </button>
                 </div>
               ) : selectedGroup === 'points' && !selectedPointsSubgroup ? (
@@ -424,11 +442,12 @@ function MutationInterface({
                     <button
                       key={key}
                       onClick={() => setSelectedPointsSubgroup(key)}
-                      className="flex flex-col items-center justify-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border-2 border-transparent hover:border-blue-500"
+                      className="flex flex-col items-center justify-center p-4 border-2 transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
                     >
                       <span className="text-2xl mb-1">{subgroup.emoji}</span>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{subgroup.label}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{subgroup.mutations.length} options</span>
+                      <span className="text-sm font-medium" style={{ color: COLORS.black }}>{subgroup.label}</span>
+                      <span className="text-xs" style={{ color: COLORS.black, opacity: 0.7 }}>{subgroup.mutations.length} options</span>
                     </button>
                   ))}
                 </div>
@@ -439,11 +458,12 @@ function MutationInterface({
                     <button
                       key={mutation}
                       onClick={() => handleMutationClick(mutation)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                        isOwnerBypass
-                          ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
-                          : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
-                      }`}
+                      className="w-full text-left px-4 py-3 border-2 transition-opacity hover:opacity-80"
+                      style={{ 
+                        backgroundColor: isOwnerBypass ? COLORS.red : COLORS.green, 
+                        borderColor: COLORS.black,
+                        color: isOwnerBypass ? COLORS.white : COLORS.black
+                      }}
                     >
                       <span className="font-medium">{getMutationLabel(mutation)}</span>
                     </button>
@@ -456,11 +476,12 @@ function MutationInterface({
                     <button
                       key={mutation}
                       onClick={() => handleMutationClick(mutation)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                        isOwnerBypass
-                          ? 'bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-800 dark:text-purple-200'
-                          : 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-800 dark:text-green-200'
-                      }`}
+                      className="w-full text-left px-4 py-3 border-2 transition-opacity hover:opacity-80"
+                      style={{ 
+                        backgroundColor: isOwnerBypass ? COLORS.red : COLORS.green, 
+                        borderColor: COLORS.black,
+                        color: isOwnerBypass ? COLORS.white : COLORS.black
+                      }}
                     >
                       <span className="font-medium">{getMutationLabel(mutation)}</span>
                     </button>
@@ -873,12 +894,15 @@ export default function MutatePage() {
   // Not connected
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Connect Wallet</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Please connect your wallet to access mutations.
-          </p>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+            <h1 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>Connect Wallet</h1>
+            <p style={{ color: COLORS.black }}>
+              Please connect your wallet to access mutations.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -887,8 +911,11 @@ export default function MutatePage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin h-12 w-12 border-4 border-t-transparent" style={{ borderColor: COLORS.red, borderTopColor: 'transparent' }}></div>
+        </div>
       </div>
     );
   }
@@ -896,31 +923,35 @@ export default function MutatePage() {
   // Not owner
   if (!isTokenOwner) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center p-8 bg-red-100 dark:bg-red-900/30 rounded-lg max-w-md">
-          <h1 className="text-2xl font-bold mb-4 text-red-800 dark:text-red-200">Access Denied</h1>
-          <p className="text-red-700 dark:text-red-300 mb-6">
-            You do not own Spatter #{tokenId}. Only the owner can access the mutation page.
-          </p>
-          <Link href="/my-spatters" className="text-blue-600 hover:underline">
-            ← Back to My Spatters
-          </Link>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center p-8 border-2 max-w-md" style={{ backgroundColor: COLORS.white, borderColor: COLORS.red }}>
+            <h1 className="text-2xl font-black mb-4" style={{ color: COLORS.red }}>Access Denied</h1>
+            <p className="mb-6" style={{ color: COLORS.black }}>
+              You do not own Spatter #{tokenId}. Only the owner can access the mutation page.
+            </p>
+            <Link href="/my-spatters" className="font-bold hover:opacity-70" style={{ color: COLORS.blue }}>
+              ← Back to My Spatters
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sticky top-0 z-10">
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+      <Navbar />
+      <header className="border-b-2 px-4 py-3 sticky top-[65px] z-10" style={{ backgroundColor: COLORS.background, borderColor: COLORS.black }}>
         <div className="flex justify-between items-center">
-          <Link href="/my-spatters" className="text-blue-600 hover:underline text-sm">
+          <Link href="/my-spatters" className="text-sm font-medium hover:opacity-70" style={{ color: COLORS.black }}>
             ← Back to My Spatters
           </Link>
-          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+          <h1 className="text-lg font-black" style={{ color: COLORS.black }}>
             Mutate Spatter #{tokenId}
           </h1>
-          <Link href={`/token/${tokenId}`} className="text-blue-600 hover:underline text-sm">
+          <Link href={`/token/${tokenId}`} className="text-sm font-medium hover:opacity-70" style={{ color: COLORS.blue }}>
             View Token →
           </Link>
         </div>
@@ -928,12 +959,15 @@ export default function MutatePage() {
 
       {/* Regeneration Status Banner */}
       {regenerationStatus !== 'idle' && (
-        <div className={`px-4 py-3 text-center ${
-          regenerationStatus === 'waiting' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' :
-          regenerationStatus === 'ready' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200' :
-          'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200'
-        }`}>
-          <div className="flex items-center justify-center gap-2">
+        <div 
+          className="px-4 py-3 text-center border-b-2"
+          style={{ 
+            backgroundColor: regenerationStatus === 'waiting' ? COLORS.yellow : regenerationStatus === 'ready' ? COLORS.green : COLORS.red,
+            borderColor: COLORS.black,
+            color: regenerationStatus === 'waiting' ? COLORS.black : COLORS.black
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 font-medium">
             {regenerationStatus === 'waiting' && (
               <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -948,7 +982,7 @@ export default function MutatePage() {
       )}
 
       <main className="flex flex-col xl:flex-row">
-        <div className="w-full xl:w-[1200px] xl:flex-shrink-0 bg-black">
+        <div className="w-full xl:w-[1200px] xl:flex-shrink-0" style={{ backgroundColor: COLORS.background }}>
           <iframe
             key={iframeKey}
             src={`${baseUrl}/api/token/${tokenId}?c=${contractAddress?.slice(-8) || ''}&v=${iframeKey}`}
@@ -959,48 +993,48 @@ export default function MutatePage() {
             }}
             title={`Spatter #${tokenId}`}
           />
-          <div className="bg-gray-900 text-center text-sm text-gray-400 py-2">
+          <div className="text-center text-sm py-2 border-t-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}>
             Click artwork to cycle through mutation history • Mutations: {mutationCount}
           </div>
         </div>
 
         <div 
           className="flex-1 p-4 xl:p-6 xl:overflow-y-auto space-y-4"
-          style={{ maxHeight: iframeHeight ? `${iframeHeight + 40}px` : undefined }}
+          style={{ maxHeight: iframeHeight ? `${iframeHeight + 40}px` : undefined, backgroundColor: COLORS.background }}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <h2 className="text-base font-semibold mb-3 text-gray-800 dark:text-gray-200">
+          <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+            <h2 className="text-base font-bold mb-3" style={{ color: COLORS.black }}>
               Next Mutation Dates
             </h2>
             <div className="space-y-2">
               {mutationDates.upcomingDates.length === 0 && (
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                <p className="text-sm" style={{ color: COLORS.black, opacity: 0.7 }}>
                   No eligible dates available.
                 </p>
               )}
               {mutationDates.upcomingDates.map((d, i) => (
-                <div key={i} className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
-                  <span className="font-medium text-blue-800 dark:text-blue-200 text-sm">
+                <div key={i} className="flex justify-between items-center p-2 border-2" style={{ backgroundColor: COLORS.background, borderColor: COLORS.blue }}>
+                  <span className="font-medium text-sm" style={{ color: COLORS.blue }}>
                     {formatMutationDate(d.date)}
                   </span>
-                  <span className="text-xs text-blue-600 dark:text-blue-400">{d.reason}</span>
+                  <span className="text-xs" style={{ color: COLORS.blue }}>{d.reason}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <h2 className="text-base font-semibold mb-3 text-gray-800 dark:text-gray-200">
+          <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+            <h2 className="text-base font-bold mb-3" style={{ color: COLORS.black }}>
               Mutations
             </h2>
             {(canMutateContract as boolean) ? (
               <div className="space-y-4">
-                <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3">
-                  <p className="text-green-800 dark:text-green-200 font-medium text-sm">
+                <div className="border-2 p-3" style={{ backgroundColor: COLORS.green, borderColor: COLORS.black }}>
+                  <p className="font-medium text-sm" style={{ color: COLORS.black }}>
                     ✓ Mutation Available Today!
                   </p>
                   {mutationDates.todayReason && (
-                    <p className="text-green-700 dark:text-green-300 text-xs">
+                    <p className="text-xs" style={{ color: COLORS.black }}>
                       Reason: {mutationDates.todayReason}
                     </p>
                   )}
@@ -1015,11 +1049,11 @@ export default function MutatePage() {
                 />
               </div>
             ) : (
-              <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
-                <p className="text-yellow-800 dark:text-yellow-200 font-medium text-sm">
+              <div className="border-2 p-3" style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black }}>
+                <p className="font-medium text-sm" style={{ color: COLORS.black }}>
                   Mutation Not Available Today
                 </p>
-                <p className="text-yellow-700 dark:text-yellow-300 text-xs">
+                <p className="text-xs" style={{ color: COLORS.black }}>
                   Check the schedule above for the next eligible date.
                 </p>
               </div>
@@ -1027,8 +1061,8 @@ export default function MutatePage() {
           </div>
 
           {Boolean(isContractOwner) && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border-2 border-purple-300 dark:border-purple-700">
-              <h2 className="text-base font-semibold mb-3 text-purple-800 dark:text-purple-200">
+            <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.red }}>
+              <h2 className="text-base font-bold mb-3" style={{ color: COLORS.red }}>
                 🔧 Owner Mutation (Testing)
               </h2>
               <MutationInterface
@@ -1043,18 +1077,18 @@ export default function MutatePage() {
             </div>
           )}
 
-          <details className="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-            <summary className="p-4 cursor-pointer text-base font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl">
+          <details className="border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+            <summary className="p-4 cursor-pointer text-base font-bold hover:opacity-70" style={{ color: COLORS.black }}>
               All Eligible Dates This Year ({mutationDates.allDatesThisYear.length})
             </summary>
             <div className="px-4 pb-4">
-              <div className="max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+              <div className="max-h-48 overflow-y-auto p-3 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
                 {mutationDates.allDatesThisYear.map((d, i) => (
-                  <div key={i} className="flex justify-between py-1 text-sm border-b border-gray-200 dark:border-gray-700 last:border-0">
-                    <span className="text-gray-600 dark:text-gray-400">
+                  <div key={i} className="flex justify-between py-1 text-sm border-b last:border-0" style={{ borderColor: COLORS.black }}>
+                    <span style={{ color: COLORS.black }}>
                       {d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span className="text-gray-800 dark:text-gray-200 text-xs">{d.reason}</span>
+                    <span className="text-xs" style={{ color: COLORS.black }}>{d.reason}</span>
                   </div>
                 ))}
               </div>

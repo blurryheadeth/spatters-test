@@ -7,10 +7,22 @@ import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { getRecentlyMutatedTokenIds, clearAllMutationRecords } from '@/lib/mutation-tracker';
+import Navbar from '@/components/Navbar';
 
 const contractAbi = SpattersABI.abi as Abi;
 
 const TOKENS_PER_PAGE = 24;
+
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
 
 export default function CollectionPage() {
   const [searchId, setSearchId] = useState('');
@@ -140,10 +152,16 @@ export default function CollectionPage() {
 
   if (isLoadingSupply) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#EBE5D9' }}>
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-t-transparent mx-auto mb-4" style={{ borderColor: '#fc1a4a', borderTopColor: 'transparent' }}></div>
-          <p style={{ color: '#000000' }}>Loading collection...</p>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div 
+              className="animate-spin h-12 w-12 border-4 border-t-transparent mx-auto mb-4" 
+              style={{ borderColor: COLORS.red, borderTopColor: 'transparent' }}
+            ></div>
+            <p style={{ color: COLORS.black }}>Loading collection...</p>
+          </div>
         </div>
       </div>
     );
@@ -151,23 +169,28 @@ export default function CollectionPage() {
 
   if (supply === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#EBE5D9' }}>
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4" style={{ color: '#000000' }}>No Tokens Yet</h1>
-          <p className="mb-6" style={{ color: '#000000' }}>The collection is empty. Be the first to mint!</p>
-          <Link href="/" className="font-bold hover:opacity-70" style={{ color: '#2587c3' }}>
-            ← Go to Mint
-          </Link>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <h1 className="text-4xl font-black mb-4" style={{ color: COLORS.black }}>No Tokens Yet</h1>
+            <p className="mb-6" style={{ color: COLORS.black }}>The collection is empty. Be the first to mint!</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8" style={{ backgroundColor: '#EBE5D9' }}>
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+      <Navbar />
+
       {/* Recently Mutated Banner */}
       {recentlyMutated.length > 0 && (
-        <div className="px-4 py-3 text-center mb-4 border-2" style={{ backgroundColor: '#75d494', borderColor: '#000000', color: '#000000' }}>
+        <div 
+          className="px-4 py-3 text-center border-b-2" 
+          style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
+        >
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <span className="font-medium">
               🎨 Token{recentlyMutated.length > 1 ? 's' : ''} {recentlyMutated.join(', ')} {recentlyMutated.length > 1 ? 'were' : 'was'} recently mutated!
@@ -175,7 +198,7 @@ export default function CollectionPage() {
             <button
               onClick={handleRefreshThumbnails}
               className="px-4 py-1 text-sm font-bold border-2 hover:opacity-70 transition-opacity"
-              style={{ backgroundColor: '#000000', borderColor: '#000000', color: '#FFFFFF' }}
+              style={{ backgroundColor: COLORS.black, borderColor: COLORS.black, color: COLORS.white }}
             >
               Refresh Thumbnails
             </button>
@@ -183,15 +206,15 @@ export default function CollectionPage() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-black" style={{ color: '#000000' }}>
+              <h1 className="text-3xl font-black" style={{ color: COLORS.black }}>
                 Spatters Collection
               </h1>
-              <p className="mt-1" style={{ color: '#000000' }}>
+              <p className="mt-1" style={{ color: COLORS.black }}>
                 {supply} tokens minted
               </p>
             </div>
@@ -201,7 +224,7 @@ export default function CollectionPage() {
               <button
                 onClick={handleRefreshThumbnails}
                 className="px-3 py-2 text-sm font-medium border-2 hover:opacity-70 transition-opacity"
-                style={{ backgroundColor: '#EBE5D9', borderColor: '#000000', color: '#000000' }}
+                style={{ backgroundColor: COLORS.background, borderColor: COLORS.black, color: COLORS.black }}
                 title="Refresh all thumbnails (force reload)"
               >
                 ↻ Refresh
@@ -215,40 +238,16 @@ export default function CollectionPage() {
                   min="1"
                   max={supply}
                   className="px-4 py-2 border-2 w-40"
-                  style={{ backgroundColor: '#FFFFFF', borderColor: '#000000', color: '#000000' }}
+                  style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
                 />
                 <button
                   type="submit"
                   className="px-4 py-2 font-bold border-2 hover:opacity-70 transition-opacity"
-                  style={{ backgroundColor: '#2587c3', borderColor: '#000000', color: '#FFFFFF' }}
+                  style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black, color: COLORS.white }}
                 >
                   Go
                 </button>
               </form>
-            </div>
-          </div>
-
-          {/* Contract Info */}
-          <div className="mt-4 p-4 border-2" style={{ backgroundColor: '#FFFFFF', borderColor: '#000000' }}>
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div>
-                <span style={{ color: '#000000' }}>Contract: </span>
-                <a
-                  href={`${etherscanBase}/address/${contractAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:opacity-70 font-mono"
-                  style={{ color: '#2587c3' }}
-                >
-                  {formatAddress(contractAddress)}
-                </a>
-              </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400">Network: </span>
-                <span className="text-gray-700 dark:text-gray-300">
-                  {chainId === 1 ? 'Ethereum Mainnet' : 'Sepolia Testnet'}
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -258,11 +257,12 @@ export default function CollectionPage() {
           {filteredTokens.map((tokenId) => (
             <div
               key={tokenId}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow"
+              className="border-2 overflow-hidden hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}
             >
               {/* Thumbnail - PNG from storage */}
               <Link href={`/token/${tokenId}`}>
-                <div className="aspect-[2/1] cursor-pointer overflow-hidden bg-gray-100 dark:bg-gray-700">
+                <div className="aspect-[4/3] cursor-pointer overflow-hidden" style={{ backgroundColor: COLORS.background }}>
                   <img
                     src={`${baseUrl}/api/image/${tokenId}?m=${mutationCounts[tokenId] ?? 0}&c=${contractAddress?.slice(-8) || ''}${imageVersion > 0 ? `&v=${imageVersion}` : ''}`}
                     alt={`Spatter #${tokenId}`}
@@ -273,10 +273,10 @@ export default function CollectionPage() {
               </Link>
 
               {/* Token Info */}
-              <div className="p-3">
+              <div className="p-3 border-t-2" style={{ borderColor: COLORS.black }}>
                 <div className="flex justify-between items-start">
                   <Link href={`/token/${tokenId}`}>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 hover:text-blue-600">
+                    <h3 className="font-bold hover:opacity-70" style={{ color: COLORS.black }}>
                       #{tokenId}
                     </h3>
                   </Link>
@@ -284,7 +284,8 @@ export default function CollectionPage() {
                     href={`${etherscanBase}/nft/${contractAddress}/${tokenId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs font-bold hover:opacity-70"
+                    style={{ color: COLORS.blue }}
                   >
                     ↗
                   </a>
@@ -295,7 +296,8 @@ export default function CollectionPage() {
                     href={`${etherscanBase}/address/${owners[tokenId]}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 font-mono"
+                    className="text-xs hover:opacity-70 font-mono"
+                    style={{ color: COLORS.black, opacity: 0.7 }}
                   >
                     {formatAddress(owners[tokenId])}
                   </a>
@@ -307,37 +309,31 @@ export default function CollectionPage() {
 
         {/* Pagination */}
         {totalPages > 1 && !searchId && (
-          <div className="mt-8 flex justify-center gap-2">
+          <div className="mt-8 flex justify-center gap-2 items-center">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="px-4 py-2 font-bold border-2 hover:opacity-70 transition-opacity disabled:opacity-30"
+              style={{ backgroundColor: COLORS.background, borderColor: COLORS.black, color: COLORS.black }}
             >
               ← Previous
             </button>
             
-            <span className="px-4 py-2 text-gray-600 dark:text-gray-400">
+            <span className="px-4 py-2 font-medium" style={{ color: COLORS.black }}>
               Page {currentPage} of {totalPages}
             </span>
             
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="px-4 py-2 font-bold border-2 hover:opacity-70 transition-opacity disabled:opacity-30"
+              style={{ backgroundColor: COLORS.background, borderColor: COLORS.black, color: COLORS.black }}
             >
               Next →
             </button>
           </div>
         )}
-
-        {/* Back to Home */}
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-blue-600 hover:underline">
-            ← Back to Mint
-          </Link>
-        </div>
       </div>
     </div>
   );
 }
-

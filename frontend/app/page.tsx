@@ -3,9 +3,10 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useState } from 'react';
-import Link from 'next/link';
 import PublicMint from '@/components/PublicMint';
 import OwnerMint from '@/components/OwnerMint';
+import Navbar from '@/components/Navbar';
+import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
 
 // Spatters color palette
 const COLORS = {
@@ -23,11 +24,11 @@ function SpattersTitle({ className = '' }: { className?: string }) {
   return (
     <span className={className}>
       <span style={{ color: COLORS.red }}>S</span>
-      <span style={{ color: COLORS.black }}>p</span>
+      <span style={{ color: COLORS.green }}>p</span>
       <span style={{ color: COLORS.blue }}>a</span>
       <span style={{ color: COLORS.yellow }}>t</span>
       <span style={{ color: COLORS.yellow }}>t</span>
-      <span style={{ color: COLORS.white, textShadow: '0 0 2px #000' }}>e</span>
+      <span style={{ color: COLORS.blue }}>e</span>
       <span style={{ color: COLORS.green }}>r</span>
       <span style={{ color: COLORS.red }}>s</span>
     </span>
@@ -35,47 +36,18 @@ function SpattersTitle({ className = '' }: { className?: string }) {
 }
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const [activeTab, setActiveTab] = useState<'public' | 'owner'>('public');
+  
+  // Get contract address for the current chain (default to Sepolia)
+  const currentChainId = chainId || 11155111;
+  const contractAddress = getContractAddress(currentChainId);
+  const etherscanBase = getEtherscanBaseUrl(currentChainId);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
-      {/* Header / Navbar */}
-      <header className="border-b-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            {/* Left: Navigation Links */}
-            <div className="flex items-center gap-6">
-              <Link 
-                href="/" 
-                className="font-bold text-lg hover:opacity-70 transition-opacity"
-                style={{ color: COLORS.black }}
-              >
-                Home
-              </Link>
-              <Link 
-                href="/collection" 
-                className="font-bold text-lg hover:opacity-70 transition-opacity"
-                style={{ color: COLORS.black }}
-              >
-                Collection
-              </Link>
-              {isConnected && (
-                <Link 
-                  href="/my-spatters" 
-                  className="font-bold text-lg hover:opacity-70 transition-opacity"
-                  style={{ color: COLORS.black }}
-                >
-                  My Spatters
-                </Link>
-              )}
-            </div>
-            
-            {/* Right: Wallet Connect */}
-            <ConnectButton />
-          </div>
-        </div>
-      </header>
+      {/* Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <section className="py-16" style={{ backgroundColor: COLORS.background }}>
@@ -277,6 +249,60 @@ export default function Home() {
                   Confirm your choice and your Spatter NFT is minted to your wallet.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* On-Chain Architecture */}
+      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
+        <div className="container mx-auto px-4 max-w-4xl">
+          <h3 className="text-3xl font-black text-center mb-8" style={{ color: COLORS.black }}>
+            100% On-Chain
+          </h3>
+          <div 
+            className="border-2 p-6"
+            style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+          >
+            <p className="mb-4" style={{ color: COLORS.black }}>
+              Spatters is a fully on-chain generative art project. Every component needed to render the artwork 
+              is stored permanently on the Ethereum blockchain:
+            </p>
+            <ul className="list-disc pl-6 mb-6 space-y-2" style={{ color: COLORS.black }}>
+              <li>
+                <strong>Spatters Contract:</strong> Stores all token data including mint seeds, mutations, and custom palettes
+              </li>
+              <li>
+                <strong>Generator Contract:</strong> Contains the custom rendering logic (spatters.js) split across multiple storage chunks
+              </li>
+              <li>
+                <strong>p5.js Dependency:</strong> We use the p5.js library (v1.0.0) deployed on-chain by{' '}
+                <a 
+                  href="https://artblocks.io" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="font-semibold hover:opacity-70"
+                  style={{ color: COLORS.blue }}
+                >
+                  Art Blocks
+                </a>
+                {' '}via their DependencyRegistry contract on Ethereum mainnet
+              </li>
+              <li>
+                <strong>HTML Template:</strong> A minimal viewer template stored on-chain that assembles all components client-side
+              </li>
+            </ul>
+            <div className="text-center pt-4 border-t-2" style={{ borderColor: COLORS.black }}>
+              <p className="text-sm mb-2" style={{ color: COLORS.black }}>Contract Address:</p>
+              <a
+                href={`${etherscanBase}/address/${contractAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-lg font-bold hover:opacity-70 transition-opacity break-all"
+                style={{ color: COLORS.blue }}
+              >
+                {contractAddress}
+              </a>
             </div>
           </div>
         </div>

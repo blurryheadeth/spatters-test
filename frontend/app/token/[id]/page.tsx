@@ -8,8 +8,20 @@ import { Abi } from 'viem';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 import { wasTokenRecentlyMutated, clearMutationRecord } from '@/lib/mutation-tracker';
+import Navbar from '@/components/Navbar';
 
 const contractAbi = SpattersABI.abi as Abi;
+
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
 
 export default function TokenPage() {
   const params = useParams();
@@ -152,10 +164,16 @@ export default function TokenPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading token #{tokenId}...</p>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div 
+              className="animate-spin h-12 w-12 border-4 border-t-transparent mx-auto mb-4"
+              style={{ borderColor: COLORS.red, borderTopColor: 'transparent' }}
+            ></div>
+            <p style={{ color: COLORS.black }}>Loading token #{tokenId}...</p>
+          </div>
         </div>
       </div>
     );
@@ -163,37 +181,61 @@ export default function TokenPage() {
 
   if (!isValidToken) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">Token Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">Token #{tokenId} does not exist yet.</p>
-          <Link href="/collection" className="text-blue-600 hover:underline">
-            ← View Collection
-          </Link>
+      <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <h1 className="text-4xl font-black mb-4" style={{ color: COLORS.black }}>Token Not Found</h1>
+            <p className="mb-6" style={{ color: COLORS.black }}>Token #{tokenId} does not exist yet.</p>
+            <Link 
+              href="/collection" 
+              className="font-bold hover:opacity-70"
+              style={{ color: COLORS.blue }}
+            >
+              ← View Collection
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+      <Navbar />
+
+      {/* Token Navigation */}
+      <div 
+        className="border-b-2 px-4 py-3"
+        style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}
+      >
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/collection" className="text-blue-600 hover:underline">
+          <Link 
+            href="/collection" 
+            className="font-medium hover:opacity-70"
+            style={{ color: COLORS.black }}
+          >
             ← Back to Collection
           </Link>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+          <h1 className="text-xl font-black" style={{ color: COLORS.black }}>
             Spatter #{tokenId}
           </h1>
           <div className="flex gap-4">
             {Number(tokenId) > 1 && (
-              <Link href={`/token/${Number(tokenId) - 1}`} className="text-blue-600 hover:underline">
+              <Link 
+                href={`/token/${Number(tokenId) - 1}`} 
+                className="font-medium hover:opacity-70"
+                style={{ color: COLORS.blue }}
+              >
                 ← Prev
               </Link>
             )}
             {totalSupply && Number(tokenId) < Number(totalSupply) && (
-              <Link href={`/token/${Number(tokenId) + 1}`} className="text-blue-600 hover:underline">
+              <Link 
+                href={`/token/${Number(tokenId) + 1}`} 
+                className="font-medium hover:opacity-70"
+                style={{ color: COLORS.blue }}
+              >
                 Next →
               </Link>
             )}
@@ -203,9 +245,12 @@ export default function TokenPage() {
 
       {/* Update Available Banner - shows for recent mutations, detected changes, or stale cache */}
       {(showUpdateBanner || showRecentMutationBanner || showStaleCacheBanner) && (
-        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center">
+        <div 
+          className="px-4 py-3 text-center border-b-2"
+          style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
+        >
           <div className="flex items-center justify-center gap-3">
-            <span>
+            <span className="font-medium">
               🎨 {showStaleCacheBanner 
                 ? `Artwork has been updated! (${currentMutationCount} mutation${currentMutationCount !== 1 ? 's' : ''} on-chain, cached version has ${cachedMutationCount})`
                 : showRecentMutationBanner 
@@ -215,7 +260,8 @@ export default function TokenPage() {
             </span>
             <button
               onClick={handleRefresh}
-              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-1 text-sm font-bold border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.black, borderColor: COLORS.black, color: COLORS.white }}
             >
               Refresh Artwork
             </button>
@@ -224,12 +270,15 @@ export default function TokenPage() {
       )}
 
       {/* Centered Artwork Display - Full height based on actual canvas */}
-      <div className="w-full bg-gray-100 dark:bg-gray-950 flex justify-center py-4">
+      <div className="w-full flex justify-center py-4" style={{ backgroundColor: COLORS.background }}>
         {!mutationsLoaded ? (
           <div className="flex items-center justify-center" style={{ width: '100%', maxWidth: '1200px', minHeight: '400px' }}>
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Loading artwork...</p>
+              <div 
+                className="animate-spin h-8 w-8 border-4 border-t-transparent mx-auto mb-2"
+                style={{ borderColor: COLORS.red, borderTopColor: 'transparent' }}
+              ></div>
+              <p className="text-sm" style={{ color: COLORS.black }}>Loading artwork...</p>
             </div>
           </div>
         ) : (
@@ -240,7 +289,7 @@ export default function TokenPage() {
             style={{ 
               width: '100%',
               maxWidth: '1200px',
-              height: iframeHeight ? `${iframeHeight}px` : 'calc(100vh - 180px)',
+              height: iframeHeight ? `${iframeHeight}px` : 'calc(100vh - 240px)',
               minHeight: '400px',
             }}
             title={`Spatter #${tokenId}`}
@@ -249,18 +298,22 @@ export default function TokenPage() {
       </div>
 
       {/* Compact Info Bar */}
-      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4">
+      <div 
+        className="border-t-2 px-4 py-4"
+        style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap gap-6 items-center justify-between">
             {/* Owner */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Owner:</span>
+              <span className="text-sm" style={{ color: COLORS.black }}>Owner:</span>
               {typeof ownerAddress === 'string' && (
                 <a
                   href={`${etherscanBase}/address/${ownerAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-mono text-sm"
+                  className="hover:opacity-70 font-mono text-sm"
+                  style={{ color: COLORS.blue }}
                 >
                   {formatAddress(ownerAddress)}
                 </a>
@@ -273,28 +326,22 @@ export default function TokenPage() {
                 href={`${etherscanBase}/nft/${contractAddress}/${tokenId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+                className="hover:opacity-70 font-medium"
+                style={{ color: COLORS.blue }}
               >
                 Etherscan →
-              </a>
-              <a
-                href={`${baseUrl}/api/metadata/${tokenId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                Metadata →
               </a>
             </div>
 
             {/* Mutation count */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm" style={{ color: COLORS.black }}>
                 Mutations: {currentMutationCount}
               </span>
               <button
                 onClick={handleRefresh}
-                className="text-xs text-blue-600 hover:text-blue-800 dark:hover:text-blue-400"
+                className="text-xs font-medium hover:opacity-70"
+                style={{ color: COLORS.blue }}
                 title="Force refresh artwork"
               >
                 ↻ Refresh
@@ -302,7 +349,7 @@ export default function TokenPage() {
             </div>
 
             {/* Interaction hint */}
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm" style={{ color: COLORS.black, opacity: 0.7 }}>
               💡 Click artwork to cycle through mutations
             </span>
           </div>
@@ -311,4 +358,3 @@ export default function TokenPage() {
     </div>
   );
 }
-
