@@ -140,10 +140,10 @@ export default function CollectionPage() {
 
   if (isLoadingSupply) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#EBE5D9' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading collection...</p>
+          <div className="animate-spin h-12 w-12 border-4 border-t-transparent mx-auto mb-4" style={{ borderColor: '#fc1a4a', borderTopColor: 'transparent' }}></div>
+          <p style={{ color: '#000000' }}>Loading collection...</p>
         </div>
       </div>
     );
@@ -151,11 +151,11 @@ export default function CollectionPage() {
 
   if (supply === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#EBE5D9' }}>
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">No Tokens Yet</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">The collection is empty. Be the first to mint!</p>
-          <Link href="/" className="text-blue-600 hover:underline">
+          <h1 className="text-4xl font-bold mb-4" style={{ color: '#000000' }}>No Tokens Yet</h1>
+          <p className="mb-6" style={{ color: '#000000' }}>The collection is empty. Be the first to mint!</p>
+          <Link href="/" className="font-bold hover:opacity-70" style={{ color: '#2587c3' }}>
             ← Go to Mint
           </Link>
         </div>
@@ -164,17 +164,18 @@ export default function CollectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen py-8" style={{ backgroundColor: '#EBE5D9' }}>
       {/* Recently Mutated Banner */}
       {recentlyMutated.length > 0 && (
-        <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-4 py-3 text-center mb-4">
+        <div className="px-4 py-3 text-center mb-4 border-2" style={{ backgroundColor: '#75d494', borderColor: '#000000', color: '#000000' }}>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <span>
+            <span className="font-medium">
               🎨 Token{recentlyMutated.length > 1 ? 's' : ''} {recentlyMutated.join(', ')} {recentlyMutated.length > 1 ? 'were' : 'was'} recently mutated!
             </span>
             <button
               onClick={handleRefreshThumbnails}
-              className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-1 text-sm font-bold border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: '#000000', borderColor: '#000000', color: '#FFFFFF' }}
             >
               Refresh Thumbnails
             </button>
@@ -187,10 +188,10 @@ export default function CollectionPage() {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+              <h1 className="text-3xl font-black" style={{ color: '#000000' }}>
                 Spatters Collection
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="mt-1" style={{ color: '#000000' }}>
                 {supply} tokens minted
               </p>
             </div>
@@ -199,7 +200,8 @@ export default function CollectionPage() {
             <div className="flex gap-4 items-center">
               <button
                 onClick={handleRefreshThumbnails}
-                className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-600 dark:hover:border-blue-400 transition-colors"
+                className="px-3 py-2 text-sm font-medium border-2 hover:opacity-70 transition-opacity"
+                style={{ backgroundColor: '#EBE5D9', borderColor: '#000000', color: '#000000' }}
                 title="Refresh all thumbnails (force reload)"
               >
                 ↻ Refresh
@@ -212,11 +214,13 @@ export default function CollectionPage() {
                   placeholder="Search by ID..."
                   min="1"
                   max={supply}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-40"
+                  className="px-4 py-2 border-2 w-40"
+                  style={{ backgroundColor: '#FFFFFF', borderColor: '#000000', color: '#000000' }}
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 font-bold border-2 hover:opacity-70 transition-opacity"
+                  style={{ backgroundColor: '#2587c3', borderColor: '#000000', color: '#FFFFFF' }}
                 >
                   Go
                 </button>
@@ -225,15 +229,16 @@ export default function CollectionPage() {
           </div>
 
           {/* Contract Info */}
-          <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="mt-4 p-4 border-2" style={{ backgroundColor: '#FFFFFF', borderColor: '#000000' }}>
             <div className="flex flex-wrap gap-6 text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Contract: </span>
+                <span style={{ color: '#000000' }}>Contract: </span>
                 <a
                   href={`${etherscanBase}/address/${contractAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-mono"
+                  className="hover:opacity-70 font-mono"
+                  style={{ color: '#2587c3' }}
                 >
                   {formatAddress(contractAddress)}
                 </a>

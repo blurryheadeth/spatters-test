@@ -18,6 +18,9 @@ export default function PublicMint() {
   // Dynamic iframe heights based on canvas dimensions from postMessage
   const [iframeHeights, setIframeHeights] = useState<{ [key: string]: number }>({});
   
+  // Confirmation modal for 55-minute warning
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  
   const contractAddress = chainId ? getContractAddress(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
@@ -394,13 +397,23 @@ export default function PublicMint() {
   // Show preview selection (3 options stacked)
   if (previewSeeds.length === 3) {
     return (
-      <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col">
+      <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#EBE5D9' }}>
+        {/* URGENT Warning Banner */}
+        <div 
+          className="flex-shrink-0 py-3 px-4 text-center font-bold border-b-2"
+          style={{ backgroundColor: '#fc1a4a', color: '#FFFFFF', borderColor: '#000000' }}
+        >
+          ⚠️ WARNING: You have 55 minutes to select an option. If you do not choose, 
+          your mint will be cancelled and the minting fee is NOT refundable. ⚠️
+        </div>
+
         {/* Sticky Header with Navigation */}
-        <div className="flex-shrink-0 bg-gray-800 border-b border-gray-700 px-4 py-3 sticky top-0 z-10">
+        <div className="flex-shrink-0 border-b-2 px-4 py-3 sticky top-0 z-10" style={{ backgroundColor: '#EBE5D9', borderColor: '#000000' }}>
           <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <button
               onClick={resetForm}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="font-medium hover:opacity-70 transition-opacity"
+              style={{ color: '#000000' }}
             >
               ← Cancel
             </button>
@@ -564,15 +577,74 @@ export default function PublicMint() {
         )}
 
         <button
-          onClick={handleRequestMint}
+          onClick={() => setShowConfirmModal(true)}
           disabled={isRequestPending || isRequestConfirming || !mintPrice}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+          className="w-full font-bold py-3 px-6 transition-colors border-2"
+          style={{ 
+            backgroundColor: '#fc1a4a', 
+            borderColor: '#000000',
+            color: '#FFFFFF',
+            opacity: (isRequestPending || isRequestConfirming || !mintPrice) ? 0.5 : 1,
+          }}
         >
           {isRequestPending || isRequestConfirming 
             ? 'Generating Options...' 
             : `Generate 3 Options (${mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH)`}
         </button>
       </div>
+
+      {/* Confirmation Modal for 55-minute warning */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div 
+            className="max-w-lg w-full p-6 border-2"
+            style={{ backgroundColor: '#FFFFFF', borderColor: '#000000' }}
+          >
+            <h3 className="text-2xl font-bold mb-4 text-center" style={{ color: '#fc1a4a' }}>
+              ⚠️ Important Warning
+            </h3>
+            <div className="space-y-4 mb-6">
+              <p style={{ color: '#000000' }}>
+                You are about to pay <strong>{mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH</strong> to request 3 preview options. Please understand:
+              </p>
+              <ul className="list-disc pl-6 space-y-2" style={{ color: '#000000' }}>
+                <li>
+                  <strong>You will have exactly 55 minutes</strong> to select one of the 3 options.
+                </li>
+                <li>
+                  If you <strong>do not select an option</strong> within this time, 
+                  your mint request will be <strong>automatically cancelled</strong>.
+                </li>
+                <li style={{ color: '#fc1a4a' }}>
+                  <strong>Your minting fee ({mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH) is NOT refundable</strong> if you fail to complete the selection in time.
+                </li>
+              </ul>
+              <p className="font-semibold" style={{ color: '#000000' }}>
+                Make sure you have time to review and select an option before proceeding.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 px-6 font-bold border-2 transition-opacity hover:opacity-70"
+                style={{ backgroundColor: '#EBE5D9', borderColor: '#000000', color: '#000000' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  handleRequestMint();
+                }}
+                className="flex-1 py-3 px-6 font-bold border-2 transition-opacity hover:opacity-70"
+                style={{ backgroundColor: '#fc1a4a', borderColor: '#000000', color: '#FFFFFF' }}
+              >
+                I Understand, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

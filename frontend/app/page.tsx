@@ -6,75 +6,99 @@ import { useState } from 'react';
 import Link from 'next/link';
 import PublicMint from '@/components/PublicMint';
 import OwnerMint from '@/components/OwnerMint';
-import { COLLECTION_CONFIG } from '@/lib/config';
+
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
+
+// Styled "Spatters" title with each letter colored
+function SpattersTitle({ className = '' }: { className?: string }) {
+  return (
+    <span className={className}>
+      <span style={{ color: COLORS.red }}>S</span>
+      <span style={{ color: COLORS.black }}>p</span>
+      <span style={{ color: COLORS.blue }}>a</span>
+      <span style={{ color: COLORS.yellow }}>t</span>
+      <span style={{ color: COLORS.yellow }}>t</span>
+      <span style={{ color: COLORS.white, textShadow: '0 0 2px #000' }}>e</span>
+      <span style={{ color: COLORS.green }}>r</span>
+      <span style={{ color: COLORS.red }}>s</span>
+    </span>
+  );
+}
 
 export default function Home() {
   const { isConnected } = useAccount();
   const [activeTab, setActiveTab] = useState<'public' | 'owner'>('public');
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black">
-        <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
+      {/* Header / Navbar */}
+      <header className="border-b-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
+        <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-                Spatters
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Fully On-Chain Seed-Based Generative Art
-              </p>
-            </div>
+            {/* Left: Navigation Links */}
             <div className="flex items-center gap-6">
               <Link 
+                href="/" 
+                className="font-bold text-lg hover:opacity-70 transition-opacity"
+                style={{ color: COLORS.black }}
+              >
+                Home
+              </Link>
+              <Link 
                 href="/collection" 
-                className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
+                className="font-bold text-lg hover:opacity-70 transition-opacity"
+                style={{ color: COLORS.black }}
               >
                 Collection
               </Link>
               {isConnected && (
                 <Link 
                   href="/my-spatters" 
-                  className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 font-medium transition-colors"
+                  className="font-bold text-lg hover:opacity-70 transition-opacity"
+                  style={{ color: COLORS.black }}
                 >
                   My Spatters
                 </Link>
               )}
-              <ConnectButton />
             </div>
+            
+            {/* Right: Wallet Connect */}
+            <ConnectButton />
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-b from-purple-50 to-white dark:from-purple-950/20 dark:to-black">
+      <section className="py-16" style={{ backgroundColor: COLORS.background }}>
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-5xl md:text-6xl font-bold mb-6">
-            Fully On-Chain
-            <br />
-            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              Generative Art
-            </span>
-          </h2>
-          <p className="text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            {COLLECTION_CONFIG.maxSupply} unique NFTs with deterministic generation from on-chain seeds.
-            All code stored on Ethereum. Zero external dependencies.
+          <h1 className="text-7xl md:text-8xl font-black mb-6 tracking-tight">
+            <SpattersTitle />
+          </h1>
+          <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: COLORS.black }}>
+            Up to 999 pieces of generative art that evolve along with their collectors. 
+            All code stored on Ethereum. Zero off-chain dependencies.
           </p>
-          <div className="flex gap-8 justify-center text-sm">
-            <div>
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                {COLLECTION_CONFIG.maxSupply}
-              </div>
-              <div className="text-gray-600 dark:text-gray-400">Total Supply</div>
+          <div className="flex gap-8 md:gap-12 justify-center flex-wrap">
+            <div className="text-center">
+              <div className="text-4xl font-black" style={{ color: COLORS.red }}>999</div>
+              <div className="text-sm font-medium" style={{ color: COLORS.black }}>Max Supply</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-pink-600 dark:text-pink-400">0.01 ETH</div>
-              <div className="text-gray-600 dark:text-gray-400">Starting Price</div>
+            <div className="text-center">
+              <div className="text-4xl font-black" style={{ color: COLORS.blue }}>0.01 ETH</div>
+              <div className="text-sm font-medium" style={{ color: COLORS.black }}>Starting Price</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-red-600 dark:text-red-400">100 ETH</div>
-              <div className="text-gray-600 dark:text-gray-400">Final Price</div>
+            <div className="text-center">
+              <div className="text-4xl font-black" style={{ color: COLORS.green }}>100 ETH</div>
+              <div className="text-sm font-medium" style={{ color: COLORS.black }}>Final Price</div>
             </div>
           </div>
         </div>
@@ -82,27 +106,27 @@ export default function Home() {
 
       {/* Mint Section */}
       {isConnected ? (
-        <section className="py-12">
+        <section className="py-8" style={{ backgroundColor: COLORS.background }}>
           <div className="container mx-auto px-4 max-w-5xl">
             {/* Tabs */}
-            <div className="flex space-x-4 mb-8 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
               <button
                 onClick={() => setActiveTab('public')}
-                className={`pb-4 px-6 font-semibold transition-colors ${
-                  activeTab === 'public'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
+                className="pb-3 px-6 font-bold transition-all"
+                style={{
+                  borderBottom: activeTab === 'public' ? `3px solid ${COLORS.red}` : '3px solid transparent',
+                  color: activeTab === 'public' ? COLORS.red : COLORS.black,
+                }}
               >
                 Public Mint
               </button>
               <button
                 onClick={() => setActiveTab('owner')}
-                className={`pb-4 px-6 font-semibold transition-colors ${
-                  activeTab === 'owner'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
+                className="pb-3 px-6 font-bold transition-all"
+                style={{
+                  borderBottom: activeTab === 'owner' ? `3px solid ${COLORS.blue}` : '3px solid transparent',
+                  color: activeTab === 'owner' ? COLORS.blue : COLORS.black,
+                }}
               >
                 Owner Mint
               </button>
@@ -113,12 +137,17 @@ export default function Home() {
           </div>
         </section>
       ) : (
-        <section className="py-20">
+        <section className="py-16" style={{ backgroundColor: COLORS.background }}>
           <div className="container mx-auto px-4 text-center">
-            <div className="max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 shadow-lg">
-              <h3 className="text-2xl font-bold mb-4">Connect Your Wallet</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Connect your wallet to start minting Spatters NFTs
+            <div 
+              className="max-w-md mx-auto border-2 p-8"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.black }}>
+                Connect Your Wallet
+              </h3>
+              <p className="mb-6" style={{ color: COLORS.black }}>
+                Connect your wallet to start minting Spatters
               </p>
               <div className="flex justify-center">
                 <ConnectButton />
@@ -129,29 +158,51 @@ export default function Home() {
       )}
 
       {/* Features */}
-      <section className="py-20 border-t border-gray-200 dark:border-gray-800">
+      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center mb-12">Features</h3>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg">
+          <h3 className="text-3xl font-black text-center mb-12" style={{ color: COLORS.black }}>
+            Features
+          </h3>
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Seed-Based Generation */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
               <div className="text-4xl mb-4">🎨</div>
-              <h4 className="text-xl font-bold mb-2">Seed-Based Generation</h4>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Seed-Based Generation
+              </h4>
+              <p style={{ color: COLORS.black }}>
                 Each NFT generated from on-chain seeds using p5.js. Choose from 3 previews before minting.
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg">
+
+            {/* Time-Based Mutations */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
               <div className="text-4xl mb-4">🔄</div>
-              <h4 className="text-xl font-bold mb-2">Time-Based Mutations</h4>
-              <p className="text-gray-600 dark:text-gray-400">
-                92 mutation types available on specific dates: anniversaries, equinoxes, and solstices.
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Time-Based Mutations
+              </h4>
+              <p style={{ color: COLORS.black }}>
+                94 mutation types available on milestone anniversaries (tokens #1, #100, #500, #750, #999) and each token&apos;s own minting anniversary.
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg">
-              <div className="text-4xl mb-4">🎨</div>
-              <h4 className="text-xl font-bold mb-2">Custom Palettes</h4>
-              <p className="text-gray-600 dark:text-gray-400">
-                First 30 tokens can be minted by owner with optional custom 6-color palettes.
+
+            {/* Interactive History */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <div className="text-4xl mb-4">🖱️</div>
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Interactive History
+              </h4>
+              <p style={{ color: COLORS.black }}>
+                Click any artwork to cycle through its full journey—from mint to every mutation. The art is the complete sequence, not just the final frame.
               </p>
             </div>
           </div>
@@ -159,40 +210,71 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-gray-100 dark:bg-gray-800/50">
+      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}>
         <div className="container mx-auto px-4 max-w-4xl">
-          <h3 className="text-3xl font-bold text-center mb-12">How It Works</h3>
+          <h3 className="text-3xl font-black text-center mb-12" style={{ color: COLORS.black }}>
+            How It Works
+          </h3>
           <div className="space-y-8">
+            {/* Step 1 */}
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+              <div 
+                className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
+                style={{ backgroundColor: COLORS.red, color: COLORS.white }}
+              >
                 1
               </div>
               <div>
-                <h4 className="text-xl font-bold mb-2">Request Mint</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Pay the mint price and request 3 unique seeds from the contract
+                <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                  Request Mint
+                </h4>
+                <p style={{ color: COLORS.black }}>
+                  Pay the mint price and request 3 unique seeds from the contract. 
+                  <span className="font-semibold"> Each token costs 1% more than the previous one</span>, 
+                  starting at 0.01 ETH and ending at ~100 ETH for token #999.
                 </p>
               </div>
             </div>
+
+            {/* Step 2 */}
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+              <div 
+                className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
+                style={{ backgroundColor: COLORS.blue, color: COLORS.white }}
+              >
                 2
               </div>
               <div>
-                <h4 className="text-xl font-bold mb-2">Preview & Choose</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  View 3 generated artworks and select your favorite
+                <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                  Preview & Choose
+                </h4>
+                <p style={{ color: COLORS.black }}>
+                  View 3 generated artworks and select your favorite.
                 </p>
+                <div 
+                  className="mt-3 p-3 border-2 font-semibold"
+                  style={{ borderColor: COLORS.red, backgroundColor: '#fff0f0', color: COLORS.red }}
+                >
+                  ⚠️ You have 55 minutes to choose. If no option is selected, 
+                  the mint is cancelled and the minting fee is <strong>NOT refundable</strong>.
+                </div>
               </div>
             </div>
+
+            {/* Step 3 */}
             <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+              <div 
+                className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
+                style={{ backgroundColor: COLORS.green, color: COLORS.white }}
+              >
                 3
               </div>
               <div>
-                <h4 className="text-xl font-bold mb-2">Complete Mint</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Confirm your choice and mint your Spatter NFT
+                <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                  Complete Mint
+                </h4>
+                <p style={{ color: COLORS.black }}>
+                  Confirm your choice and your Spatter NFT is minted to your wallet.
                 </p>
               </div>
             </div>
@@ -201,9 +283,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 py-8 bg-white dark:bg-black">
-        <div className="container mx-auto px-4 text-center text-gray-600 dark:text-gray-400">
-          <p>© 2025 Spatters. All rights reserved.</p>
+      <footer className="border-t-2 py-8" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
+        <div className="container mx-auto px-4 text-center" style={{ color: COLORS.black }}>
+          <p className="font-medium">© 2025 Spatters. All rights reserved.</p>
           <p className="mt-2 text-sm">Built on Ethereum • Fully On-Chain</p>
         </div>
       </footer>

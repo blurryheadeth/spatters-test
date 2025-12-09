@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+/* Spatters Color Palette */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --spatters-bg: #EBE5D9;
+  --spatters-red: #fc1a4a;
+  --spatters-green: #75d494;
+  --spatters-blue: #2587c3;
+  --spatters-yellow: #f2c945;
+  --spatters-black: #000000;
+  --spatters-white: #FFFFFF;
+  
+  --background: #EBE5D9;
+  --foreground: #000000;
 }
 
 @theme inline {
@@ -12,10 +21,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Force light mode - no dark mode for Spatters */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #EBE5D9;
+    --foreground: #000000;
   }
 }
 
@@ -23,4 +33,49 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Remove shadows globally for flat design */
+* {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Exception for the white "e" letter shadow in title */
+.spatters-title-e {
+  text-shadow: 0 0 2px #000 !important;
+}
+
+/* Flat buttons and cards */
+.flat-card {
+  border: 2px solid var(--spatters-black);
+  background: var(--spatters-white);
+}
+
+.flat-button {
+  border: 2px solid var(--spatters-black);
+  transition: opacity 0.2s;
+}
+
+.flat-button:hover {
+  opacity: 0.8;
+}
+
+/* Custom scrollbar for the theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--spatters-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--spatters-black);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
 }
