@@ -942,7 +942,8 @@ export default function OwnerMint() {
             {/* All 3 Artworks Stacked - All load simultaneously */}
             <div className="flex-1 overflow-auto bg-black">
               {previewSeeds.map((seed, index) => {
-                const paletteQuery = useCustomPalette ? `&palette=${customPalette.join(',')}` : '';
+                // URL encode palette - # must be %23 to avoid being treated as fragment
+                const paletteQuery = useCustomPalette ? `&palette=${encodeURIComponent(customPalette.join(','))}` : '';
                 const previewUrl = `${baseUrl}/api/preview?seed=${seed}${paletteQuery}`;
                 
                 return (
