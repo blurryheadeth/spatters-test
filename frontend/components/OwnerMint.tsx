@@ -10,6 +10,17 @@ import { Abi } from 'viem';
 const DEFAULT_COLORS = ['#fc1a4a', '#75d494', '#2587c3', '#f2c945', '#000000', '#FFFFFF'];
 const MAX_SEED_VALUE = 9007199254740991; // JavaScript's Number.MAX_SAFE_INTEGER (2^53 - 1)
 
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
+
 /**
  * Parse a comma-separated string of hex colors into an array of 6 colors.
  * Handles formats like: "#07B0F0","#140902"... or #07B0F0,#140902...
@@ -487,19 +498,19 @@ export default function OwnerMint() {
 
   if (!address) {
     return (
-      <div className="text-center p-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <p className="text-lg">Please connect your wallet</p>
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+        <p className="text-lg" style={{ color: COLORS.black }}>Please connect your wallet</p>
       </div>
     );
   }
 
   if (!isOwner) {
     return (
-      <div className="text-center p-8 bg-red-100 dark:bg-red-900 rounded-lg">
-        <p className="text-lg text-red-800 dark:text-red-200">
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+        <p className="text-lg" style={{ color: COLORS.white }}>
           Owner minting is restricted to contract owner only
         </p>
-        <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+        <p className="text-sm mt-2" style={{ color: COLORS.white, opacity: 0.9 }}>
           Owner address: {ownerAddress as string}
         </p>
       </div>
@@ -514,8 +525,8 @@ export default function OwnerMint() {
 
   if (remainingReserve <= 0 && !canMintAfterReserve) {
     return (
-      <div className="text-center p-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-        <p className="text-lg text-yellow-800 dark:text-yellow-200">
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black }}>
+        <p className="text-lg font-bold" style={{ color: COLORS.black }}>
           Max supply reached
         </p>
       </div>
@@ -527,36 +538,37 @@ export default function OwnerMint() {
     const remainingTime = getRemainingTime();
     return (
       <div className="space-y-6">
-        <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-6 shadow-lg border border-orange-300 dark:border-orange-700">
-          <h2 className="text-2xl font-bold mb-4 text-orange-800 dark:text-orange-200">
+        <div className="border-2 p-6" style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black }}>
+          <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>
             ⏳ Minting Temporarily Blocked
           </h2>
           <div className="space-y-4">
-            <p className="text-orange-700 dark:text-orange-300">
+            <p style={{ color: COLORS.black }}>
               Another user is currently selecting from 3 preview options. 
               Minting is blocked until they complete their selection or the 55-minute window expires.
             </p>
-            <div className="bg-orange-200 dark:bg-orange-800/50 rounded-lg p-4">
-              <p className="text-sm text-orange-800 dark:text-orange-200">
+            <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+              <p className="text-sm" style={{ color: COLORS.black }}>
                 <strong>Active requester:</strong>{' '}
                 <span className="font-mono text-xs">
                   {(activeMintRequester as string)?.slice(0, 6)}...{(activeMintRequester as string)?.slice(-4)}
                 </span>
               </p>
               {remainingTime && remainingTime !== 'Expired' && (
-                <p className="text-sm text-orange-800 dark:text-orange-200 mt-2">
+                <p className="text-sm mt-2" style={{ color: COLORS.black }}>
                   <strong>Time remaining:</strong> ~{remainingTime}
                 </p>
               )}
               {remainingTime === 'Expired' && (
-                <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                <p className="text-sm mt-2" style={{ color: COLORS.green }}>
                   <strong>Status:</strong> Selection window expired - minting will be available soon
                 </p>
               )}
             </div>
             <button
               onClick={() => refetchMintStatus()}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="w-full font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.black, borderColor: COLORS.black, color: COLORS.white }}
             >
               Refresh Status
             </button>
@@ -572,27 +584,27 @@ export default function OwnerMint() {
       <div className="space-y-6">
         {/* Show expired request warning */}
         {isRequestExpired && (
-          <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4 border border-red-300 dark:border-red-700">
-            <h3 className="font-bold text-red-800 dark:text-red-200 mb-2">
+          <div className="border-2 p-4" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+            <h3 className="font-bold mb-2" style={{ color: COLORS.white }}>
               ⏰ Previous Selection Expired
             </h3>
-            <p className="text-red-700 dark:text-red-300 text-sm">
+            <p className="text-sm" style={{ color: COLORS.white }}>
               Your previous 3-option preview has expired (55-minute window passed). 
               Please generate new options to continue.
             </p>
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-          <h2 className="text-2xl font-bold mb-4">Owner Mint</h2>
+        <div className="border-2 p-6" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+          <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>Owner Mint</h2>
           <div className="space-y-2 mb-6">
-            <p className="text-gray-600 dark:text-gray-300">
+            <p style={{ color: COLORS.black }}>
               {supply < reserve 
                 ? `Owner Reserve Remaining: ${remainingReserve} / ${reserve}`
                 : `Public Supply: ${supply - reserve} / ${max - reserve}`
               }
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm" style={{ color: COLORS.black, opacity: 0.7 }}>
               Choose your minting method:
             </p>
           </div>
@@ -600,10 +612,11 @@ export default function OwnerMint() {
           <div className="grid md:grid-cols-2 gap-4">
             <button
               onClick={() => setMintMode('preview')}
-              className="p-6 border-2 border-blue-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+              className="p-6 border-2 hover:opacity-70 transition-opacity text-left"
+              style={{ backgroundColor: COLORS.background, borderColor: COLORS.blue }}
             >
-              <h3 className="font-bold text-lg mb-2">Preview 3 Options</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-bold text-lg mb-2" style={{ color: COLORS.blue }}>Preview 3 Options</h3>
+              <p className="text-sm" style={{ color: COLORS.black }}>
                 Generate 3 random seeds and preview the artwork before choosing one to mint.
                 Seeds are generated by the smart contract.
               </p>
@@ -611,10 +624,11 @@ export default function OwnerMint() {
             
             <button
               onClick={() => setMintMode('direct')}
-              className="p-6 border-2 border-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left"
+              className="p-6 border-2 hover:opacity-70 transition-opacity text-left"
+              style={{ backgroundColor: COLORS.background, borderColor: COLORS.green }}
             >
-              <h3 className="font-bold text-lg mb-2">Direct Mint with Seed</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h3 className="font-bold text-lg mb-2" style={{ color: COLORS.green }}>Direct Mint with Seed</h3>
+              <p className="text-sm" style={{ color: COLORS.black }}>
                 Provide a specific integer seed to mint a deterministic artwork immediately.
                 The seed is stored on-chain and passed directly to spatters.js.
               </p>
@@ -629,12 +643,13 @@ export default function OwnerMint() {
   if (mintMode === 'direct') {
     return (
       <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+        <div className="border-2 p-6" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Direct Mint with Custom Seed</h2>
+            <h2 className="text-2xl font-black" style={{ color: COLORS.black }}>Direct Mint with Custom Seed</h2>
             <button
               onClick={resetForm}
-              className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              className="text-sm hover:opacity-70 transition-opacity"
+              style={{ color: COLORS.black }}
             >
               ← Back
             </button>
@@ -643,31 +658,33 @@ export default function OwnerMint() {
           <div className="space-y-6">
             {/* Recipient Address */}
             <div>
-              <label className="block text-sm font-medium mb-2">Recipient Address</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Recipient Address</label>
               <input
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="0x..."
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                className="w-full px-4 py-2 border-2"
+                style={{ borderColor: COLORS.black, backgroundColor: COLORS.background, color: COLORS.black }}
               />
             </div>
 
             {/* Custom Seed (Required) - as integer */}
             <div>
-              <label className="block text-sm font-medium mb-2">Custom Seed (integer) *</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Custom Seed (integer) *</label>
               <input
                 type="text"
                 value={customSeed}
                 onChange={(e) => setCustomSeed(e.target.value)}
                 placeholder="601234567890123512"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 font-mono text-sm"
+                className="w-full px-4 py-2 border-2 font-mono text-sm"
+                style={{ borderColor: COLORS.black, backgroundColor: COLORS.background, color: COLORS.black }}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs mt-1" style={{ color: COLORS.black, opacity: 0.7 }}>
                 Enter a positive integer up to {MAX_SEED_VALUE.toLocaleString()}
               </p>
               {customSeed && !isValidSeed(customSeed) && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs mt-1" style={{ color: COLORS.red }}>
                   Invalid seed. Must be a positive integer within safe range.
                 </p>
               )}
@@ -682,7 +699,7 @@ export default function OwnerMint() {
                 onChange={(e) => setUseCustomPalette(e.target.checked)}
                 className="w-5 h-5"
               />
-              <label htmlFor="useCustomPalette" className="text-sm font-medium">
+              <label htmlFor="useCustomPalette" className="text-sm font-medium" style={{ color: COLORS.black }}>
                 Use Custom Palette
               </label>
             </div>
@@ -691,25 +708,27 @@ export default function OwnerMint() {
             {useCustomPalette && (
               <div className="space-y-4">
                 {/* Bulk Paste Input */}
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                  <label className="block text-sm font-medium mb-2">Quick Paste (6 hex colors)</label>
+                <div className="border-2 p-4" style={{ backgroundColor: COLORS.background, borderColor: COLORS.black }}>
+                  <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Quick Paste (6 hex colors)</label>
                   <div className="flex space-x-2">
                     <input
                       type="text"
                       value={bulkPaletteInput}
                       onChange={(e) => setBulkPaletteInput(e.target.value)}
                       placeholder={'"#07B0F0","#140902","#F7F2D7","#EDC5D4","#9EE4F7","#E25252"'}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono"
+                      className="flex-1 px-3 py-2 border-2 text-sm font-mono"
+                      style={{ borderColor: COLORS.black, backgroundColor: COLORS.white, color: COLORS.black }}
                     />
                     <button
                       type="button"
                       onClick={handlePopulatePalette}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                      className="px-4 py-2 font-medium border-2 hover:opacity-70 transition-opacity whitespace-nowrap"
+                      style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black, color: COLORS.white }}
                     >
                       Populate
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs mt-1" style={{ color: COLORS.black, opacity: 0.7 }}>
                     Paste comma-separated hex colors to auto-fill below
                   </p>
                 </div>
@@ -718,19 +737,21 @@ export default function OwnerMint() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {customPalette.map((color, index) => (
                     <div key={index} className="space-y-2">
-                      <label className="block text-sm">Color {index + 1}</label>
+                      <label className="block text-sm" style={{ color: COLORS.black }}>Color {index + 1}</label>
                       <div className="flex space-x-2">
                         <input
                           type="color"
                           value={color}
                           onChange={(e) => handleColorChange(index, e.target.value)}
-                          className="w-12 h-10 rounded cursor-pointer"
+                          className="w-12 h-10 cursor-pointer border-2"
+                          style={{ borderColor: COLORS.black }}
                         />
                         <input
                           type="text"
                           value={color}
                           onChange={(e) => handleColorChange(index, e.target.value)}
-                          className="flex-1 px-2 py-1 border rounded text-sm"
+                          className="flex-1 px-2 py-1 border-2 text-sm"
+                          style={{ borderColor: COLORS.black, color: COLORS.black }}
                         />
                       </div>
                     </div>
@@ -740,22 +761,23 @@ export default function OwnerMint() {
             )}
 
             {error && (
-              <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg">
-                <p className="text-red-800 dark:text-red-200">{error}</p>
+              <div className="p-4 border-2" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+                <p style={{ color: COLORS.white }}>{error}</p>
               </div>
             )}
 
             <button
               onClick={handleDirectOwnerMint}
               disabled={isDirectPending || isDirectConfirming || !recipient || !customSeed}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              className="w-full font-bold py-3 px-6 border-2 hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
             >
               {isDirectPending || isDirectConfirming ? 'Minting...' : 'Mint Token'}
             </button>
 
             {isDirectConfirmed && (
-              <div className="p-4 bg-green-100 dark:bg-green-900 rounded-lg text-center">
-                <p className="text-green-800 dark:text-green-200 font-semibold">
+              <div className="p-4 border-2 text-center" style={{ backgroundColor: COLORS.green, borderColor: COLORS.black }}>
+                <p className="font-semibold" style={{ color: COLORS.black }}>
                   ✅ Token minted successfully!
                 </p>
               </div>
@@ -769,12 +791,13 @@ export default function OwnerMint() {
   // Render preview mode (3-option flow)
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+      <div className="border-2 p-6" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Preview 3 Options</h2>
+          <h2 className="text-2xl font-black" style={{ color: COLORS.black }}>Preview 3 Options</h2>
           <button
             onClick={resetForm}
-            className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="text-sm hover:opacity-70 transition-opacity"
+            style={{ color: COLORS.black }}
           >
             ← Back
           </button>
@@ -785,13 +808,14 @@ export default function OwnerMint() {
           <div className="space-y-6">
             {/* Recipient Address */}
             <div>
-              <label className="block text-sm font-medium mb-2">Recipient Address</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Recipient Address</label>
               <input
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="0x..."
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                className="w-full px-4 py-2 border-2"
+                style={{ borderColor: COLORS.black, backgroundColor: COLORS.background, color: COLORS.black }}
               />
             </div>
 
@@ -804,7 +828,7 @@ export default function OwnerMint() {
                 onChange={(e) => setUseCustomPalette(e.target.checked)}
                 className="w-5 h-5"
               />
-              <label htmlFor="useCustomPalettePreview" className="text-sm font-medium">
+              <label htmlFor="useCustomPalettePreview" className="text-sm font-medium" style={{ color: COLORS.black }}>
                 Use Custom Palette
               </label>
             </div>
@@ -813,25 +837,27 @@ export default function OwnerMint() {
             {useCustomPalette && (
               <div className="space-y-4">
                 {/* Bulk Paste Input */}
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                  <label className="block text-sm font-medium mb-2">Quick Paste (6 hex colors)</label>
+                <div className="border-2 p-4" style={{ backgroundColor: COLORS.background, borderColor: COLORS.black }}>
+                  <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Quick Paste (6 hex colors)</label>
                   <div className="flex space-x-2">
                     <input
                       type="text"
                       value={bulkPaletteInput}
                       onChange={(e) => setBulkPaletteInput(e.target.value)}
                       placeholder={'"#07B0F0","#140902","#F7F2D7","#EDC5D4","#9EE4F7","#E25252"'}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono"
+                      className="flex-1 px-3 py-2 border-2 text-sm font-mono"
+                      style={{ borderColor: COLORS.black, backgroundColor: COLORS.white, color: COLORS.black }}
                     />
                     <button
                       type="button"
                       onClick={handlePopulatePalette}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+                      className="px-4 py-2 font-medium border-2 hover:opacity-70 transition-opacity whitespace-nowrap"
+                      style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black, color: COLORS.white }}
                     >
                       Populate
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs mt-1" style={{ color: COLORS.black, opacity: 0.7 }}>
                     Paste comma-separated hex colors to auto-fill below
                   </p>
                 </div>
@@ -840,19 +866,21 @@ export default function OwnerMint() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {customPalette.map((color, index) => (
                     <div key={index} className="space-y-2">
-                      <label className="block text-sm">Color {index + 1}</label>
+                      <label className="block text-sm" style={{ color: COLORS.black }}>Color {index + 1}</label>
                       <div className="flex space-x-2">
                         <input
                           type="color"
                           value={color}
                           onChange={(e) => handleColorChange(index, e.target.value)}
-                          className="w-12 h-10 rounded cursor-pointer"
+                          className="w-12 h-10 cursor-pointer border-2"
+                          style={{ borderColor: COLORS.black }}
                         />
                         <input
                           type="text"
                           value={color}
                           onChange={(e) => handleColorChange(index, e.target.value)}
-                          className="flex-1 px-2 py-1 border rounded text-sm"
+                          className="flex-1 px-2 py-1 border-2 text-sm"
+                          style={{ borderColor: COLORS.black, color: COLORS.black }}
                         />
                       </div>
                     </div>
@@ -862,8 +890,8 @@ export default function OwnerMint() {
             )}
 
             {error && (
-              <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg">
-                <p className="text-red-800 dark:text-red-200">{error}</p>
+              <div className="p-4 border-2" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+                <p style={{ color: COLORS.white }}>{error}</p>
               </div>
             )}
 
@@ -916,11 +944,12 @@ export default function OwnerMint() {
                         setSelectedSeedIndex(index);
                         document.getElementById(`preview-${index}`)?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        selectedSeedIndex === index
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
+                      className="px-4 py-2 font-medium transition-opacity border-2 hover:opacity-70"
+                      style={{
+                        backgroundColor: selectedSeedIndex === index ? COLORS.green : COLORS.white,
+                        borderColor: COLORS.black,
+                        color: COLORS.black,
+                      }}
                     >
                       Option {index + 1}
                       {selectedSeedIndex === index && ' ✓'}
@@ -932,7 +961,8 @@ export default function OwnerMint() {
                 <button
                   onClick={handleCompleteOwnerMint}
                   disabled={selectedSeedIndex === null || isCompletePending || isCompleteConfirming}
-                  className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+                  className="px-6 py-2 font-bold border-2 transition-opacity hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
                 >
                   {isCompletePending || isCompleteConfirming 
                     ? 'Minting...' 
@@ -944,14 +974,14 @@ export default function OwnerMint() {
               </div>
 
               {error && (
-                <div className="max-w-7xl mx-auto mt-2 p-2 bg-red-900/50 border border-red-700 rounded-lg">
-                  <p className="text-red-200 text-center text-sm">{error}</p>
+                <div className="max-w-7xl mx-auto mt-2 p-2 border-2" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+                  <p className="text-center text-sm" style={{ color: COLORS.white }}>{error}</p>
                 </div>
               )}
 
               {isCompleteConfirmed && (
-                <div className="max-w-7xl mx-auto mt-2 p-2 bg-green-900/50 border border-green-700 rounded-lg">
-                  <p className="text-green-200 text-center font-semibold">
+                <div className="max-w-7xl mx-auto mt-2 p-2 border-2" style={{ backgroundColor: COLORS.green, borderColor: COLORS.black }}>
+                  <p className="text-center font-semibold" style={{ color: COLORS.black }}>
                     ✅ Token minted successfully! Redirecting...
                   </p>
                 </div>
@@ -959,7 +989,7 @@ export default function OwnerMint() {
             </div>
 
             {/* All 3 Artworks Stacked - All load simultaneously */}
-            <div className="flex-1 overflow-auto bg-black">
+            <div className="flex-1 overflow-auto" style={{ backgroundColor: COLORS.white }}>
               {previewSeeds.map((seed, index) => {
                 // URL encode palette - # must be %23 to avoid being treated as fragment
                 const paletteQuery = useCustomPalette ? `&palette=${encodeURIComponent(customPalette.join(','))}` : '';
@@ -969,21 +999,22 @@ export default function OwnerMint() {
                   <div 
                     key={index} 
                     id={`preview-${index}`}
-                    className="border-b-4 border-gray-700 last:border-b-0"
+                    className="border-b-4 last:border-b-0"
+                    style={{ borderColor: COLORS.black }}
                   >
                     {/* Option Header - Clickable to select */}
                     <div 
-                      className={`sticky top-0 z-5 py-3 px-6 flex justify-between items-center cursor-pointer transition-colors ${
-                        selectedSeedIndex === index 
-                          ? 'bg-green-800' 
-                          : 'bg-gray-800 hover:bg-gray-700'
-                      }`}
+                      className="sticky top-0 z-5 py-3 px-6 flex justify-between items-center cursor-pointer transition-opacity hover:opacity-90 border-b-2"
+                      style={{ 
+                        backgroundColor: selectedSeedIndex === index ? COLORS.green : COLORS.background,
+                        borderColor: COLORS.black,
+                      }}
                       onClick={() => setSelectedSeedIndex(index)}
                     >
-                      <h2 className="text-xl font-bold text-white">
+                      <h2 className="text-xl font-bold" style={{ color: COLORS.black }}>
                         Option {index + 1}
                         {selectedSeedIndex === index && (
-                          <span className="ml-3 text-green-400">✓ Selected</span>
+                          <span className="ml-3" style={{ color: COLORS.black }}>✓ Selected</span>
                         )}
                       </h2>
                       <button
@@ -991,23 +1022,25 @@ export default function OwnerMint() {
                           e.stopPropagation();
                           setSelectedSeedIndex(index);
                         }}
-                        className={`px-4 py-1 rounded transition-colors ${
-                          selectedSeedIndex === index
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-600 hover:bg-green-600 text-white'
-                        }`}
+                        className="px-4 py-1 border-2 transition-opacity hover:opacity-70"
+                        style={{ 
+                          backgroundColor: selectedSeedIndex === index ? COLORS.black : COLORS.white,
+                          borderColor: COLORS.black,
+                          color: selectedSeedIndex === index ? COLORS.white : COLORS.black,
+                        }}
                       >
                         {selectedSeedIndex === index ? 'Selected' : 'Select This'}
                       </button>
                     </div>
                     
                     {/* Artwork iframe - centered, dynamic height based on canvas */}
-                    <div className="flex justify-center bg-black">
+                    <div className="flex justify-center" style={{ backgroundColor: COLORS.white }}>
                       <iframe
                         src={previewUrl}
                         data-preview-seed={seed}
                         className="w-full max-w-[1200px] border-0 transition-all duration-300"
-                        style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px' }}
+                        scrolling="no"
+                        style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px', overflow: 'hidden' }}
                         title={`Preview Option ${index + 1}`}
                       />
                     </div>

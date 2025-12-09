@@ -7,6 +7,17 @@ import { formatEther } from 'viem';
 import { getContractAddress } from '@/lib/config';
 import SpattersABI from '@/contracts/Spatters.json';
 
+// Spatters color palette
+const COLORS = {
+  background: '#EBE5D9',
+  red: '#fc1a4a',
+  green: '#75d494',
+  blue: '#2587c3',
+  yellow: '#f2c945',
+  black: '#000000',
+  white: '#FFFFFF',
+};
+
 export default function PublicMint() {
   const router = useRouter();
   const { address, chainId } = useAccount();
@@ -287,8 +298,8 @@ export default function PublicMint() {
 
   if (!address) {
     return (
-      <div className="text-center p-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <p className="text-lg">Please connect your wallet to mint</p>
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+        <p className="text-lg" style={{ color: COLORS.black }}>Please connect your wallet to mint</p>
       </div>
     );
   }
@@ -301,11 +312,11 @@ export default function PublicMint() {
   // Check if public minting is available (after owner reserve)
   if (supply < reserve) {
     return (
-      <div className="text-center p-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-        <p className="text-lg text-yellow-800 dark:text-yellow-200">
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black }}>
+        <p className="text-lg font-bold" style={{ color: COLORS.black }}>
           Public minting not yet available
         </p>
-        <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
+        <p className="text-sm mt-2" style={{ color: COLORS.black }}>
           {reserve - supply} owner reserve tokens remaining before public mint opens
         </p>
       </div>
@@ -315,8 +326,8 @@ export default function PublicMint() {
   // Check if max supply reached
   if (supply >= max) {
     return (
-      <div className="text-center p-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <p className="text-lg">All tokens have been minted!</p>
+      <div className="text-center p-8 border-2" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+        <p className="text-lg font-bold" style={{ color: COLORS.black }}>All tokens have been minted!</p>
       </div>
     );
   }
@@ -326,36 +337,37 @@ export default function PublicMint() {
     const remainingTime = getRemainingTime();
     return (
       <div className="space-y-6">
-        <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-6 shadow-lg border border-orange-300 dark:border-orange-700">
-          <h2 className="text-2xl font-bold mb-4 text-orange-800 dark:text-orange-200">
+        <div className="border-2 p-6" style={{ backgroundColor: COLORS.yellow, borderColor: COLORS.black }}>
+          <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>
             ⏳ Minting Temporarily Blocked
           </h2>
           <div className="space-y-4">
-            <p className="text-orange-700 dark:text-orange-300">
+            <p style={{ color: COLORS.black }}>
               Another user is currently selecting from 3 preview options. 
               Minting is blocked until they complete their selection or the 55-minute window expires.
             </p>
-            <div className="bg-orange-200 dark:bg-orange-800/50 rounded-lg p-4">
-              <p className="text-sm text-orange-800 dark:text-orange-200">
+            <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+              <p className="text-sm" style={{ color: COLORS.black }}>
                 <strong>Active requester:</strong>{' '}
                 <span className="font-mono text-xs">
                   {(activeMintRequester as string)?.slice(0, 6)}...{(activeMintRequester as string)?.slice(-4)}
                 </span>
               </p>
               {remainingTime && remainingTime !== 'Expired' && (
-                <p className="text-sm text-orange-800 dark:text-orange-200 mt-2">
+                <p className="text-sm mt-2" style={{ color: COLORS.black }}>
                   <strong>Time remaining:</strong> ~{remainingTime}
                 </p>
               )}
               {remainingTime === 'Expired' && (
-                <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                <p className="text-sm mt-2" style={{ color: COLORS.green }}>
                   <strong>Status:</strong> Selection window expired - minting will be available soon
                 </p>
               )}
             </div>
             <button
               onClick={() => refetchMintStatus()}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="w-full font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.black, borderColor: COLORS.black, color: COLORS.white }}
             >
               Refresh Status
             </button>
@@ -369,22 +381,23 @@ export default function PublicMint() {
   if (cooldownRemaining && previewSeeds.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-6 shadow-lg border border-blue-300 dark:border-blue-700">
-          <h2 className="text-2xl font-bold mb-4 text-blue-800 dark:text-blue-200">
+        <div className="border-2 p-6" style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black }}>
+          <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.white }}>
             ⏰ Cooldown Active
           </h2>
           <div className="space-y-4">
-            <p className="text-blue-700 dark:text-blue-300">
+            <p style={{ color: COLORS.white }}>
               A token was recently minted. Public minting has a 24-hour cooldown between mints.
             </p>
-            <div className="bg-blue-200 dark:bg-blue-800/50 rounded-lg p-4">
-              <p className="text-lg text-blue-800 dark:text-blue-200 text-center">
+            <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+              <p className="text-lg text-center" style={{ color: COLORS.black }}>
                 <strong>Time until next mint:</strong> ~{cooldownRemaining}
               </p>
             </div>
             <button
               onClick={() => refetchMintStatus()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="w-full font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
+              style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
             >
               Refresh Status
             </button>
@@ -427,11 +440,12 @@ export default function PublicMint() {
                     setSelectedIndex(index);
                     document.getElementById(`preview-${index}`)?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    selectedIndex === index
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                  className="px-4 py-2 font-medium transition-opacity border-2 hover:opacity-70"
+                  style={{
+                    backgroundColor: selectedIndex === index ? COLORS.green : COLORS.white,
+                    borderColor: COLORS.black,
+                    color: COLORS.black,
+                  }}
                 >
                   Option {index + 1}
                   {selectedIndex === index && ' ✓'}
@@ -443,7 +457,8 @@ export default function PublicMint() {
             <button
               onClick={handleCompleteMint}
               disabled={selectedIndex === null || isCompletePending || isCompleteConfirming}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
+              className="px-6 py-2 font-bold border-2 transition-opacity hover:opacity-70 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
             >
               {isCompletePending || isCompleteConfirming 
                 ? 'Minting...' 
@@ -455,14 +470,14 @@ export default function PublicMint() {
           </div>
 
           {error && (
-            <div className="max-w-7xl mx-auto mt-2 p-2 bg-red-900/50 border border-red-700 rounded-lg">
-              <p className="text-red-200 text-center text-sm">{error}</p>
+            <div className="max-w-7xl mx-auto mt-2 p-2 border-2" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+              <p className="text-center text-sm" style={{ color: COLORS.white }}>{error}</p>
             </div>
           )}
 
           {isCompleteConfirmed && (
-            <div className="max-w-7xl mx-auto mt-2 p-2 bg-green-900/50 border border-green-700 rounded-lg">
-              <p className="text-green-200 text-center font-semibold">
+            <div className="max-w-7xl mx-auto mt-2 p-2 border-2" style={{ backgroundColor: COLORS.green, borderColor: COLORS.black }}>
+              <p className="text-center font-semibold" style={{ color: COLORS.black }}>
                 ✅ Token minted successfully! Redirecting...
               </p>
             </div>
@@ -470,7 +485,7 @@ export default function PublicMint() {
         </div>
 
         {/* All 3 Artworks Stacked - All load simultaneously */}
-        <div className="flex-1 overflow-auto bg-black">
+        <div className="flex-1 overflow-auto" style={{ backgroundColor: COLORS.white }}
           {previewSeeds.map((seed, index) => {
             const previewUrl = `${baseUrl}/api/preview?seed=${seed}`;
             
@@ -478,21 +493,22 @@ export default function PublicMint() {
               <div 
                 key={index} 
                 id={`preview-${index}`}
-                className="border-b-4 border-gray-700 last:border-b-0"
+                className="border-b-4 last:border-b-0"
+                style={{ borderColor: COLORS.black }}
               >
                 {/* Option Header - Clickable to select */}
                 <div 
-                  className={`sticky top-0 z-5 py-3 px-6 flex justify-between items-center cursor-pointer transition-colors ${
-                    selectedIndex === index 
-                      ? 'bg-green-800' 
-                      : 'bg-gray-800 hover:bg-gray-700'
-                  }`}
+                  className="sticky top-0 z-5 py-3 px-6 flex justify-between items-center cursor-pointer transition-opacity hover:opacity-90 border-b-2"
+                  style={{ 
+                    backgroundColor: selectedIndex === index ? COLORS.green : COLORS.background,
+                    borderColor: COLORS.black,
+                  }}
                   onClick={() => setSelectedIndex(index)}
                 >
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-xl font-bold" style={{ color: COLORS.black }}>
                     Option {index + 1}
                     {selectedIndex === index && (
-                      <span className="ml-3 text-green-400">✓ Selected</span>
+                      <span className="ml-3" style={{ color: COLORS.black }}>✓ Selected</span>
                     )}
                   </h2>
                   <button
@@ -500,23 +516,25 @@ export default function PublicMint() {
                       e.stopPropagation();
                       setSelectedIndex(index);
                     }}
-                    className={`px-4 py-1 rounded transition-colors ${
-                      selectedIndex === index
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-600 hover:bg-green-600 text-white'
-                    }`}
+                    className="px-4 py-1 border-2 transition-opacity hover:opacity-70"
+                    style={{ 
+                      backgroundColor: selectedIndex === index ? COLORS.black : COLORS.white,
+                      borderColor: COLORS.black,
+                      color: selectedIndex === index ? COLORS.white : COLORS.black,
+                    }}
                   >
                     {selectedIndex === index ? 'Selected' : 'Select This'}
                   </button>
                 </div>
                 
                 {/* Artwork iframe - centered, dynamic height based on canvas */}
-                <div className="flex justify-center bg-black">
+                <div className="flex justify-center" style={{ backgroundColor: COLORS.white }}>
                   <iframe
                     src={previewUrl}
                     data-preview-seed={seed}
                     className="w-full max-w-[1200px] border-0 transition-all duration-300"
-                    style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px' }}
+                    scrolling="no"
+                    style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px', overflow: 'hidden' }}
                     title={`Preview Option ${index + 1}`}
                   />
                 </div>
@@ -533,46 +551,46 @@ export default function PublicMint() {
     <div className="space-y-6">
       {/* Show expired request warning */}
       {isRequestExpired && (
-        <div className="bg-red-100 dark:bg-red-900/30 rounded-lg p-4 border border-red-300 dark:border-red-700">
-          <h3 className="font-bold text-red-800 dark:text-red-200 mb-2">
+        <div className="border-2 p-4" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+          <h3 className="font-bold mb-2" style={{ color: COLORS.white }}>
             ⏰ Previous Selection Expired
           </h3>
-          <p className="text-red-700 dark:text-red-300 text-sm mb-2">
+          <p className="text-sm mb-2" style={{ color: COLORS.white }}>
             Your previous 3-option preview has expired (55-minute window passed). 
             Unfortunately, your payment for that request cannot be recovered.
           </p>
-          <p className="text-red-600 dark:text-red-400 text-xs">
+          <p className="text-xs" style={{ color: COLORS.white, opacity: 0.9 }}>
             Please generate new options to mint. We recommend completing your selection promptly next time.
           </p>
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Public Mint</h2>
+      <div className="border-2 p-6" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
+        <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>Public Mint</h2>
         <div className="space-y-2 mb-6">
-          <p className="text-gray-600 dark:text-gray-300">
+          <p style={{ color: COLORS.black }}>
             Minted: {supply} / {max}
           </p>
-          <p className="text-gray-600 dark:text-gray-300">
-            Current Price: {mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH
+          <p style={{ color: COLORS.black }}>
+            Current Price: <strong>{mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH</strong>
           </p>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">How it works:</h3>
-          <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
+        <div className="border-2 p-4 mb-6" style={{ backgroundColor: COLORS.background, borderColor: COLORS.blue }}>
+          <h3 className="font-bold mb-2" style={{ color: COLORS.blue }}>How it works:</h3>
+          <ol className="list-decimal list-inside text-sm space-y-1" style={{ color: COLORS.black }}>
             <li>Pay the mint price to generate 3 random artwork options</li>
             <li>Preview all 3 options and choose your favorite</li>
             <li>Confirm your selection to mint your chosen artwork</li>
           </ol>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+          <p className="text-xs mt-2" style={{ color: COLORS.black, opacity: 0.7 }}>
             You have 55 minutes to make your selection. Seeds are generated on-chain.
           </p>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg mb-4">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
+          <div className="p-4 border-2 mb-4" style={{ backgroundColor: COLORS.red, borderColor: COLORS.black }}>
+            <p style={{ color: COLORS.white }}>{error}</p>
           </div>
         )}
 
