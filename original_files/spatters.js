@@ -989,24 +989,12 @@ function mutate(seed) {
         let nextSeedIndex = findNextUnconnectedSeed(currentSeed, seedpoints, connectedLeftEdges, connectedRightEdges, i);
     
         // Draw seedpoint
-        //drawSemicircle(currentSeed.x, currentSeed.y, baseRadius, centralPoint);
         let seedPointAngle = atan2(centralPoint.y - currentSeed.y, centralPoint.x - currentSeed.x) + PI / 2;
         //Calculate the edges of the semicircle
         let radius = baseRadius * currentSeed.radiusIncrease;
-        let startX = currentSeed.x + cos(seedPointAngle) * radius;
-        let startY = currentSeed.y + sin(seedPointAngle) * radius;
-        let endX = currentSeed.x - cos(seedPointAngle) * radius;
-        let endY = currentSeed.y - sin(seedPointAngle) * radius;
-        let midX = (startX + endX) / 2;
-        let midY = (startY + endY) / 2;
-        // Calculate the angle towards centralPoint
-            let controlAngle = atan2(centralPoint.y - midY, centralPoint.x - midX);
-        // Calculate control point position at a distance of curvature from the midpoint
-            let controlX = midX - cos(controlAngle) * radius * 2;
-            let controlY = midY - sin(controlAngle) * radius * 2;
 
-        // Draw the arc
-        drawArc(startX, startY, endX, endY, controlX, controlY);
+        // Draw the semicircle around the point
+        drawHalfCircle(currentSeed.x, currentSeed.y, radius, seedPointAngle);
     
         if (nextSeedIndex ==-1) {
             nextSeedIndex = connectedLeftEdges.indexOf(false);
@@ -3269,18 +3257,15 @@ function generateSeedpoints(baseRadius) {
     }
 }
 
-function drawSemicircle(x, y, radius, centralPoint) {
-    push();
-    translate(x, y);
+// Function to draw a semicircle around a seedpoint
+function drawHalfCircle(centerX, centerY, radius, seedPointAngle) {
 
-    // Calculate the angle to face the edges of the canvas
-    let angle = atan2(centralPoint.y - y, centralPoint.x - x) + PI / 2;
+    for (let i = 0; i <= PI; i += 0.1) {
+        let x = centerX + cos(seedPointAngle + i) * radius;
+        let y = centerY + sin(seedPointAngle + i) * radius;
+        vertex(x, y);
+    }
 
-    rotate(angle);
-
-    // Draw a half circle (180 degrees) using the arc function
-    arc(0, 0, radius * 2, radius * 2, 0, PI);
-    pop();
 }
 
 function findConvexHull(relativePoints) {
@@ -4149,7 +4134,6 @@ function rotateShape(relativePoints,baseRadius) {
     };
 
     lastOverflow = 1;
-    console.log(borderAngles);
 
     //We strart this loop in the second position of the array because the first one is always just 0
     for (let j = 1; j<borderAngles.length;j++){
