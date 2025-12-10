@@ -232,7 +232,7 @@ export default function OwnerMint() {
   // Check for existing pending request on page load and auto-resume
   useEffect(() => {
     if (pendingRequest && address) {
-      const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean; hasCustomPalette?: boolean };
+      const request = pendingRequest as { seeds: string[]; timestamp: bigint; completed: boolean; hasCustomPalette: boolean };
       // If user has an uncompleted pending request with seeds
       if (request.seeds && request.seeds.length === 3 && !request.completed && request.timestamp > BigInt(0)) {
         // Check if seeds are valid (not all zeros)
@@ -244,16 +244,21 @@ export default function OwnerMint() {
             setMintMode('preview');
             setIsRequestExpired(false);
             
-            // Restore custom palette if one was stored with the request
-            if (pendingPaletteResults && pendingPaletteResults.length === 6) {
+            // ONLY restore custom palette if the request was made WITH a custom palette
+            // (check the hasCustomPalette flag from the contract, not just if palette data exists)
+            if (request.hasCustomPalette && pendingPaletteResults && pendingPaletteResults.length === 6) {
               const restoredPalette = pendingPaletteResults.map(result => 
                 result.status === 'success' ? (result.result as string) : ''
               );
-              // Check if the first color is non-empty (indicates custom palette exists)
+              // Check if the first color is non-empty
               if (restoredPalette[0] && restoredPalette[0].length > 0) {
                 setCustomPalette(restoredPalette);
                 setUseCustomPalette(true);
               }
+            } else {
+              // No custom palette for this request - reset to defaults
+              setUseCustomPalette(false);
+              setCustomPalette(DEFAULT_COLORS);
             }
           } else {
             // Request has expired - show expired message
