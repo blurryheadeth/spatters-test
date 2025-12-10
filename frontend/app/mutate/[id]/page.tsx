@@ -817,17 +817,14 @@ export default function MutatePage() {
       const currentMutationCount = existingMutations ? (existingMutations as any[]).length : 0;
       const expectedMutationCount = currentMutationCount + 1;
       
-      console.log(`[Mutate] Mutation confirmed. Current: ${currentMutationCount}, Expected after regen: ${expectedMutationCount}`);
-      
       // Trigger pixel regeneration
       fetch('/api/trigger-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId, event: 'token-mutated' }),
-      }).then((response) => {
+      }).then(() => {
         if (isCancelled) return;
         
-        console.log('[Mutate] Trigger response:', response.status);
         setRegenerationMessage('Waiting for artwork to regenerate (this may take 1-2 minutes)...');
         
         // Start polling for completion
@@ -850,19 +847,10 @@ export default function MutatePage() {
             });
             const data = await response.json();
             
-            console.log(`[Mutate] Poll #${pollCount}:`, {
-              exists: data.exists,
-              cachedMutationCount: data.cachedMutationCount,
-              expectedMutationCount,
-              lastModified: data.lastModified
-            });
-            
             // Check if cached mutation count matches expected
             // This is more reliable than timestamp comparison
             if (data.exists && data.cachedMutationCount !== null && data.cachedMutationCount >= expectedMutationCount) {
               // File has been regenerated with the new mutation!
-              console.log('[Mutate] Regeneration complete! Cached count matches expected.');
-              
               if (pollInterval) clearInterval(pollInterval);
               pollInterval = null;
               
@@ -887,7 +875,7 @@ export default function MutatePage() {
             }
             
           } catch (error) {
-            console.error('[Mutate] Polling error:', error);
+            // Polling error - continue trying
           }
           
           // Stop polling after max attempts
@@ -901,8 +889,7 @@ export default function MutatePage() {
           }
         }, 5000); // Poll every 5 seconds
         
-      }).catch((error) => {
-        console.error('[Mutate] Trigger error:', error);
+      }).catch(() => {
         if (!isCancelled) {
           setRegenerationStatus('error');
           setRegenerationMessage('Failed to trigger regeneration. Please try refreshing the page.');
