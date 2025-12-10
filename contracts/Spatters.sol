@@ -141,7 +141,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     mapping(uint256 => MutationRecord[]) public tokenMutations;
     mapping(uint256 => string[6]) public customPalettes;  // Only populated for tokens with custom palettes
     mapping(address => MintRequest) public pendingRequests;
-    mapping(address => string[6]) public pendingPalettes;  // Palette for pending owner mint requests
+    string[6] public pendingPalette;  // Single pending palette (only one mint active at a time, only owner can use)
     
     uint256 private _nextTokenId = 1;
     uint256 public collectionLaunchDate;
@@ -542,7 +542,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         // Store palette separately if provided
         if (hasCustomPalette) {
             for (uint i = 0; i < 6; i++) {
-                pendingPalettes[msg.sender][i] = customPalette[i];
+                pendingPalette[i] = customPalette[i];
             }
         }
         
@@ -600,8 +600,13 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         // Copy custom palette from pending to token if provided
         if (hasCustomPalette) {
             for (uint i = 0; i < 6; i++) {
-                customPalettes[tokenId][i] = pendingPalettes[msg.sender][i];
+                customPalettes[tokenId][i] = pendingPalette[i];
             }
+        }
+        
+        // Clear pending palette after use
+        for (uint i = 0; i < 6; i++) {
+            pendingPalette[i] = "";
         }
         
         // Mint token

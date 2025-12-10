@@ -145,18 +145,18 @@ export default function OwnerMint() {
     args: [address],
   });
 
-  // Read pending palette for current user (all 6 colors, used when resuming a pending request)
-  const pendingPaletteCalls = address ? [0, 1, 2, 3, 4, 5].map(i => ({
+  // Read pending palette (single global palette, since only one mint can be active at a time)
+  const pendingPaletteCalls = [0, 1, 2, 3, 4, 5].map(i => ({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi as Abi,
-    functionName: 'pendingPalettes' as const,
-    args: [address, BigInt(i)] as const,
-  })) : [];
+    functionName: 'pendingPalette' as const,
+    args: [BigInt(i)] as const,
+  }));
 
   const { data: pendingPaletteResults } = useReadContracts({
     contracts: pendingPaletteCalls,
     query: {
-      enabled: !!address && pendingPaletteCalls.length > 0,
+      enabled: !!contractAddress,
     },
   });
 
