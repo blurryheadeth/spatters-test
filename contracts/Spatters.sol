@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "./ExponentialPricing.sol";
@@ -36,14 +35,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // Minting cooldowns and limits
     uint256 public constant REQUEST_EXPIRATION = 55 minutes;
     uint256 public constant GLOBAL_COOLDOWN = 24 hours;  // 24h cooldown for public mint after ANY mint
-    uint256 public constant WALLET_COOLDOWN = 24 hours;
     uint256 public constant MAX_PER_WALLET = 10;
     
-    // Default palette (matches spatters.js)
-    string[6] public DEFAULT_PALETTE = [
-        "#fc1a4a", "#75d494", "#2587c3", 
-        "#f2c945", "#000000", "#FFFFFF"
-    ];
+    // Note: Default palette is hard-coded in spatters.js (deployed to SSTORE2):
+    // ["#fc1a4a", "#75d494", "#2587c3", "#f2c945", "#000000", "#FFFFFF"]
     
     // ============ EIP-2981 Royalties ============
     
@@ -59,7 +54,8 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     uint256 public immutable deploymentTime;
     
     /// @notice Governance becomes available 10 years after deployment
-    uint256 public constant GOVERNANCE_DELAY = 10 * 365 days;
+    /// @dev TESTING ONLY: Set to 0 for Sepolia testing. Change back to 10 * 365 days for mainnet!
+    uint256 public constant GOVERNANCE_DELAY = 0; // MAINNET: 10 * 365 days
     
     /// @notice Cooldown between proposals (prevents spam)
     uint256 public constant PROPOSAL_COOLDOWN = 30 days;
@@ -109,17 +105,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /// @notice Array of voters for current proposal (for clearing votes)
     address[] public currentProposalVoters;
     
-    // ============ SSTORE2 Storage (Immutable After Construction) ============
-    
-    // Spatters.js script split across multiple storage contracts
-    address[] private SPATTERS_STORAGE_ADDRESSES;
-    
-    // p5.js library address (or zero address to use CDN)
-    address private P5JS_STORAGE_ADDRESS;
-    
-    // Lock to prevent modification after construction
-    bool private storageAddressesLocked;
-
     // ============ Structs ============
 
     struct TokenData {
@@ -160,14 +145,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     
     // Anti-whale tracking
     mapping(address => uint256) public mintedPerWallet;
-    mapping(address => uint256) public lastMintTime;
     
     // Allowed mutation types (92 total from spatters.js)
     string[] public allowedMutations;
     
-    // Scripty.sol integration (for on-chain code storage)
-    address public p5jsScriptAddress;        // Art Blocks p5.js v1.0.0
-    address public spattersScriptAddress;    // Our spatters.js code
     
     // Per-token mutation cooldown tracking (UTC day number)
     mapping(uint256 => uint256) public lastMutationDay;
@@ -222,21 +203,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // ============ Constructor ============
 
     /**
-     * @dev Constructor sets SSTORE2 storage addresses (locked after construction)
-     * @param spattersAddresses Array of addresses containing chunked spatters.js code
-     * @param p5jsAddress Address containing p5.js library (or zero address for CDN)
+     * @dev Constructor initializes the Spatters NFT collection
+     * Script storage addresses are managed by the separate SpattersGenerator contract
      */
-    constructor(
-        address[] memory spattersAddresses,
-        address p5jsAddress
-    ) ERC721("Spatters", "SPAT") Ownable(msg.sender) {
-        require(spattersAddresses.length > 0, "Must provide storage addresses");
-        
-        // Store addresses (can never be changed after construction)
-        SPATTERS_STORAGE_ADDRESSES = spattersAddresses;
-        P5JS_STORAGE_ADDRESS = p5jsAddress;
-        storageAddressesLocked = true; // Lock permanently
-        
+    constructor() ERC721("Spatters", "SPAT") Ownable(msg.sender) {
         // Set initial royalty receiver to contract owner
         royaltyReceiver = msg.sender;
         
@@ -373,19 +343,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         allowedMutations.push("seedpointDecreaseRadius-right");
     }
 
-    /**
-     * @dev Set script addresses for on-chain code retrieval
-     * @param _p5jsAddress Address of on-chain p5.js library
-     * @param _spattersAddress Address of on-chain spatters.js code
-     */
-    function setScriptAddresses(
-        address _p5jsAddress,
-        address _spattersAddress
-    ) external onlyOwner {
-        p5jsScriptAddress = _p5jsAddress;
-        spattersScriptAddress = _spattersAddress;
-    }
-
     // ============ Public Minting Functions ============
 
     /**
@@ -405,10 +362,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         
         // Check anti-whale protection
         require(mintedPerWallet[msg.sender] < MAX_PER_WALLET, "Wallet limit reached");
-        require(
-            block.timestamp >= lastMintTime[msg.sender] + WALLET_COOLDOWN,
-            "Wallet cooldown active"
-        );
         require(
             block.timestamp >= lastGlobalMintTime + GLOBAL_COOLDOWN,
             "Global cooldown active"
@@ -477,7 +430,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         
         // Update tracking
         lastGlobalMintTime = block.timestamp;
-        lastMintTime[msg.sender] = block.timestamp;
         mintedPerWallet[msg.sender]++;
         
         // Set collection launch date on first public mint
@@ -969,11 +921,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     }
 
     /**
-     * @dev Generate token URI with embedded HTML and all data
-     * @param tokenId Token to generate URI for
-     * @return Data URI with complete HTML
-     */
-    /**
      * @notice Returns metadata for OpenSea and other marketplaces
      * @dev Points to API URLs which call the on-chain generator contract
      * 
@@ -984,175 +931,16 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
      * - Same model as Art Blocks!
      * 
      * @param tokenId The token ID
-     * @return JSON metadata as base64-encoded data URI
+     * @return Metadata URL (baseURI + tokenId)
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(bytes(baseURI).length > 0, "baseURI not set - owner must call setBaseURI");
         
-        // If baseURI is set, return HTTP URL (Art Blocks model for marketplace compatibility)
-        // Otherwise return data URI for full decentralization
-        if (bytes(baseURI).length > 0) {
-            return string(abi.encodePacked(baseURI, tokenId.toString()));
-        }
-        
-        return string(abi.encodePacked(
-            'data:application/json;base64,',
-            Base64.encode(bytes(_buildTokenJSON(tokenId)))
-        ));
-    }
-    
-    /**
-     * @dev Build JSON metadata for a token
-     */
-    function _buildTokenJSON(uint256 tokenId) internal view returns (string memory) {
-        // API base URL - update after deploying your API
-        string memory apiBase = "https://api.spatters.art";
-        
-        return string(abi.encodePacked(
-            _buildTokenJSONPart1(tokenId, apiBase),
-            _buildTokenJSONPart2(tokenId)
-        ));
-    }
-    
-    /**
-     * @dev Build first part of JSON (name, description, URLs)
-     */
-    function _buildTokenJSONPart1(uint256 tokenId, string memory apiBase) internal pure returns (string memory) {
-        return string(abi.encodePacked(
-            '{"name":"Spatter #', tokenId.toString(), '",',
-            '"description":"Fully on-chain generative art with time-based mutations.",',
-            '"image":"', apiBase, '/image/', tokenId.toString(), '.png",',
-            '"animation_url":"', apiBase, '/token/', tokenId.toString(), '",',
-            '"external_url":"', apiBase, '/token/', tokenId.toString(), '",'
-        ));
-    }
-    
-    /**
-     * @dev Build second part of JSON (attributes)
-     */
-    function _buildTokenJSONPart2(uint256 tokenId) internal view returns (string memory) {
-        bool hasCustomPalette = bytes(customPalettes[tokenId][0]).length > 0;
-        
-        return string(abi.encodePacked(
-            '"attributes":[',
-                '{"trait_type":"Mutations","value":', tokenMutations[tokenId].length.toString(), '},',
-                '{"trait_type":"Custom Palette","value":"', hasCustomPalette ? 'Yes' : 'No', '"},',
-                '{"trait_type":"Generation","value":"On-Chain"}',
-            ']}'
-        ));
+        return string(abi.encodePacked(baseURI, tokenId.toString()));
     }
 
     // ============ Internal Functions ============
-
-    /**
-     * @dev Read spatters.js from SSTORE2 storage contracts
-     * Concatenates all chunks stored across multiple contracts
-     */
-    function _getSpattersScript() internal view returns (string memory) {
-        bytes memory fullScript;
-        
-        // Read and concatenate all chunks
-        for (uint i = 0; i < SPATTERS_STORAGE_ADDRESSES.length; i++) {
-            address storageAddress = SPATTERS_STORAGE_ADDRESSES[i];
-            
-            // Read data from SSTORE2 contract (skip first byte which is STOP opcode)
-            bytes memory chunk;
-            assembly {
-                // Get code size
-                let size := extcodesize(storageAddress)
-                // Allocate memory for the chunk (size - 1 to skip STOP opcode)
-                chunk := mload(0x40)
-                mstore(0x40, add(chunk, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-                mstore(chunk, sub(size, 1))
-                // Copy code to memory (offset 1 to skip STOP opcode)
-                extcodecopy(storageAddress, add(chunk, 0x20), 1, sub(size, 1))
-            }
-            
-            fullScript = bytes.concat(fullScript, chunk);
-        }
-        
-        return string(fullScript);
-    }
-
-    /**
-     * @dev Build script tags with p5.js, spatters code, and initialization
-     */
-    function _buildScriptTags(
-        TokenData memory token,
-        MutationRecord[] memory mutations,
-        uint256 tokenId
-    ) internal view returns (string memory) {
-        // Check if custom palette exists for this token
-        string[6] memory palette = customPalettes[tokenId];
-        bool hasCustomPalette = bytes(palette[0]).length > 0;
-        
-        // Build palette JS and generate call based on existence
-        string memory paletteJS;
-        string memory generateCall;
-        
-        if (hasCustomPalette) {
-            // Include custom palette
-            paletteJS = string(abi.encodePacked(
-                'const customPalette = ', _buildPaletteArray(palette), ';'
-            ));
-            generateCall = 'generate(mintingSeed, mutations, customPalette);';
-        } else {
-            // Omit palette variable entirely - p5.js will use default
-            paletteJS = '';
-            generateCall = 'generate(mintingSeed, mutations);';
-        }
-        
-        // Fetch spatters.js from SSTORE2 storage
-        string memory spattersCode = _getSpattersScript();
-        
-        // Build complete HTML with on-chain scripts
-        return string(abi.encodePacked(
-            '<script src="https://cdn.jsdelivr.net/npm/p5@1.11.2/lib/p5.min.js"></script>',
-            '<script>', spattersCode, '</script>',
-            '<script>',
-            'const mintingSeed = hexToSeed("', _bytes32ToHex(token.mintSeed), '");',
-            'const mutations = ', _buildMutationsArray(mutations), ';',
-            paletteJS,
-            'function setup() { ', generateCall, ' }',
-            'function hexToSeed(h) { return parseInt(h.slice(0,16),16); }',
-            '</script>'
-        ));
-    }
-
-    /**
-     * @dev Build mutations array for JavaScript
-     */
-    function _buildMutationsArray(MutationRecord[] memory mutations) internal pure returns (string memory) {
-        if (mutations.length == 0) {
-            return "[]";
-        }
-        
-        string memory result = "[";
-        for (uint i = 0; i < mutations.length; i++) {
-            if (i > 0) result = string(abi.encodePacked(result, ","));
-            result = string(abi.encodePacked(
-                result,
-                "[", mutations[i].timestamp.toString(), ',"', mutations[i].mutationType, '"]'
-            ));
-        }
-        return string(abi.encodePacked(result, "]"));
-    }
-
-    /**
-     * @dev Build palette array for JavaScript
-     */
-    function _buildPaletteArray(string[6] memory palette) internal pure returns (string memory) {
-        if (bytes(palette[0]).length == 0) {
-            return "[]";
-        }
-        
-        string memory result = "[";
-        for (uint i = 0; i < 6; i++) {
-            if (i > 0) result = string(abi.encodePacked(result, ","));
-            result = string(abi.encodePacked(result, '"', palette[i], '"'));
-        }
-        return string(abi.encodePacked(result, "]"));
-    }
 
     /**
      * @dev Generate pseudo-random seed
@@ -1191,24 +979,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     }
 
     /**
-     * @dev Convert bytes32 to hex string
-     */
-    function _bytes32ToHex(bytes32 data) internal pure returns (string memory) {
-        bytes memory hexString = "0x";
-        bytes memory alphabet = "0123456789abcdef";
-        
-        for (uint256 i = 0; i < 32; i++) {
-            hexString = abi.encodePacked(
-                hexString,
-                alphabet[uint8(data[i] >> 4)],
-                alphabet[uint8(data[i] & 0x0f)]
-            );
-        }
-        
-        return string(hexString);
-    }
-
-    /**
      * @dev Validate hex color format
      */
     function _isValidHexColor(string memory color) internal pure returns (bool) {
@@ -1240,13 +1010,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             }
         }
         return false;
-    }
-
-    /**
-     * @dev Check if two timestamps are on the same day
-     */
-    function _isSameDay(uint256 timestamp1, uint256 timestamp2) internal pure returns (bool) {
-        return (timestamp1 / 1 days) == (timestamp2 / 1 days);
     }
 
     /**

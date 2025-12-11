@@ -1,18 +1,3 @@
 // Constructor arguments for Spatters.sol verification
-module.exports = [
-  // spattersAddresses
-  [
-    "0xF2aF5b85A21B6b4766b4c98beCa0cfeA5eb34A6e",
-    "0xAD93A21bE0D04BDEA0F057827FAb0e3685Ee2613",
-    "0xb1fA555cd8929eaFACeCaDBECb434C189EB8CD6d",
-    "0xdBC1759417712256F0bcb94a8EFAC3aF81AaD02e",
-    "0xCa10dE7ABddf78aC36253f55454E5a87EaD24432",
-    "0x6580a00aB10D9dB480289661cDE59638fB331fe6",
-    "0x7ec2BC8571AE9882cF9f002b245C7b25744F20cf",
-    "0xB904c461a2b2e07B193f0E0C2B34C91eF53fc4D2",
-    "0x70c803E898D1ed5dC00dcc081C087578eAb1E5E0"
-  ],
-  // p5jsAddress (zero address for CDN fallback)
-  "0x0000000000000000000000000000000000000000"
-];
-
+// Spatters constructor takes no arguments - script storage is in SpattersGenerator
+module.exports = [];

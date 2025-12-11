@@ -608,6 +608,9 @@ export default function MutatePage() {
 
   const [iframeHeight, setIframeHeight] = useState<number>(600);
   
+  // Countdown timer state
+  const [countdown, setCountdown] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  
   // Regeneration tracking
   const [regenerationStatus, setRegenerationStatus] = useState<'idle' | 'waiting' | 'ready' | 'error'>('idle');
   const [regenerationMessage, setRegenerationMessage] = useState<string>('');
@@ -913,6 +916,52 @@ export default function MutatePage() {
     (contractOwner as string).toLowerCase() === address.toLowerCase();
   const mutationCount = existingMutations ? (existingMutations as any[]).length : 0;
 
+  // Countdown timer effect
+  useEffect(() => {
+    // Only run if mutation is not available today and we have upcoming dates
+    if (canMutateContract || mutationDates.upcomingDates.length === 0) {
+      setCountdown(null);
+      return;
+    }
+
+    const nextDate = mutationDates.upcomingDates[0].date;
+    
+    // Calculate midnight UTC on the next mutation date
+    const targetTime = new Date(Date.UTC(
+      nextDate.getFullYear(),
+      nextDate.getMonth(),
+      nextDate.getDate(),
+      0, 0, 0, 0
+    )).getTime();
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = targetTime - now;
+
+      if (diff <= 0) {
+        setCountdown(null);
+        // Refresh the canMutate status when countdown reaches zero
+        refetchCanMutate();
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    // Update immediately
+    updateCountdown();
+
+    // Update every second
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [canMutateContract, mutationDates.upcomingDates, refetchCanMutate]);
+
   // Not connected
   if (!isConnected) {
     return (
@@ -1077,9 +1126,21 @@ export default function MutatePage() {
                 <p className="font-medium text-sm" style={{ color: COLORS.black }}>
                   Mutation Not Available Today
                 </p>
-                <p className="text-xs" style={{ color: COLORS.black }}>
-                  Check the schedule above for the next eligible date.
-                </p>
+                {countdown ? (
+                  <p className="text-sm mt-2" style={{ color: COLORS.black }}>
+                    The next mutation will be available in:{' '}
+                    <span className="font-bold">
+                      {countdown.days > 0 && `${countdown.days} day${countdown.days !== 1 ? 's' : ''}, `}
+                      {countdown.hours > 0 && `${countdown.hours} hour${countdown.hours !== 1 ? 's' : ''}, `}
+                      {countdown.minutes > 0 && `${countdown.minutes} minute${countdown.minutes !== 1 ? 's' : ''} and `}
+                      {countdown.seconds} second{countdown.seconds !== 1 ? 's' : ''}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs" style={{ color: COLORS.black }}>
+                    Check the schedule above for the next eligible date.
+                  </p>
+                )}
               </div>
             )}
           </div>
