@@ -106,6 +106,9 @@ export default function OwnerMint() {
   // Confirmation modal for 55-minute warning
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
+  // Dynamic countdown timer for remaining mint time
+  const [remainingMinutes, setRemainingMinutes] = useState<number>(55);
+  
   const contractAddress = chainId ? getContractAddress(chainId) : '';
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
 
@@ -303,6 +306,44 @@ export default function OwnerMint() {
       });
     }
   }, [isRequestConfirmed, refetchPendingRequest]);
+
+  // Update remaining minutes countdown when in preview mode
+  useEffect(() => {
+    if (previewSeeds.length !== 3) return;
+    
+    // Calculate from either the global expiry or the pending request timestamp
+    const getExpirationTimestamp = (): number => {
+      // Use global expiry if available
+      if (activeMintRequestExpiry && activeMintRequestExpiry > BigInt(0)) {
+        return Number(activeMintRequestExpiry);
+      }
+      // Fallback to pending request timestamp + 55 minutes
+      if (pendingRequest) {
+        const request = pendingRequest as { timestamp: bigint };
+        if (request.timestamp && request.timestamp > BigInt(0)) {
+          return Number(request.timestamp) + (55 * 60);
+        }
+      }
+      // Default: 55 minutes from now (shouldn't happen)
+      return Math.floor(Date.now() / 1000) + (55 * 60);
+    };
+    
+    const updateCountdown = () => {
+      const expirationTime = getExpirationTimestamp();
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = Math.max(0, expirationTime - now);
+      const minutes = Math.ceil(remaining / 60); // Round up to show "1 minute" until truly expired
+      setRemainingMinutes(minutes);
+    };
+    
+    // Update immediately
+    updateCountdown();
+    
+    // Update every 10 seconds for smoother UX
+    const interval = setInterval(updateCountdown, 10000);
+    
+    return () => clearInterval(interval);
+  }, [previewSeeds.length, activeMintRequestExpiry, pendingRequest]);
 
   // Handle completion confirmation
   useEffect(() => {
@@ -920,12 +961,12 @@ export default function OwnerMint() {
         {/* Step 2: Show all 3 previews stacked - All load simultaneously */}
         {previewSeeds.length === 3 && (
           <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#EBE5D9' }}>
-            {/* URGENT Warning Banner */}
+            {/* URGENT Warning Banner with Dynamic Countdown */}
             <div 
               className="flex-shrink-0 py-3 px-4 text-center font-bold border-b-2"
               style={{ backgroundColor: '#fc1a4a', color: '#FFFFFF', borderColor: '#000000' }}
             >
-              ⚠️ WARNING: You have 55 minutes to select an option. If you do not choose, 
+              ⚠️ WARNING: You have <span className="underline">{remainingMinutes} minute{remainingMinutes !== 1 ? 's' : ''}</span> to select an option. If you do not choose, 
               your mint will be cancelled and the minting fee is NOT refundable. ⚠️
             </div>
 

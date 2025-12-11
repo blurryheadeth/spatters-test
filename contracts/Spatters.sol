@@ -79,8 +79,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /// for anyone reconstructing the rendering infrastructure
     address public generatorContract;
     
+    /// @notice Whether the generator contract reference is permanently locked
+    /// @dev Once locked, the generatorContract address can never be changed
+    bool public generatorLocked;
+    
     /// @notice Emitted when the generator contract reference is updated
     event GeneratorContractUpdated(address indexed oldGenerator, address indexed newGenerator);
+    
+    /// @notice Emitted when the generator contract reference is permanently locked
+    event GeneratorPermanentlyLocked(address indexed lockedGenerator);
     
     struct CommunityProposal {
         address proposer;                // Address that created the proposal
@@ -1284,12 +1291,30 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /**
      * @notice Update the Generator contract reference (informational only)
      * @dev This is purely for discoverability - this contract never calls the Generator
+     *      Can only be called before lockGenerator() is called
      * @param _generator Address of the new Generator contract
      */
     function setGeneratorContract(address _generator) external onlyOwner {
+        require(!generatorLocked, "Generator is permanently locked");
         address oldGenerator = generatorContract;
         generatorContract = _generator;
         emit GeneratorContractUpdated(oldGenerator, _generator);
+    }
+    
+    /**
+     * @notice Permanently lock the generator contract reference
+     * @dev Once called, setGeneratorContract() can never be called again
+     *      This provides collectors with cryptographic proof that the rendering
+     *      infrastructure will never change (Art Blocks-style immutability)
+     * 
+     * WARNING: This is IRREVERSIBLE. Ensure the generator is fully tested
+     *          and working correctly before calling this function.
+     */
+    function lockGenerator() external onlyOwner {
+        require(!generatorLocked, "Already locked");
+        require(generatorContract != address(0), "Set generator before locking");
+        generatorLocked = true;
+        emit GeneratorPermanentlyLocked(generatorContract);
     }
     
     /**
