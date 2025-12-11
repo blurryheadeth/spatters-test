@@ -1,20 +1,11 @@
 {
-  "address": "0x6c9a701d2b86a7Bd236BF0096619a963892d94e3",
+  "address": "0x04f6E1BD095447c6f8cD34Dde50c8e7bec114a0e",
   "abi": [
     {
       "type": "constructor",
       "stateMutability": "undefined",
       "payable": false,
-      "inputs": [
-        {
-          "type": "address[]",
-          "name": "spattersAddresses"
-        },
-        {
-          "type": "address",
-          "name": "p5jsAddress"
-        }
-      ]
+      "inputs": []
     },
     {
       "type": "error",
@@ -214,6 +205,18 @@
         {
           "type": "address",
           "name": "newGenerator",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "GeneratorPermanentlyLocked",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "lockedGenerator",
           "indexed": true
         }
       ]
@@ -464,25 +467,6 @@
     },
     {
       "type": "function",
-      "name": "DEFAULT_PALETTE",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": ""
-        }
-      ],
-      "outputs": [
-        {
-          "type": "string",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
       "name": "GLOBAL_COOLDOWN",
       "constant": true,
       "stateMutability": "view",
@@ -651,20 +635,6 @@
     },
     {
       "type": "function",
-      "name": "WALLET_COOLDOWN",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
       "name": "activeMintRequestTime",
       "constant": true,
       "stateMutability": "view",
@@ -783,20 +753,6 @@
       "outputs": [
         {
           "type": "bool",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "collectionLaunchDate",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "uint256",
           "name": ""
         }
       ]
@@ -949,6 +905,20 @@
     },
     {
       "type": "function",
+      "name": "generatorLocked",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getAllowedMutations",
       "constant": true,
       "stateMutability": "view",
@@ -1061,12 +1031,7 @@
       "constant": true,
       "stateMutability": "view",
       "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "minter"
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "type": "tuple",
@@ -1213,25 +1178,6 @@
     },
     {
       "type": "function",
-      "name": "lastMintTime",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": ""
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
       "name": "lastMutationDay",
       "constant": true,
       "stateMutability": "view",
@@ -1262,6 +1208,14 @@
           "name": ""
         }
       ]
+    },
+    {
+      "type": "function",
+      "name": "lockGenerator",
+      "constant": false,
+      "payable": false,
+      "inputs": [],
+      "outputs": []
     },
     {
       "type": "function",
@@ -1386,29 +1340,11 @@
     },
     {
       "type": "function",
-      "name": "p5jsScriptAddress",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "address",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "pendingPalettes",
+      "name": "pendingPalette",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [
-        {
-          "type": "address",
-          "name": ""
-        },
         {
           "type": "uint256",
           "name": ""
@@ -1423,16 +1359,11 @@
     },
     {
       "type": "function",
-      "name": "pendingRequests",
+      "name": "pendingRequest",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": ""
-        }
-      ],
+      "inputs": [],
       "outputs": [
         {
           "type": "uint256",
@@ -1658,37 +1589,6 @@
     },
     {
       "type": "function",
-      "name": "setScriptAddresses",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "_p5jsAddress"
-        },
-        {
-          "type": "address",
-          "name": "_spattersAddress"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "spattersScriptAddress",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "address",
-          "name": ""
-        }
-      ]
-    },
-    {
-      "type": "function",
       "name": "supportsInterface",
       "constant": true,
       "stateMutability": "view",
@@ -1848,10 +1748,6 @@
       "payable": false,
       "inputs": [],
       "outputs": []
-    },
-    {
-      "type": "receive",
-      "stateMutability": "payable"
     }
   ],
   "network": "sepolia",
