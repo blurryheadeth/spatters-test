@@ -18,14 +18,13 @@ import "./DateTime.sol";
  * 
  * Features:
  * - Two-step minting with 3-choice preview selection
- * - Owner-only custom palette support (first 25 tokens)
- * - Date-based mutation system with 92 mutation types
+ * - Owner-only custom palette support (first 30 tokens)
+ * - Date-based mutation system with 94 mutation types
  * - EIP-2981 royalty standard (5% secondary sales)
  * - All code stored on-chain, zero external dependencies
  */
 contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     using Strings for uint256;
-    using Strings for address;
 
     // ============ Constants ============
 
@@ -132,11 +131,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     mapping(uint256 => TokenData) public tokens;
     mapping(uint256 => MutationRecord[]) public tokenMutations;
     mapping(uint256 => string[6]) public customPalettes;  // Only populated for tokens with custom palettes
-    mapping(address => MintRequest) public pendingRequests;
+    MintRequest public pendingRequest;  // Single pending request (only one mint active at a time)
     string[6] public pendingPalette;  // Single pending palette (only one mint active at a time, only owner can use)
     
     uint256 private _nextTokenId = 1;
-    uint256 public collectionLaunchDate;
     uint256 public lastGlobalMintTime;
     
     // Global pending request tracking - blocks ALL minting during selection period
@@ -146,8 +144,11 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     // Anti-whale tracking
     mapping(address => uint256) public mintedPerWallet;
     
-    // Allowed mutation types (92 total from spatters.js)
+    // Allowed mutation types (94 total from spatters.js)
     string[] public allowedMutations;
+    
+    // O(1) lookup for mutation type validation
+    mapping(bytes32 => bool) private _mutationTypeHashes;
     
     
     // Per-token mutation cooldown tracking (UTC day number)
@@ -220,127 +221,136 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
 
     /**
      * @dev Initialize the 94 allowed mutation types from spatters.js
+     * Also populates _mutationTypeHashes for O(1) validation
      */
     function _initializeMutationTypes() private {
-        // Base mutations (1-10)
-        allowedMutations.push("aspectRatioChange");
-        allowedMutations.push("baseRadiusIncrease");
-        allowedMutations.push("baseRadiusDecrease");
-        allowedMutations.push("gradientTypeChange");
-        allowedMutations.push("dividerCountChange");
-        allowedMutations.push("circleCountChange");
-        allowedMutations.push("lineCountChange");
-        allowedMutations.push("circleSizeIncrease");
-        allowedMutations.push("circleSizeDecrease");
-        allowedMutations.push("circlePositionChange");
+        // Helper to add mutation to both array and hash mapping
+        _addMutation("aspectRatioChange");
+        _addMutation("baseRadiusIncrease");
+        _addMutation("baseRadiusDecrease");
+        _addMutation("gradientTypeChange");
+        _addMutation("dividerCountChange");
+        _addMutation("circleCountChange");
+        _addMutation("lineCountChange");
+        _addMutation("circleSizeIncrease");
+        _addMutation("circleSizeDecrease");
+        _addMutation("circlePositionChange");
         
-        // Circle mutations (11-14)
-        allowedMutations.push("circleMoveLeft");
-        allowedMutations.push("circleMoveRight");
-        allowedMutations.push("circleMoveUp");
-        allowedMutations.push("circleMoveDown");
+        // Circle mutations
+        _addMutation("circleMoveLeft");
+        _addMutation("circleMoveRight");
+        _addMutation("circleMoveUp");
+        _addMutation("circleMoveDown");
         
-        // Line mutations (15-24)
-        allowedMutations.push("lineWidthIncrease");
-        allowedMutations.push("lineWidthDecrease");
-        allowedMutations.push("lineAngleChange");
-        allowedMutations.push("lineLengthIncrease");
-        allowedMutations.push("lineLengthDecrease");
-        allowedMutations.push("linePositionChange");
-        allowedMutations.push("lineMoveLeft");
-        allowedMutations.push("lineMoveRight");
-        allowedMutations.push("lineMoveUp");
-        allowedMutations.push("lineMoveDown");
+        // Line mutations
+        _addMutation("lineWidthIncrease");
+        _addMutation("lineWidthDecrease");
+        _addMutation("lineAngleChange");
+        _addMutation("lineLengthIncrease");
+        _addMutation("lineLengthDecrease");
+        _addMutation("linePositionChange");
+        _addMutation("lineMoveLeft");
+        _addMutation("lineMoveRight");
+        _addMutation("lineMoveUp");
+        _addMutation("lineMoveDown");
         
-        // Palette mutations (25-31)
-        allowedMutations.push("paletteChangeOne");
-        allowedMutations.push("paletteChangeAll");
-        allowedMutations.push("paletteCombineOne");
-        allowedMutations.push("paletteCombineAll");
-        allowedMutations.push("paletteResetOne");
-        allowedMutations.push("paletteResetAll");
-        allowedMutations.push("paletteShuffle");
+        // Palette mutations
+        _addMutation("paletteChangeOne");
+        _addMutation("paletteChangeAll");
+        _addMutation("paletteCombineOne");
+        _addMutation("paletteCombineAll");
+        _addMutation("paletteResetOne");
+        _addMutation("paletteResetAll");
+        _addMutation("paletteShuffle");
         
-        // Divider and rotation (32-34)
-        allowedMutations.push("dividerMove");
-        allowedMutations.push("dividerRotate");
-        allowedMutations.push("rotate");
+        // Divider and rotation
+        _addMutation("dividerMove");
+        _addMutation("dividerRotate");
+        _addMutation("rotate");
         
-        // Seedpoint count (35-36)
-        allowedMutations.push("seedPointCountIncrease");
-        allowedMutations.push("seedPointCountDecrease");
+        // Seedpoint count
+        _addMutation("seedPointCountIncrease");
+        _addMutation("seedPointCountDecrease");
         
-        // Generic seedpoint mutations (37-45)
-        allowedMutations.push("seedpointMoveRight");
-        allowedMutations.push("seedpointMoveLeft");
-        allowedMutations.push("seedpointMoveUp");
-        allowedMutations.push("seedpointMoveDown");
-        allowedMutations.push("seedpointChangeCurveCenter");
-        allowedMutations.push("seedpointIncreaseConcavity");
-        allowedMutations.push("seedpointDecreaseConcavity");
-        allowedMutations.push("seedpointIncreaseRadius");
-        allowedMutations.push("seedpointDecreaseRadius");
+        // Generic seedpoint mutations
+        _addMutation("seedpointMoveRight");
+        _addMutation("seedpointMoveLeft");
+        _addMutation("seedpointMoveUp");
+        _addMutation("seedpointMoveDown");
+        _addMutation("seedpointChangeCurveCenter");
+        _addMutation("seedpointIncreaseConcavity");
+        _addMutation("seedpointDecreaseConcavity");
+        _addMutation("seedpointIncreaseRadius");
+        _addMutation("seedpointDecreaseRadius");
         
-        // Shape mutations (46-56)
-        allowedMutations.push("shapeExpand");
-        allowedMutations.push("shapeShrink");
-        allowedMutations.push("shapeMakeWider");
-        allowedMutations.push("shapeMakeNarrower");
-        allowedMutations.push("shapeMakeHigher");
-        allowedMutations.push("shapeMakeShorter");
-        allowedMutations.push("shapeChangeCurveCenters");
-        allowedMutations.push("shapeIncreaseConcavity");
-        allowedMutations.push("shapeReduceConcavity");
-        allowedMutations.push("shapeChangeRadiuses");
-        allowedMutations.push("shapeMove");
+        // Shape mutations
+        _addMutation("shapeExpand");
+        _addMutation("shapeShrink");
+        _addMutation("shapeMakeWider");
+        _addMutation("shapeMakeNarrower");
+        _addMutation("shapeMakeHigher");
+        _addMutation("shapeMakeShorter");
+        _addMutation("shapeChangeCurveCenters");
+        _addMutation("shapeIncreaseConcavity");
+        _addMutation("shapeReduceConcavity");
+        _addMutation("shapeChangeRadiuses");
+        _addMutation("shapeMove");
         
-        // Undo mutations (57-58)
-        allowedMutations.push("undoMutation");
-        allowedMutations.push("returnToPreviousVersion");
+        // Undo mutations
+        _addMutation("undoMutation");
+        _addMutation("returnToPreviousVersion");
         
-        // Seedpoint-top mutations (59-67)
-        allowedMutations.push("seedpointMoveRight-top");
-        allowedMutations.push("seedpointMoveLeft-top");
-        allowedMutations.push("seedpointMoveUp-top");
-        allowedMutations.push("seedpointMoveDown-top");
-        allowedMutations.push("seedpointChangeCurveCenter-top");
-        allowedMutations.push("seedpointIncreaseConcavity-top");
-        allowedMutations.push("seedpointDecreaseConcavity-top");
-        allowedMutations.push("seedpointIncreaseRadius-top");
-        allowedMutations.push("seedpointDecreaseRadius-top");
+        // Seedpoint-top mutations
+        _addMutation("seedpointMoveRight-top");
+        _addMutation("seedpointMoveLeft-top");
+        _addMutation("seedpointMoveUp-top");
+        _addMutation("seedpointMoveDown-top");
+        _addMutation("seedpointChangeCurveCenter-top");
+        _addMutation("seedpointIncreaseConcavity-top");
+        _addMutation("seedpointDecreaseConcavity-top");
+        _addMutation("seedpointIncreaseRadius-top");
+        _addMutation("seedpointDecreaseRadius-top");
         
-        // Seedpoint-bottom mutations (68-76)
-        allowedMutations.push("seedpointMoveRight-bottom");
-        allowedMutations.push("seedpointMoveLeft-bottom");
-        allowedMutations.push("seedpointMoveUp-bottom");
-        allowedMutations.push("seedpointMoveDown-bottom");
-        allowedMutations.push("seedpointChangeCurveCenter-bottom");
-        allowedMutations.push("seedpointIncreaseConcavity-bottom");
-        allowedMutations.push("seedpointDecreaseConcavity-bottom");
-        allowedMutations.push("seedpointIncreaseRadius-bottom");
-        allowedMutations.push("seedpointDecreaseRadius-bottom");
+        // Seedpoint-bottom mutations
+        _addMutation("seedpointMoveRight-bottom");
+        _addMutation("seedpointMoveLeft-bottom");
+        _addMutation("seedpointMoveUp-bottom");
+        _addMutation("seedpointMoveDown-bottom");
+        _addMutation("seedpointChangeCurveCenter-bottom");
+        _addMutation("seedpointIncreaseConcavity-bottom");
+        _addMutation("seedpointDecreaseConcavity-bottom");
+        _addMutation("seedpointIncreaseRadius-bottom");
+        _addMutation("seedpointDecreaseRadius-bottom");
         
-        // Seedpoint-left mutations (77-85)
-        allowedMutations.push("seedpointMoveRight-left");
-        allowedMutations.push("seedpointMoveLeft-left");
-        allowedMutations.push("seedpointMoveUp-left");
-        allowedMutations.push("seedpointMoveDown-left");
-        allowedMutations.push("seedpointChangeCurveCenter-left");
-        allowedMutations.push("seedpointIncreaseConcavity-left");
-        allowedMutations.push("seedpointDecreaseConcavity-left");
-        allowedMutations.push("seedpointIncreaseRadius-left");
-        allowedMutations.push("seedpointDecreaseRadius-left");
+        // Seedpoint-left mutations
+        _addMutation("seedpointMoveRight-left");
+        _addMutation("seedpointMoveLeft-left");
+        _addMutation("seedpointMoveUp-left");
+        _addMutation("seedpointMoveDown-left");
+        _addMutation("seedpointChangeCurveCenter-left");
+        _addMutation("seedpointIncreaseConcavity-left");
+        _addMutation("seedpointDecreaseConcavity-left");
+        _addMutation("seedpointIncreaseRadius-left");
+        _addMutation("seedpointDecreaseRadius-left");
         
-        // Seedpoint-right mutations (86-94)
-        allowedMutations.push("seedpointMoveRight-right");
-        allowedMutations.push("seedpointMoveLeft-right");
-        allowedMutations.push("seedpointMoveUp-right");
-        allowedMutations.push("seedpointMoveDown-right");
-        allowedMutations.push("seedpointChangeCurveCenter-right");
-        allowedMutations.push("seedpointIncreaseConcavity-right");
-        allowedMutations.push("seedpointDecreaseConcavity-right");
-        allowedMutations.push("seedpointIncreaseRadius-right");
-        allowedMutations.push("seedpointDecreaseRadius-right");
+        // Seedpoint-right mutations
+        _addMutation("seedpointMoveRight-right");
+        _addMutation("seedpointMoveLeft-right");
+        _addMutation("seedpointMoveUp-right");
+        _addMutation("seedpointMoveDown-right");
+        _addMutation("seedpointChangeCurveCenter-right");
+        _addMutation("seedpointIncreaseConcavity-right");
+        _addMutation("seedpointDecreaseConcavity-right");
+        _addMutation("seedpointIncreaseRadius-right");
+        _addMutation("seedpointDecreaseRadius-right");
+    }
+    
+    /**
+     * @dev Helper to add mutation to both array and hash mapping
+     */
+    function _addMutation(string memory mutationType) private {
+        allowedMutations.push(mutationType);
+        _mutationTypeHashes[keccak256(bytes(mutationType))] = true;
     }
 
     // ============ Public Minting Functions ============
@@ -368,14 +378,14 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         );
         
         // Check payment
-        uint256 price = ExponentialPricing.calculatePrice(_nextTokenId);
+        uint256 price = ExponentialPricing.calculatePrice(_nextTokenId, OWNER_RESERVE);
         require(msg.value >= price, "Insufficient payment");
         
         // Check for existing pending request
         // Allow new request only if previous request is completed OR expired
         require(
-            pendingRequests[msg.sender].completed ||
-            block.timestamp > pendingRequests[msg.sender].timestamp + REQUEST_EXPIRATION,
+            pendingRequest.completed ||
+            block.timestamp > pendingRequest.timestamp + REQUEST_EXPIRATION,
             "Pending request exists"
         );
         
@@ -386,7 +396,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         }
         
         // Store request
-        pendingRequests[msg.sender] = MintRequest({
+        pendingRequest = MintRequest({
             seeds: seeds,
             timestamp: block.timestamp,
             completed: false,
@@ -411,31 +421,28 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     function completeMint(uint8 seedChoice) external nonReentrant {
         require(seedChoice < 3, "Invalid seed choice");
         
-        MintRequest storage request = pendingRequests[msg.sender];
-        require(request.timestamp > 0, "No pending request");
-        require(!request.completed, "Request already completed");
-        require(!request.isOwnerMint, "Use completeOwnerMint for owner mints");
+        // Verify this user is the active requester
+        require(activeMintRequester == msg.sender, "Not your pending request");
+        
+        require(pendingRequest.timestamp > 0, "No pending request");
+        require(!pendingRequest.completed, "Request already completed");
+        require(!pendingRequest.isOwnerMint, "Use completeOwnerMint for owner mints");
         require(
-            block.timestamp <= request.timestamp + REQUEST_EXPIRATION,
+            block.timestamp <= pendingRequest.timestamp + REQUEST_EXPIRATION,
             "Request expired"
         );
         
         // Get chosen seed
-        bytes32 chosenSeed = request.seeds[seedChoice];
+        bytes32 chosenSeed = pendingRequest.seeds[seedChoice];
         
         // Mark request as completed and clear global active request
-        request.completed = true;
+        pendingRequest.completed = true;
         activeMintRequester = address(0);
         activeMintRequestTime = 0;
         
         // Update tracking
         lastGlobalMintTime = block.timestamp;
         mintedPerWallet[msg.sender]++;
-        
-        // Set collection launch date on first public mint
-        if (_nextTokenId == OWNER_RESERVE + 1 && collectionLaunchDate == 0) {
-            collectionLaunchDate = block.timestamp;
-        }
         
         // Store token data
         uint256 tokenId = _nextTokenId++;
@@ -489,7 +496,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         }
         
         // Store request with recipient
-        pendingRequests[msg.sender] = MintRequest({
+        pendingRequest = MintRequest({
             seeds: seeds,
             timestamp: block.timestamp,
             completed: false,
@@ -522,32 +529,29 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     function completeOwnerMint(uint8 seedChoice) external onlyOwner nonReentrant {
         require(seedChoice < 3, "Invalid seed choice");
         
-        MintRequest storage request = pendingRequests[msg.sender];
-        require(request.timestamp > 0, "No pending request");
-        require(!request.completed, "Request already completed");
-        require(request.isOwnerMint, "Not an owner mint request");
+        // Verify this is the active request
+        require(activeMintRequester == msg.sender, "Not your pending request");
+        
+        require(pendingRequest.timestamp > 0, "No pending request");
+        require(!pendingRequest.completed, "Request already completed");
+        require(pendingRequest.isOwnerMint, "Not an owner mint request");
         require(
-            block.timestamp <= request.timestamp + REQUEST_EXPIRATION,
+            block.timestamp <= pendingRequest.timestamp + REQUEST_EXPIRATION,
             "Request expired"
         );
         
         // Get chosen seed and recipient
-        bytes32 chosenSeed = request.seeds[seedChoice];
-        address recipient = request.recipient;
-        bool hasCustomPalette = request.hasCustomPalette;
+        bytes32 chosenSeed = pendingRequest.seeds[seedChoice];
+        address recipient = pendingRequest.recipient;
+        bool hasCustomPalette = pendingRequest.hasCustomPalette;
         
         // Mark request as completed and clear global active request
-        request.completed = true;
+        pendingRequest.completed = true;
         activeMintRequester = address(0);
         activeMintRequestTime = 0;
         
         // Update global mint time (triggers 24h cooldown for public mints)
         lastGlobalMintTime = block.timestamp;
-        
-        // Set collection launch date on first mint
-        if (_nextTokenId == 1) {
-            collectionLaunchDate = block.timestamp;
-        }
         
         // Store token data
         uint256 tokenId = _nextTokenId++;
@@ -608,11 +612,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         
         // Update global mint time (triggers 24h cooldown for public mints)
         lastGlobalMintTime = block.timestamp;
-        
-        // Set collection launch date on first mint
-        if (_nextTokenId == 1) {
-            collectionLaunchDate = block.timestamp;
-        }
         
         // Store token data
         uint256 tokenId = _nextTokenId++;
@@ -819,12 +818,12 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     }
 
     /**
-     * @dev Get pending mint request for an address
-     * @param minter Address to query
+     * @dev Get the current pending mint request
      * @return Full MintRequest struct with seeds array
+     * @notice Since only one request can be active at a time, no address parameter needed
      */
-    function getPendingRequest(address minter) external view returns (MintRequest memory) {
-        return pendingRequests[minter];
+    function getPendingRequest() external view returns (MintRequest memory) {
+        return pendingRequest;
     }
 
     /**
@@ -858,7 +857,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
      * @return Current price in wei
      */
     function getCurrentPrice() external view returns (uint256) {
-        return ExponentialPricing.calculatePrice(_nextTokenId);
+        return ExponentialPricing.calculatePrice(_nextTokenId, OWNER_RESERVE);
     }
 
     /**
@@ -1001,15 +1000,10 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     }
 
     /**
-     * @dev Check if mutation type is valid
+     * @dev Check if mutation type is valid (O(1) lookup via hash mapping)
      */
     function _isValidMutationType(string memory mutationType) internal view returns (bool) {
-        for (uint i = 0; i < allowedMutations.length; i++) {
-            if (keccak256(bytes(allowedMutations[i])) == keccak256(bytes(mutationType))) {
-                return true;
-            }
-        }
-        return false;
+        return _mutationTypeHashes[keccak256(bytes(mutationType))];
     }
 
     /**
@@ -1034,11 +1028,6 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         (bool success, ) = owner().call{value: balance}("");
         require(success, "Withdrawal failed");
     }
-
-    /**
-     * @dev Receive function to accept ETH
-     */
-    receive() external payable {}
 
     // ============ Community Governance Functions ============
     

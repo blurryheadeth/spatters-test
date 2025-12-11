@@ -140,12 +140,12 @@ export default function OwnerMint() {
     functionName: 'MAX_SUPPLY',
   });
 
-  // Read pending request for current user
+  // Read the global pending request (only one can exist at a time)
   const { data: pendingRequest, refetch: refetchPendingRequest } = useReadContract({
     address: contractAddress as `0x${string}`,
     abi: SpattersABI.abi,
     functionName: 'getPendingRequest',
-    args: [address],
+    args: [],  // No address param needed - single global request
   });
 
   // Read pending palette (single global palette, since only one mint can be active at a time)

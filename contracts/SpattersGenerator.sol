@@ -170,15 +170,7 @@ contract SpattersGenerator {
      * @return The raw bytes stored (excluding STOP opcode)
      */
     function readStorageChunk(address storageAddress) external view returns (bytes memory) {
-        bytes memory chunk;
-        assembly {
-            let size := extcodesize(storageAddress)
-            chunk := mload(0x40)
-            mstore(0x40, add(chunk, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            mstore(chunk, sub(size, 1))
-            extcodecopy(storageAddress, add(chunk, 0x20), 1, sub(size, 1))
-        }
-        return chunk;
+        return _readFromSSTORE2(storageAddress);
     }
 
     /**

@@ -45,11 +45,9 @@ async function main() {
 
   // Get cooldown info
   const globalCooldown = await spatters.GLOBAL_COOLDOWN();
-  const walletCooldown = await spatters.WALLET_COOLDOWN();
   const maxPerWallet = await spatters.MAX_PER_WALLET();
   console.log("\nAnti-Whale Protection:");
   console.log("- Global Cooldown:", (Number(globalCooldown) / 3600).toFixed(1), "hours");
-  console.log("- Wallet Cooldown:", (Number(walletCooldown) / 3600).toFixed(1), "hours");
   console.log("- Max Per Wallet:", maxPerWallet.toString());
 
   console.log("\nNetwork:", network.name);
