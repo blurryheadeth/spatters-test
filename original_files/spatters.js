@@ -3027,7 +3027,7 @@ function adjustAngle(startX,initialAngle,minAngle,maxAngle,diagonal){
             }
         }
         
-        if(angle > maxAngle){
+        if(angle >= maxAngle){
             //we did not manage to find a possible line
             return null;
         }

@@ -473,11 +473,25 @@ export default function PublicMint() {
       <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: '#EBE5D9' }}>
         {/* URGENT Warning Banner with Dynamic Countdown */}
         <div 
-          className="flex-shrink-0 py-3 px-4 text-center font-bold border-b-2"
+          className="flex-shrink-0 py-3 px-4 text-center border-b-2"
           style={{ backgroundColor: '#fc1a4a', color: '#FFFFFF', borderColor: '#000000' }}
         >
-          ⚠️ WARNING: You have <span className="underline">{remainingMinutes} minute{remainingMinutes !== 1 ? 's' : ''}</span> to select an option. If you do not choose, 
-          your mint will be cancelled and the minting fee is NOT refundable. ⚠️
+          <p className="font-bold">
+            ⚠️ WARNING: You have <span className="underline">{remainingMinutes} minute{remainingMinutes !== 1 ? 's' : ''}</span> to select an option. If you do not choose, 
+            your mint will be cancelled and the minting fee is NOT refundable. ⚠️
+          </p>
+          <p className="text-sm mt-1 opacity-90">
+            If you encounter any website issues, you can complete your mint directly on{' '}
+            <a 
+              href={`https://sepolia.etherscan.io/address/${contractAddress}#writeContract`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-70"
+            >
+              Etherscan
+            </a>
+            {' '}by calling <code className="bg-white/20 px-1 rounded">completeMint(0, 1, or 2)</code>
+          </p>
         </div>
 
         {/* Sticky Header with Navigation */}
