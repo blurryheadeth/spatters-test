@@ -52,18 +52,18 @@ type MintMode = 'choose' | 'direct' | 'preview';
 /**
  * Convert a JavaScript integer seed to bytes32 format for contract storage.
  * 
- * The renderer's hexToSeed() reads the first 14 hex digits (56 bits) of the bytes32.
+ * The renderer's hexToSeed() reads the first 13 hex digits (52 bits) of the bytes32.
  * To recover the exact original integer:
- * 1. LEFT-pad the hex to 14 digits (so hexToSeed reads the full value)
+ * 1. LEFT-pad the hex to 13 digits (so hexToSeed reads the full value)
  * 2. RIGHT-pad to 64 digits total (to make valid bytes32)
  * 
- * Example: 1763114204158 → "0x0000019a8c8c77fe0000000000000000000000000000000000000000000000"
- *          hexToSeed reads "0x0000019a8c8c77fe" → parseInt → 1763114204158 ✓
+ * Example: 1763114204158 → "0x00019a8c8c77fe00000000000000000000000000000000000000000000000000"
+ *          hexToSeed reads "00019a8c8c77fe" → parseInt → 1763114204158 ✓
  */
 function integerToBytes32(seed: number | bigint): string {
   const hex = BigInt(seed).toString(16);
-  // LEFT-pad to 14 hex digits (what hexToSeed reads - 56 bits, covers MAX_SAFE_INTEGER)
-  const leftPadded = hex.padStart(14, '0');
+  // LEFT-pad to 13 hex digits (what hexToSeed reads - 52 bits, stays within MAX_SAFE_INTEGER)
+  const leftPadded = hex.padStart(13, '0');
   // RIGHT-pad to 64 hex digits total (valid bytes32)
   const fullPadded = leftPadded.padEnd(64, '0');
   return '0x' + fullPadded;

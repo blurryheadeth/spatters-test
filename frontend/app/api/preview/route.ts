@@ -71,8 +71,10 @@ export async function GET(request: Request) {
   }
 
   // Convert seed to decimal (matching on-chain template)
+  // Take 13 hex digits (52 bits) to stay within MAX_SAFE_INTEGER (2^53 - 1)
   function hexToSeed(hexString: string): number {
-    const truncated = hexString.slice(0, 16);
+    // Skip "0x" prefix, take next 13 chars
+    const truncated = hexString.slice(2, 15);
     return parseInt(truncated, 16);
   }
   const seedDecimal = hexToSeed(seedHex);

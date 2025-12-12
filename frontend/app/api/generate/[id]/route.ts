@@ -143,9 +143,10 @@ export async function GET(
   const [seed, mutationSeeds, mutationTypes, customPalette] = tokenData;
 
   // Convert bytes32 hex seed to truncated decimal (matching on-chain template)
-  // Takes first 8 bytes (18 chars including 0x) and converts to decimal
+  // Take 13 hex digits (52 bits) to stay within MAX_SAFE_INTEGER (2^53 - 1)
   function hexToSeed(hexString: string): number {
-    const truncated = hexString.slice(0, 16);
+    // Skip "0x" prefix, take next 13 chars
+    const truncated = hexString.slice(2, 15);
     return parseInt(truncated, 16);
   }
 

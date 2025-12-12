@@ -153,7 +153,9 @@ async function loadSpattersJs() {
 }
 
 function hexToSeed(hexString) {
-  const truncated = hexString.slice(0, 16);
+  // Take 13 hex digits (52 bits) to stay within MAX_SAFE_INTEGER (2^53 - 1)
+  // Skip "0x" prefix, take next 13 chars
+  const truncated = hexString.slice(2, 15);
   return parseInt(truncated, 16);
 }
 
