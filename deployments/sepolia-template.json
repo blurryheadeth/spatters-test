@@ -2,9 +2,9 @@
   "network": "sepolia",
   "chainId": 11155111,
   "templateAddresses": [
-    "0x9e41Ce8D57FeAf91932BddEa50B50d6526289fB7"
+    "0x4DbfEEDf0E34bbE3C0af0614277e905A97cB5eE9"
   ],
   "templateChunks": 1,
-  "templateSize": 6157,
-  "deployedAt": "2025-12-09T10:45:49.381Z"
+  "templateSize": 6276,
+  "deployedAt": "2025-12-12T12:58:36.702Z"
 }
