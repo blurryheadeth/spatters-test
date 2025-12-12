@@ -277,6 +277,18 @@ export default function PublicMint() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  // Hide body scrollbar when preview modal is open (prevents double scrollbar)
+  useEffect(() => {
+    if (previewSeeds.length === 3) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [previewSeeds.length]);
+
   // Handle completion confirmation
   useEffect(() => {
     if (isCompleteConfirmed && !hasTriggeredGeneration) {

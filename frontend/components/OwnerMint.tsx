@@ -411,6 +411,18 @@ export default function OwnerMint() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  // Hide body scrollbar when preview modal is open (prevents double scrollbar)
+  useEffect(() => {
+    if (previewSeeds.length === 3) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [previewSeeds.length]);
+
   // Validate hex color
   const isValidHexColor = (color: string): boolean => {
     return /^#[0-9A-Fa-f]{6}$/.test(color);
