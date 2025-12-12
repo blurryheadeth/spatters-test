@@ -581,7 +581,7 @@ export default function PublicMint() {
               <div 
                 key={index} 
                 id={`preview-${index}`}
-                className="border-b-4 last:border-b-0"
+                className="border-b-2 last:border-b-0"
                 style={{ borderColor: COLORS.black }}
               >
                 {/* Option Header - Clickable to select */}
