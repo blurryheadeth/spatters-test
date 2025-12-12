@@ -29,6 +29,12 @@ export default function PublicMint() {
   // Dynamic iframe heights based on canvas dimensions from postMessage
   const [iframeHeights, setIframeHeights] = useState<{ [key: string]: number }>({});
   
+  // Sequential loading: track which previews should be loaded (starts with just index 0)
+  const [loadedPreviews, setLoadedPreviews] = useState<Set<number>>(new Set([0]));
+  
+  // Track which previews have finished rendering (received postMessage)
+  const [finishedPreviews, setFinishedPreviews] = useState<Set<number>>(new Set());
+  
   // Confirmation modal for 55-minute warning
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
@@ -239,7 +245,7 @@ export default function PublicMint() {
     return () => clearInterval(interval);
   }, [previewSeeds.length, activeMintRequestExpiry, pendingRequest]);
 
-  // Listen for canvas dimensions from preview iframes
+  // Listen for canvas dimensions from preview iframes and auto-load next preview
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'spatters-canvas-ready') {
@@ -249,8 +255,18 @@ export default function PublicMint() {
         iframes.forEach((iframe) => {
           if ((iframe as HTMLIFrameElement).contentWindow === event.source) {
             const seed = iframe.getAttribute('data-preview-seed');
+            const previewIndex = iframe.getAttribute('data-preview-index');
             if (seed) {
               setIframeHeights(prev => ({ ...prev, [seed]: height }));
+            }
+            if (previewIndex !== null) {
+              const index = parseInt(previewIndex, 10);
+              // Mark this preview as finished
+              setFinishedPreviews(prev => new Set([...prev, index]));
+              // Auto-load the next preview if it exists
+              if (index < 2) {
+                setLoadedPreviews(prev => new Set([...prev, index + 1]));
+              }
             }
           }
         });
@@ -330,6 +346,9 @@ export default function PublicMint() {
     setError('');
     setHasTriggeredGeneration(false);
     setIsRequestExpired(false);
+    setLoadedPreviews(new Set([0])); // Reset to only first preview
+    setFinishedPreviews(new Set()); // Clear finished tracking
+    setIframeHeights({}); // Clear iframe heights
     resetRequest();
     resetComplete();
     // Refetch contract state to get latest status
@@ -525,10 +544,12 @@ export default function PublicMint() {
           )}
         </div>
 
-        {/* All 3 Artworks Stacked - All load simultaneously */}
+        {/* All 3 Artworks Stacked - Sequential loading to prevent browser crash */}
         <div className="flex-1 overflow-auto" style={{ backgroundColor: COLORS.white }}>
           {previewSeeds.map((seed, index) => {
             const previewUrl = `${baseUrl}/api/preview?seed=${seed}`;
+            const isLoaded = loadedPreviews.has(index);
+            const isFinished = finishedPreviews.has(index);
             
             return (
               <div 
@@ -551,6 +572,11 @@ export default function PublicMint() {
                     {selectedIndex === index && (
                       <span className="ml-3" style={{ color: COLORS.black }}>✓ Selected</span>
                     )}
+                    {isLoaded && !isFinished && (
+                      <span className="ml-3 text-sm font-normal" style={{ color: COLORS.blue }}>
+                        (Generating...)
+                      </span>
+                    )}
                   </h2>
                   <button
                     onClick={(e) => {
@@ -568,16 +594,46 @@ export default function PublicMint() {
                   </button>
                 </div>
                 
-                {/* Artwork iframe - centered, dynamic height based on canvas */}
+                {/* Artwork iframe - sequential loading to prevent browser crash */}
                 <div className="flex justify-center" style={{ backgroundColor: COLORS.white }}>
-                  <iframe
-                    src={previewUrl}
-                    data-preview-seed={seed}
-                    className="w-full max-w-[1200px] border-0 transition-all duration-300"
-                    scrolling="no"
-                    style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px', overflow: 'hidden' }}
-                    title={`Preview Option ${index + 1}`}
-                  />
+                  {isLoaded ? (
+                    <iframe
+                      src={previewUrl}
+                      data-preview-seed={seed}
+                      data-preview-index={index}
+                      className="w-full max-w-[1200px] border-0 transition-all duration-300"
+                      scrolling="no"
+                      style={{ height: iframeHeights[seed] ? `${iframeHeights[seed]}px` : '2400px', overflow: 'hidden' }}
+                      title={`Preview Option ${index + 1}`}
+                    />
+                  ) : (
+                    <div 
+                      className="w-full max-w-[1200px] flex flex-col items-center justify-center py-16"
+                      style={{ backgroundColor: COLORS.background, minHeight: '400px' }}
+                    >
+                      <div className="text-center space-y-4">
+                        <p className="text-lg font-medium" style={{ color: COLORS.black }}>
+                          ⏳ Waiting for Option {index} to finish...
+                        </p>
+                        <p className="text-sm" style={{ color: COLORS.black, opacity: 0.7 }}>
+                          Previews load one at a time to prevent browser slowdown
+                        </p>
+                        <button
+                          onClick={() => setLoadedPreviews(prev => new Set([...prev, index]))}
+                          className="px-6 py-3 border-2 font-medium hover:opacity-70 transition-opacity"
+                          style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
+                        >
+                          Load Now (May Slow Browser)
+                        </button>
+                        <p className="text-xs" style={{ color: COLORS.black, opacity: 0.6 }}>
+                          You can still select this option without viewing the preview
+                        </p>
+                        <p className="text-xs font-mono" style={{ color: COLORS.black, opacity: 0.5 }}>
+                          Seed: {seed.slice(0, 18)}...
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
