@@ -141,22 +141,62 @@ export default function PublicMint() {
     return `${minutes}m ${seconds}s`;
   };
 
-  // Calculate cooldown remaining
-  const getCooldownRemaining = (): string => {
-    if (!lastGlobalMintTime) return '';
+  // Live countdown state for cooldown
+  const [cooldownDisplay, setCooldownDisplay] = useState<string>('');
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
+
+  // Live countdown timer for cooldown period
+  useEffect(() => {
+    if (!lastGlobalMintTime) {
+      setCooldownDisplay('');
+      setIsCooldownActive(false);
+      return;
+    }
+    
     const lastMint = Number(lastGlobalMintTime);
-    if (lastMint === 0) return '';
+    if (lastMint === 0) {
+      setCooldownDisplay('');
+      setIsCooldownActive(false);
+      return;
+    }
     
     const cooldownEnd = lastMint + (24 * 60 * 60); // 24 hours
-    const now = Math.floor(Date.now() / 1000);
-    const remaining = cooldownEnd - now;
     
-    if (remaining <= 0) return '';
+    const updateCountdown = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = cooldownEnd - now;
+      
+      if (remaining <= 0) {
+        setCooldownDisplay('');
+        setIsCooldownActive(false);
+        // Refetch to update UI when cooldown ends
+        refetchMintStatus();
+        return;
+      }
+      
+      setIsCooldownActive(true);
+      
+      const hours = Math.floor(remaining / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      const seconds = remaining % 60;
+      
+      if (hours > 0) {
+        // Show hours and minutes when > 1 hour remaining
+        setCooldownDisplay(`${hours}h ${minutes.toString().padStart(2, '0')}m`);
+      } else {
+        // Show minutes and seconds when < 1 hour remaining
+        setCooldownDisplay(`${minutes}m ${seconds.toString().padStart(2, '0')}s`);
+      }
+    };
     
-    const hours = Math.floor(remaining / 3600);
-    const minutes = Math.floor((remaining % 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
+    // Update immediately
+    updateCountdown();
+    
+    // Update every second for accurate countdown
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, [lastGlobalMintTime, refetchMintStatus]);
 
   // Helper to check if a pending request is still within the 55-minute window
   const isRequestStillValid = (timestamp: bigint): boolean => {
@@ -379,7 +419,6 @@ export default function PublicMint() {
   const supply = Number(totalSupply || 0);
   const reserve = Number(ownerReserve || 30);
   const max = Number(maxSupply || 999);
-  const cooldownRemaining = getCooldownRemaining();
 
   // Check if public minting is available (after owner reserve)
   if (supply < reserve) {
@@ -449,8 +488,8 @@ export default function PublicMint() {
     );
   }
 
-  // Show cooldown message
-  if (cooldownRemaining && previewSeeds.length === 0) {
+  // Show cooldown message with live countdown
+  if (isCooldownActive && previewSeeds.length === 0) {
     return (
       <div className="space-y-6">
         <div className="border-2 p-6" style={{ backgroundColor: COLORS.blue, borderColor: COLORS.black }}>
@@ -462,17 +501,13 @@ export default function PublicMint() {
               A token was recently minted. Public minting has a 24-hour cooldown between mints.
             </p>
             <div className="border-2 p-4" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
-              <p className="text-lg text-center" style={{ color: COLORS.black }}>
-                <strong>Time until next mint:</strong> ~{cooldownRemaining}
+              <p className="text-2xl text-center font-mono font-bold" style={{ color: COLORS.black }}>
+                {cooldownDisplay}
+              </p>
+              <p className="text-sm text-center mt-1" style={{ color: COLORS.black, opacity: 0.7 }}>
+                until next mint available
               </p>
             </div>
-            <button
-              onClick={() => refetchMintStatus()}
-              className="w-full font-bold py-2 px-4 border-2 hover:opacity-70 transition-opacity"
-              style={{ backgroundColor: COLORS.white, borderColor: COLORS.black, color: COLORS.black }}
-            >
-              Refresh Status
-            </button>
           </div>
         </div>
       </div>
