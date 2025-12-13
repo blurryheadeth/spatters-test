@@ -724,7 +724,7 @@ export default function PublicMint() {
       )}
 
       <div className="border-2 p-6" style={{ backgroundColor: COLORS.white, borderColor: COLORS.black }}>
-        <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>Public Mint</h2>
+        <h2 className="text-2xl font-black mb-4" style={{ color: COLORS.black }}>Mint a Spatter</h2>
         <div className="space-y-2 mb-6">
           <p style={{ color: COLORS.black }}>
             Minted: {supply} / {max}

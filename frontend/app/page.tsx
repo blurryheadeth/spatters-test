@@ -1,12 +1,13 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
 import { useState } from 'react';
 import PublicMint from '@/components/PublicMint';
 import OwnerMint from '@/components/OwnerMint';
 import Navbar from '@/components/Navbar';
 import { getContractAddress, getEtherscanBaseUrl } from '@/lib/config';
+import SpattersABI from '@/contracts/Spatters.json';
 
 // Spatters color palette
 const COLORS = {
@@ -36,13 +37,23 @@ function SpattersTitle({ className = '' }: { className?: string }) {
 }
 
 export default function Home() {
-  const { isConnected, chainId } = useAccount();
+  const { isConnected, chainId, address } = useAccount();
   const [activeTab, setActiveTab] = useState<'public' | 'owner'>('public');
   
   // Get contract address for the current chain (default to Sepolia)
   const currentChainId = chainId || 11155111;
   const contractAddress = getContractAddress(currentChainId);
   const etherscanBase = getEtherscanBaseUrl(currentChainId);
+
+  // Check if connected wallet is owner
+  const { data: ownerAddress } = useReadContract({
+    address: contractAddress as `0x${string}`,
+    abi: SpattersABI.abi,
+    functionName: 'owner',
+  });
+
+  const isOwner = address && ownerAddress && 
+    address.toLowerCase() === (ownerAddress as string).toLowerCase();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.background }}>
@@ -80,32 +91,40 @@ export default function Home() {
       {isConnected ? (
         <section className="py-8" style={{ backgroundColor: COLORS.white }}>
           <div className="container mx-auto px-4 max-w-5xl">
-            {/* Tabs */}
-            <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
-              <button
-                onClick={() => setActiveTab('public')}
-                className="pb-3 px-6 font-bold transition-all"
-                style={{
-                  borderBottom: activeTab === 'public' ? `3px solid ${COLORS.red}` : '3px solid transparent',
-                  color: activeTab === 'public' ? COLORS.red : COLORS.black,
-                }}
-              >
-                Public Mint
-              </button>
-              <button
-                onClick={() => setActiveTab('owner')}
-                className="pb-3 px-6 font-bold transition-all"
-                style={{
-                  borderBottom: activeTab === 'owner' ? `3px solid ${COLORS.blue}` : '3px solid transparent',
-                  color: activeTab === 'owner' ? COLORS.blue : COLORS.black,
-                }}
-              >
-                Owner Mint
-              </button>
-            </div>
+            {/* Only show tabs for contract owner */}
+            {isOwner ? (
+              <>
+                {/* Owner Tabs */}
+                <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
+                  <button
+                    onClick={() => setActiveTab('public')}
+                    className="pb-3 px-6 font-bold transition-all"
+                    style={{
+                      borderBottom: activeTab === 'public' ? `3px solid ${COLORS.red}` : '3px solid transparent',
+                      color: activeTab === 'public' ? COLORS.red : COLORS.black,
+                    }}
+                  >
+                    Mint a Spatter
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('owner')}
+                    className="pb-3 px-6 font-bold transition-all"
+                    style={{
+                      borderBottom: activeTab === 'owner' ? `3px solid ${COLORS.blue}` : '3px solid transparent',
+                      color: activeTab === 'owner' ? COLORS.blue : COLORS.black,
+                    }}
+                  >
+                    Owner Mint
+                  </button>
+                </div>
 
-            {/* Tab Content */}
-            {activeTab === 'public' ? <PublicMint /> : <OwnerMint />}
+                {/* Tab Content */}
+                {activeTab === 'public' ? <PublicMint /> : <OwnerMint />}
+              </>
+            ) : (
+              /* Non-owners see only the public mint interface */
+              <PublicMint />
+            )}
           </div>
         </section>
       ) : (
@@ -279,8 +298,8 @@ export default function Home() {
                 <strong>p5.js Dependency:</strong> We use the p5.js library (v1.0.0) deployed on-chain by{' '}
                 <a 
                   href="https://artblocks.io" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                   className="font-semibold hover:opacity-70"
                   style={{ color: COLORS.blue }}
                 >
@@ -296,8 +315,8 @@ export default function Home() {
               <p className="text-sm mb-2" style={{ color: COLORS.black }}>Contract Address:</p>
               <a
                 href={`${etherscanBase}/address/${contractAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                 className="font-mono text-lg font-bold hover:opacity-70 transition-opacity break-all"
                 style={{ color: COLORS.blue }}
               >
