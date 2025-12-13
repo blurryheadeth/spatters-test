@@ -1026,27 +1026,36 @@ export default function OwnerMint() {
                   ← Cancel
                 </button>
                 
-                {/* Jump to buttons */}
-                <div className="flex gap-2">
-                  {[0, 1, 2].map((index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setSelectedSeedIndex(index);
-                        document.getElementById(`preview-${index}`)?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="px-4 py-2 font-medium transition-opacity border-2 hover:opacity-70"
-                      style={{
-                        backgroundColor: selectedSeedIndex === index ? COLORS.green : COLORS.white,
-                        borderColor: COLORS.black,
-                        color: COLORS.black,
-                      }}
-                    >
-                      Option {index + 1}
-                      {selectedSeedIndex === index && ' ✓'}
-                    </button>
-                  ))}
-                </div>
+                {/* Jump to buttons OR loading indicator */}
+                {finishedPreviews.size < 3 ? (
+                  <div className="flex items-center gap-3 px-4 py-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent" style={{ borderColor: COLORS.blue, borderTopColor: 'transparent' }}></div>
+                    <span className="text-sm font-medium" style={{ color: COLORS.black }}>
+                      Images still loading ({finishedPreviews.size}/3)...
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    {[0, 1, 2].map((index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedSeedIndex(index);
+                          document.getElementById(`preview-${index}`)?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-4 py-2 font-medium transition-opacity border-2 hover:opacity-70"
+                        style={{
+                          backgroundColor: selectedSeedIndex === index ? COLORS.green : COLORS.white,
+                          borderColor: COLORS.black,
+                          color: COLORS.black,
+                        }}
+                      >
+                        Option {index + 1}
+                        {selectedSeedIndex === index && ' ✓'}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Mint Button */}
                 <button
