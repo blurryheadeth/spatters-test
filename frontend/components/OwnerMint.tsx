@@ -366,11 +366,15 @@ export default function OwnerMint() {
       refetchSupply();
       
       // Trigger pixel generation in background
+      console.log(`[OwnerMint] Triggering pixel generation for token ${newTokenId}`);
       fetch('/api/trigger-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: newTokenId, event: 'token-minted' }),
-      }).catch(console.error);
+      })
+        .then(res => res.json())
+        .then(data => console.log('[OwnerMint] Trigger response:', data))
+        .catch(err => console.error('[OwnerMint] Trigger error:', err));
       
       // Redirect to the new token's page after a short delay
       setTimeout(() => {
