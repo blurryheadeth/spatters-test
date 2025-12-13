@@ -209,6 +209,11 @@ export default function PublicMint() {
 
   // Track if user's pending request is expired
   const [isRequestExpired, setIsRequestExpired] = useState(false);
+  
+  // Track if there's a valid pending request waiting to be viewed
+  const [hasPendingToView, setHasPendingToView] = useState(false);
+  const [pendingRemainingMinutes, setPendingRemainingMinutes] = useState(0);
+  const [pendingSeedsCache, setPendingSeedsCache] = useState<string[]>([]);
 
   // Check for existing pending request on page load and auto-resume
   useEffect(() => {
@@ -221,17 +226,67 @@ export default function PublicMint() {
         if (hasValidSeeds) {
           // Check if the request is still within the time window
           if (isRequestStillValid(request.timestamp)) {
-            setPreviewSeeds(request.seeds);
+            // Cache the seeds and mark as having pending request
+            setPendingSeedsCache(request.seeds);
+            setHasPendingToView(true);
             setIsRequestExpired(false);
+            
+            // Calculate remaining minutes
+            const requestTime = Number(request.timestamp);
+            const expirationTime = requestTime + (55 * 60);
+            const now = Math.floor(Date.now() / 1000);
+            const remaining = Math.max(0, expirationTime - now);
+            setPendingRemainingMinutes(Math.ceil(remaining / 60));
           } else {
             // Request has expired
             setIsRequestExpired(true);
+            setHasPendingToView(false);
+            setPendingSeedsCache([]);
             setPreviewSeeds([]); // Clear previews
           }
         }
+      } else {
+        setHasPendingToView(false);
+        setPendingSeedsCache([]);
       }
     }
   }, [pendingRequest, address]);
+
+  // Update pending remaining time every minute
+  useEffect(() => {
+    if (!hasPendingToView || !pendingRequest) return;
+    
+    const request = pendingRequest as { timestamp: bigint };
+    if (!request.timestamp || request.timestamp === BigInt(0)) return;
+    
+    const updateRemainingTime = () => {
+      const requestTime = Number(request.timestamp);
+      const expirationTime = requestTime + (55 * 60);
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = Math.max(0, expirationTime - now);
+      setPendingRemainingMinutes(Math.ceil(remaining / 60));
+      
+      // If expired, clear pending state
+      if (remaining <= 0) {
+        setHasPendingToView(false);
+        setPendingSeedsCache([]);
+        setIsRequestExpired(true);
+      }
+    };
+    
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [hasPendingToView, pendingRequest]);
+
+  // Handler to view existing pending options
+  const handleViewPendingOptions = () => {
+    if (pendingSeedsCache.length === 3) {
+      setPreviewSeeds(pendingSeedsCache);
+      setHasPendingToView(false);
+    }
+  };
 
   // Handle request confirmation - extract seeds from pending request
   useEffect(() => {
@@ -761,21 +816,37 @@ export default function PublicMint() {
           </div>
         )}
 
-        <button
-          onClick={() => setShowConfirmModal(true)}
-          disabled={isRequestPending || isRequestConfirming || !mintPrice}
-          className="w-full font-bold py-3 px-6 transition-colors border-2"
-          style={{ 
-            backgroundColor: '#fc1a4a', 
-            borderColor: '#000000',
-            color: '#FFFFFF',
-            opacity: (isRequestPending || isRequestConfirming || !mintPrice) ? 0.5 : 1,
-          }}
-        >
-          {isRequestPending || isRequestConfirming 
-            ? 'Generating Options...' 
-            : `Generate 3 Options (${mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH)`}
-        </button>
+        {hasPendingToView ? (
+          /* User has pending options to view */
+          <button
+            onClick={handleViewPendingOptions}
+            className="w-full font-bold py-3 px-6 transition-colors border-2"
+            style={{ 
+              backgroundColor: '#2587c3', 
+              borderColor: '#000000',
+              color: '#FFFFFF',
+            }}
+          >
+            View My 3 Options ({pendingRemainingMinutes} minute{pendingRemainingMinutes !== 1 ? 's' : ''} left)
+          </button>
+        ) : (
+          /* New mint request */
+          <button
+            onClick={() => setShowConfirmModal(true)}
+            disabled={isRequestPending || isRequestConfirming || !mintPrice}
+            className="w-full font-bold py-3 px-6 transition-colors border-2"
+            style={{ 
+              backgroundColor: '#fc1a4a', 
+              borderColor: '#000000',
+              color: '#FFFFFF',
+              opacity: (isRequestPending || isRequestConfirming || !mintPrice) ? 0.5 : 1,
+            }}
+          >
+            {isRequestPending || isRequestConfirming 
+              ? 'Generating Options...' 
+              : `Generate 3 Options (${mintPrice ? formatEther(mintPrice as bigint) : '0'} ETH)`}
+          </button>
+        )}
       </div>
 
       {/* Confirmation Modal for 55-minute warning */}
