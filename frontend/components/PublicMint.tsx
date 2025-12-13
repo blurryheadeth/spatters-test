@@ -212,7 +212,7 @@ export default function PublicMint() {
   
   // Track if there's a valid pending request waiting to be viewed
   const [hasPendingToView, setHasPendingToView] = useState(false);
-  const [pendingRemainingMinutes, setPendingRemainingMinutes] = useState(0);
+  const [pendingRemainingTime, setPendingRemainingTime] = useState('');
   const [pendingSeedsCache, setPendingSeedsCache] = useState<string[]>([]);
 
   // Check for existing pending request on page load and auto-resume
@@ -231,12 +231,14 @@ export default function PublicMint() {
             setHasPendingToView(true);
             setIsRequestExpired(false);
             
-            // Calculate remaining minutes
+            // Calculate remaining time (will be updated by interval)
             const requestTime = Number(request.timestamp);
             const expirationTime = requestTime + (55 * 60);
             const now = Math.floor(Date.now() / 1000);
             const remaining = Math.max(0, expirationTime - now);
-            setPendingRemainingMinutes(Math.ceil(remaining / 60));
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            setPendingRemainingTime(`${mins}m ${secs.toString().padStart(2, '0')}s`);
           } else {
             // Request has expired
             setIsRequestExpired(true);
@@ -252,7 +254,7 @@ export default function PublicMint() {
     }
   }, [pendingRequest, address]);
 
-  // Update pending remaining time every minute
+  // Update pending remaining time every second
   useEffect(() => {
     if (!hasPendingToView || !pendingRequest) return;
     
@@ -264,7 +266,10 @@ export default function PublicMint() {
       const expirationTime = requestTime + (55 * 60);
       const now = Math.floor(Date.now() / 1000);
       const remaining = Math.max(0, expirationTime - now);
-      setPendingRemainingMinutes(Math.ceil(remaining / 60));
+      
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      setPendingRemainingTime(`${mins}m ${secs.toString().padStart(2, '0')}s`);
       
       // If expired, clear pending state
       if (remaining <= 0) {
@@ -275,7 +280,7 @@ export default function PublicMint() {
     };
     
     updateRemainingTime();
-    const interval = setInterval(updateRemainingTime, 60000); // Update every minute
+    const interval = setInterval(updateRemainingTime, 1000); // Update every second
     
     return () => clearInterval(interval);
   }, [hasPendingToView, pendingRequest]);
@@ -827,7 +832,7 @@ export default function PublicMint() {
               color: '#FFFFFF',
             }}
           >
-            View My 3 Options ({pendingRemainingMinutes} minute{pendingRemainingMinutes !== 1 ? 's' : ''} left)
+            View My 3 Options ({pendingRemainingTime} left)
           </button>
         ) : (
           /* New mint request */
