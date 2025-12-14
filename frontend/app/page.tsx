@@ -76,8 +76,12 @@ export default function Home() {
               <div className="text-sm font-medium" style={{ color: COLORS.black }}>Max Supply</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-black" style={{ color: COLORS.blue }}>0.01 ETH</div>
+              <div className="text-4xl font-black" style={{ color: COLORS.blue }}>0.007 ETH</div>
               <div className="text-sm font-medium" style={{ color: COLORS.black }}>Starting Price</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-black" style={{ color: COLORS.yellow }}>1%</div>
+              <div className="text-sm font-medium" style={{ color: COLORS.black }}>Price increase per mint</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-black" style={{ color: COLORS.green }}>100 ETH</div>
