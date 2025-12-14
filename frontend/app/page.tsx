@@ -87,119 +87,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Mint Section */}
-      {isConnected ? (
-        <section className="py-8" style={{ backgroundColor: COLORS.white }}>
-          <div className="container mx-auto px-4 max-w-5xl">
-            {/* Only show tabs for contract owner */}
-            {isOwner ? (
-              <>
-                {/* Owner Tabs */}
-                <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
-                  <button
-                    onClick={() => setActiveTab('public')}
-                    className="pb-3 px-6 font-bold transition-all"
-                    style={{
-                      borderBottom: activeTab === 'public' ? `3px solid ${COLORS.red}` : '3px solid transparent',
-                      color: activeTab === 'public' ? COLORS.red : COLORS.black,
-                    }}
-                  >
-                    Mint a Spatter
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('owner')}
-                    className="pb-3 px-6 font-bold transition-all"
-                    style={{
-                      borderBottom: activeTab === 'owner' ? `3px solid ${COLORS.blue}` : '3px solid transparent',
-                      color: activeTab === 'owner' ? COLORS.blue : COLORS.black,
-                    }}
-                  >
-                    Owner Mint
-                  </button>
-                </div>
-
-                {/* Tab Content */}
-                {activeTab === 'public' ? <PublicMint /> : <OwnerMint />}
-              </>
-            ) : (
-              /* Non-owners see only the public mint interface */
-              <PublicMint />
-            )}
-          </div>
-        </section>
-      ) : (
-        <section className="py-16" style={{ backgroundColor: COLORS.background }}>
-          <div className="container mx-auto px-4 text-center">
-            <div 
-              className="max-w-md mx-auto border-2 p-8"
-              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
-            >
-              <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.black }}>
-                Connect Your Wallet
-              </h3>
-              <p className="mb-6" style={{ color: COLORS.black }}>
-                Connect your wallet to start minting Spatters
-              </p>
-              <div className="flex justify-center">
-                <ConnectButton />
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Features */}
-      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-black text-center mb-12" style={{ color: COLORS.black }}>
-            Features
-          </h3>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Seed-Based Generation */}
-            <div 
-              className="border-2 p-6"
-              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
-            >
-              <div className="text-4xl mb-4">🎨</div>
-              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
-                Seed-Based Generation
-              </h4>
-              <p style={{ color: COLORS.black }}>
-                Each NFT generated from on-chain seeds using p5.js. Choose from 3 previews before minting.
-              </p>
-            </div>
-
-            {/* Time-Based Mutations */}
-            <div 
-              className="border-2 p-6"
-              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
-            >
-              <div className="text-4xl mb-4">🔄</div>
-              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
-                Time-Based Mutations
-              </h4>
-              <p style={{ color: COLORS.black }}>
-                94 mutation types available on milestone anniversaries (tokens #1, #100, #500, #750, #999) and each token&apos;s own minting anniversary.
-              </p>
-            </div>
-
-            {/* Interactive History */}
-            <div 
-              className="border-2 p-6"
-              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
-            >
-              <div className="text-4xl mb-4">🖱️</div>
-              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
-                Interactive History
-              </h4>
-              <p style={{ color: COLORS.black }}>
-                Click any artwork to cycle through its full journey—from mint to every mutation. The art is the complete sequence, not just the final frame.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
       <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}>
         <div className="container mx-auto px-4 max-w-4xl">
@@ -272,6 +159,120 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Features */}
+      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
+        <div className="container mx-auto px-4">
+          <h3 className="text-3xl font-black text-center mb-12" style={{ color: COLORS.black }}>
+            Features
+          </h3>
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Seed-Based Generation */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <div className="text-4xl mb-4">🎨</div>
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Seed-Based Generation
+              </h4>
+              <p style={{ color: COLORS.black }}>
+                Each NFT generated from on-chain seeds using p5.js. Choose from 3 previews before minting.
+              </p>
+            </div>
+
+            {/* Time-Based Mutations */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <div className="text-4xl mb-4">🔄</div>
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Time-Based Mutations
+              </h4>
+              <p style={{ color: COLORS.black }}>
+                94 mutation types available on milestone anniversaries (tokens #1, #100, #500, #750, #999) and each token&apos;s own minting anniversary.
+              </p>
+            </div>
+
+            {/* Interactive History */}
+            <div 
+              className="border-2 p-6"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <div className="text-4xl mb-4">🖱️</div>
+              <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                Interactive History
+              </h4>
+              <p style={{ color: COLORS.black }}>
+                Click any artwork to cycle through its full journey—from mint to every mutation. The art is the complete sequence, not just the final frame.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* Mint Section */}
+      {isConnected ? (
+        <section className="py-8" style={{ backgroundColor: COLORS.white }}>
+          <div className="container mx-auto px-4 max-w-5xl">
+            {/* Only show tabs for contract owner */}
+            {isOwner ? (
+              <>
+                {/* Owner Tabs */}
+                <div className="flex space-x-4 mb-8 border-b-2" style={{ borderColor: COLORS.black }}>
+                  <button
+                    onClick={() => setActiveTab('public')}
+                    className="pb-3 px-6 font-bold transition-all"
+                    style={{
+                      borderBottom: activeTab === 'public' ? `3px solid ${COLORS.red}` : '3px solid transparent',
+                      color: activeTab === 'public' ? COLORS.red : COLORS.black,
+                    }}
+                  >
+                    Mint a Spatter
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('owner')}
+                    className="pb-3 px-6 font-bold transition-all"
+                    style={{
+                      borderBottom: activeTab === 'owner' ? `3px solid ${COLORS.blue}` : '3px solid transparent',
+                      color: activeTab === 'owner' ? COLORS.blue : COLORS.black,
+                    }}
+                  >
+                    Owner Mint
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                {activeTab === 'public' ? <PublicMint /> : <OwnerMint />}
+              </>
+            ) : (
+              /* Non-owners see only the public mint interface */
+              <PublicMint />
+            )}
+          </div>
+        </section>
+      ) : (
+        <section className="py-16" style={{ backgroundColor: COLORS.background }}>
+          <div className="container mx-auto px-4 text-center">
+            <div 
+              className="max-w-md mx-auto border-2 p-8"
+              style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
+            >
+              <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.black }}>
+                Connect Your Wallet
+              </h3>
+              <p className="mb-6" style={{ color: COLORS.black }}>
+                Connect your wallet to start minting Spatters
+              </p>
+              <div className="flex justify-center">
+                <ConnectButton />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* On-Chain Architecture */}
       <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.background }}>
