@@ -98,7 +98,7 @@ export default function Home() {
             <div className="flex items-start space-x-4">
               <div 
                 className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
-                style={{ backgroundColor: COLORS.red, color: COLORS.white }}
+                style={{ backgroundColor: COLORS.blue, color: COLORS.white }}
               >
                 1
               </div>
