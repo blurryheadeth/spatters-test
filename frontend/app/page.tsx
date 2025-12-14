@@ -156,6 +156,31 @@ export default function Home() {
                 </p>
               </div>
             </div>
+
+            {/* Step 4 */}
+            <div className="flex items-start space-x-4">
+              <div 
+                className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
+                style={{ backgroundColor: COLORS.red, color: COLORS.white }}
+              >
+                4
+              </div>
+              <div>
+                <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
+                  Your Spatter grows with you
+                </h4>
+                <p style={{ color: COLORS.black }}>
+                  On specific dates each year, you can apply a change to your Spatter. You can choose the kind of modification, but the exact change will be based off a blockchain-generated seed. The outcome will be permanently recorded as part of the Spatter's full version history. 
+                </p>
+                <div 
+                  className="mt-3 p-3 border-2 font-semibold"
+                  style={{ borderColor: COLORS.red, backgroundColor: '#fff0f0', color: COLORS.red }}
+                >
+                  ⚠️ You have 55 minutes to choose. If no option is selected, 
+                  the mint is cancelled and the minting fee is <strong>NOT refundable</strong>.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
