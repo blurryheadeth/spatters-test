@@ -109,7 +109,7 @@ export default function Home() {
                 <p style={{ color: COLORS.black }}>
                   Pay the mint price and request 3 unique seeds from the contract. 
                   <span className="font-semibold"> Each token costs 1% more than the previous one</span>, 
-                  starting at 0.01 ETH and ending at ~100 ETH for token #999.
+                  ending at 100 ETH for token #999.
                 </p>
               </div>
             </div>
@@ -172,13 +172,6 @@ export default function Home() {
                 <p style={{ color: COLORS.black }}>
                   On specific dates each year, you can apply a change to your Spatter. You can choose the kind of modification, but the exact change will be based off a blockchain-generated seed. The outcome will be permanently recorded as part of the Spatter's full version history. 
                 </p>
-                <div 
-                  className="mt-3 p-3 border-2 font-semibold"
-                  style={{ borderColor: COLORS.red, backgroundColor: '#fff0f0', color: COLORS.red }}
-                >
-                  ⚠️ You have 55 minutes to choose. If no option is selected, 
-                  the mint is cancelled and the minting fee is <strong>NOT refundable</strong>.
-                </div>
               </div>
             </div>
           </div>
@@ -202,7 +195,7 @@ export default function Home() {
                 Seed-Based Generation
               </h4>
               <p style={{ color: COLORS.black }}>
-                Each NFT generated from on-chain seeds using p5.js. Choose from 3 previews before minting.
+                Each NFT is generated from on-chain seeds using p5.js. Choose from 3 previews before minting.
               </p>
             </div>
 
@@ -213,10 +206,10 @@ export default function Home() {
             >
               <div className="text-4xl mb-4">🔄</div>
               <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
-                Time-Based Mutations
+                Shape your Spatter
               </h4>
               <p style={{ color: COLORS.black }}>
-                94 mutation types available on milestone anniversaries (tokens #1, #100, #500, #750, #999) and each token&apos;s own minting anniversary.
+                94 mutation types available each yearon minting anniversaries of tokens #1, #100, #500, #750, #999 and each token&apos;s own minting anniversary. 
               </p>
             </div>
 
@@ -225,12 +218,12 @@ export default function Home() {
               className="border-2 p-6"
               style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}
             >
-              <div className="text-4xl mb-4">🖱️</div>
+              <div className="text-4xl mb-4">📜</div>
               <h4 className="text-xl font-bold mb-2" style={{ color: COLORS.black }}>
-                Interactive History
+                Full Version History
               </h4>
               <p style={{ color: COLORS.black }}>
-                Click any artwork to cycle through its full journey—from mint to every mutation. The art is the complete sequence, not just the final frame.
+                Click any artwork to cycle through its full journey — from mint through every mutation.
               </p>
             </div>
           </div>
