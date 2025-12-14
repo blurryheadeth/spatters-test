@@ -88,7 +88,7 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 border-t-2" style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}>
+      <section className="py-16" style={{ borderColor: COLORS.black, backgroundColor: COLORS.white }}>
         <div className="container mx-auto px-4 max-w-4xl">
           <h3 className="text-3xl font-black text-center mb-12" style={{ color: COLORS.black }}>
             How It Works
@@ -118,7 +118,7 @@ export default function Home() {
             <div className="flex items-start space-x-4">
               <div 
                 className="flex-shrink-0 w-12 h-12 flex items-center justify-center font-black text-xl"
-                style={{ backgroundColor: COLORS.blue, color: COLORS.white }}
+                style={{ backgroundColor: COLORS.yellow, color: COLORS.black }}
               >
                 2
               </div>
@@ -215,7 +215,7 @@ export default function Home() {
 
       {/* Mint Section */}
       {isConnected ? (
-        <section className="py-8" style={{ backgroundColor: COLORS.white }}>
+        <section className="py-8 border-t-2" style={{ backgroundColor: COLORS.white }}>
           <div className="container mx-auto px-4 max-w-5xl">
             {/* Only show tabs for contract owner */}
             {isOwner ? (
