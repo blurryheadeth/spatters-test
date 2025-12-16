@@ -1,10 +1,15 @@
 {
-  "address": "0x04f6E1BD095447c6f8cD34Dde50c8e7bec114a0e",
+  "address": "0x297289E11d07CCBa79cFee9EA9f7f8f07Df9af78",
   "abi": [
     {
       "type": "constructor",
       "stateMutability": "undefined",
       "payable": false,
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ERC721EnumerableForbiddenBatchMint",
       "inputs": []
     },
     {
@@ -101,6 +106,20 @@
     },
     {
       "type": "error",
+      "name": "ERC721OutOfBoundsIndex",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "owner"
+        },
+        {
+          "type": "uint256",
+          "name": "index"
+        }
+      ]
+    },
+    {
+      "type": "error",
       "name": "OwnableInvalidOwner",
       "inputs": [
         {
@@ -123,6 +142,18 @@
       "type": "error",
       "name": "ReentrancyGuardReentrantCall",
       "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "AllProposalBansCleared",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "tokenCount",
+          "indexed": false
+        }
+      ]
     },
     {
       "type": "event",
@@ -368,6 +399,28 @@
           "type": "uint256",
           "name": "timestamp",
           "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "proposerTokenId",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ProposalExpired",
+      "inputs": [
+        {
+          "type": "string",
+          "name": "proposedURI",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "proposerTokenId",
+          "indexed": false
         }
       ]
     },
@@ -415,6 +468,18 @@
     {
       "type": "event",
       "anonymous": false,
+      "name": "TokenBannedFromProposing",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "tokenId",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
       "name": "Transfer",
       "inputs": [
         {
@@ -446,7 +511,7 @@
         },
         {
           "type": "uint256",
-          "name": "weight",
+          "name": "tokenCount",
           "indexed": false
         }
       ]
@@ -635,6 +700,20 @@
     },
     {
       "type": "function",
+      "name": "VOTING_PERIOD",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "activeMintRequestTime",
       "constant": true,
       "stateMutability": "view",
@@ -715,6 +794,25 @@
         {
           "type": "address",
           "name": "owner"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "bannedTokenIds",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
         }
       ],
       "outputs": [
@@ -830,25 +928,10 @@
         {
           "type": "bool",
           "name": "executed"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "currentProposalVoters",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
+        },
         {
           "type": "uint256",
-          "name": ""
-        }
-      ],
-      "outputs": [
-        {
-          "type": "address",
-          "name": ""
+          "name": "proposerTokenId"
         }
       ]
     },
@@ -952,6 +1035,20 @@
     },
     {
       "type": "function",
+      "name": "getBannedTokenCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getCurrentPrice",
       "constant": true,
       "stateMutability": "view",
@@ -1003,6 +1100,10 @@
         {
           "type": "bool",
           "name": "executed"
+        },
+        {
+          "type": "uint256",
+          "name": "proposerTokenId"
         }
       ]
     },
@@ -1100,14 +1201,14 @@
     },
     {
       "type": "function",
-      "name": "hasVotedForCurrentProposal",
+      "name": "hasTokenVoted",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [
         {
-          "type": "address",
-          "name": ""
+          "type": "uint256",
+          "name": "tokenId"
         }
       ],
       "outputs": [
@@ -1159,6 +1260,25 @@
         {
           "type": "uint256",
           "name": "expiresAt"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "isTokenBanned",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "tokenId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
         }
       ]
     },
@@ -1384,6 +1504,20 @@
         {
           "type": "bool",
           "name": "hasCustomPalette"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "proposalGeneration",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
         }
       ]
     },
@@ -1622,6 +1756,44 @@
     },
     {
       "type": "function",
+      "name": "tokenBannedFromProposing",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "tokenByIndex",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "tokenMutations",
       "constant": true,
       "stateMutability": "view",
@@ -1653,6 +1825,29 @@
     },
     {
       "type": "function",
+      "name": "tokenOfOwnerByIndex",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "owner"
+        },
+        {
+          "type": "uint256",
+          "name": "index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "tokenURI",
       "constant": true,
       "stateMutability": "view",
@@ -1666,6 +1861,25 @@
       "outputs": [
         {
           "type": "string",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "tokenVoteGeneration",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
           "name": ""
         }
       ]
