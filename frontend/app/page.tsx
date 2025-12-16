@@ -213,7 +213,7 @@ export default function Home() {
                 Shape your Spatter
               </h4>
               <p style={{ color: COLORS.black }}>
-                94 mutation types available each yearon minting anniversaries of tokens #1, #100, #500, #750, #999 and each token&apos;s own minting anniversary. 
+                94 mutation types available each year on minting anniversaries of tokens #1, #100, #500, #750, #999 and each token&apos;s own minting anniversary. 
               </p>
             </div>
 
@@ -227,7 +227,7 @@ export default function Home() {
                 Full Version History
               </h4>
               <p style={{ color: COLORS.black }}>
-                Click any artwork to cycle through its full journey — from mint through every mutation.
+                Click any artwork to cycle through its full journey: from mint, through every mutation up to its current form.
               </p>
             </div>
           </div>

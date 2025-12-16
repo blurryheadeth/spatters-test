@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -23,7 +24,7 @@ import "./DateTime.sol";
  * - EIP-2981 royalty standard (5% secondary sales)
  * - All code stored on-chain, zero external dependencies
  */
-contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
+contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     using Strings for uint256;
 
     // ============ Constants ============
@@ -62,8 +63,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /// @notice Window to confirm proposal after threshold reached
     uint256 public constant CONFIRMATION_WINDOW = 48 hours;
     
+    /// @notice Maximum time a proposal can remain open for voting (prevents "locked forever" bug)
+    uint256 public constant VOTING_PERIOD = 25 days;
+    
     /// @notice Timestamp of last proposal creation
     uint256 public lastProposalTime;
+    
+    /// @notice Generation counter for O(1) vote clearing
+    /// @dev Incrementing this invalidates all previous votes without looping
+    uint256 public proposalGeneration;
     
     /// @notice baseURI for tokenURI (can be updated by owner or community governance)
     string public baseURI;
@@ -93,16 +101,22 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         bool thresholdReached;           // True when 67% approval reached
         uint256 thresholdReachedTime;    // When 67% was reached (starts 48h window)
         bool executed;                   // True after proposal confirmed and executed
+        uint256 proposerTokenId;         // Token ID used to make this proposal (for banning)
     }
     
     /// @notice Current active proposal
     CommunityProposal public currentProposal;
     
-    /// @notice Tracks which addresses voted for current proposal
-    mapping(address => bool) public hasVotedForCurrentProposal;
+    /// @notice Tracks which token IDs voted in which proposal generation
+    /// @dev tokenId => generation when voted (if generation matches current, token has voted)
+    mapping(uint256 => uint256) public tokenVoteGeneration;
     
-    /// @notice Array of voters for current proposal (for clearing votes)
-    address[] public currentProposalVoters;
+    /// @notice Tracks which token IDs are banned from proposing
+    /// @dev Tokens are banned when their proposal fails; bans clear on any successful proposal
+    mapping(uint256 => bool) public tokenBannedFromProposing;
+    
+    /// @notice Array of banned token IDs (for clearing bans on successful proposal)
+    uint256[] public bannedTokenIds;
     
     // ============ Structs ============
 
@@ -194,12 +208,15 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     event RoyaltyReceiverUpdated(address indexed newReceiver);
     
     // Governance events
-    event ProposalCreated(address indexed proposer, string proposedURI, uint256 timestamp);
+    event ProposalCreated(address indexed proposer, string proposedURI, uint256 timestamp, uint256 proposerTokenId);
     event ProposalLocked(string lockedURI);
-    event VoteCast(address indexed voter, uint256 weight);
+    event VoteCast(address indexed voter, uint256 tokenCount);
     event ProposalThresholdReached(string proposedURI, uint256 timestamp);
     event BaseURIUpdatedByCommunity(string newURI);
     event BaseURIUpdatedByOwner(string newURI);
+    event TokenBannedFromProposing(uint256 indexed tokenId);
+    event AllProposalBansCleared(uint256 tokenCount);
+    event ProposalExpired(string proposedURI, uint256 proposerTokenId);
 
     // ============ Constructor ============
 
@@ -864,7 +881,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
      * @dev Get total supply minted
      * @return Number of tokens minted
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _nextTokenId - 1;
     }
 
@@ -906,14 +923,14 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
 
     /**
      * @notice Check if contract supports a given interface
-     * @dev Overrides ERC721 to add ERC2981 support
+     * @dev Overrides ERC721Enumerable to add ERC2981 support
      * @param interfaceId The interface identifier to check
      * @return True if interface is supported
      */
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721, IERC165)
+        override(ERC721Enumerable, IERC165)
         returns (bool)
     {
         return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
@@ -1072,6 +1089,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /**
      * @notice Propose a new baseURI (available after 10 years)
      * @dev Any token holder can propose once every 30 days
+     *      Tokens that previously made failed proposals are banned until a proposal succeeds
      * @param newURI Proposed new base URI
      */
     function proposeBaseURI(string memory newURI) external {
@@ -1079,17 +1097,27 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         require(balanceOf(msg.sender) > 0, "Must own a Spatter");
         require(bytes(newURI).length > 0, "URI cannot be empty");
         
-        // Check if current proposal is expired or not locked
-        bool currentExpired = currentProposal.thresholdReached && 
-                             block.timestamp > currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW;
+        // Check if current proposal is expired
+        bool votingExpired = currentProposal.locked && 
+            block.timestamp > currentProposal.proposalTime + VOTING_PERIOD;
+        bool confirmationExpired = currentProposal.thresholdReached && 
+            block.timestamp > currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW;
+        bool currentExpired = votingExpired || confirmationExpired;
         
         require(!currentProposal.locked || currentExpired, "Active proposal in progress");
         require(block.timestamp >= lastProposalTime + PROPOSAL_COOLDOWN, "Proposal cooldown active");
         
-        // Clear old proposal if expired
-        if (currentExpired) {
-            _clearVotes();
+        // Handle expired proposal - ban the proposer's token
+        if (currentExpired && currentProposal.proposerTokenId != 0) {
+            _handleExpiredProposal();
         }
+        
+        // Find a non-banned token owned by proposer
+        uint256 proposerToken = _findNonBannedToken(msg.sender);
+        require(proposerToken != 0, "All your tokens are banned from proposing");
+        
+        // Increment generation to invalidate previous votes (O(1) clearing)
+        proposalGeneration++;
         
         // Create new proposal
         currentProposal = CommunityProposal({
@@ -1100,29 +1128,38 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             locked: false,
             thresholdReached: false,
             thresholdReachedTime: 0,
-            executed: false
+            executed: false,
+            proposerTokenId: proposerToken
         });
         
         lastProposalTime = block.timestamp;
         
-        emit ProposalCreated(msg.sender, newURI, block.timestamp);
+        emit ProposalCreated(msg.sender, newURI, block.timestamp, proposerToken);
     }
     
     /**
      * @notice Vote to approve the current proposal
      * @dev First vote locks the proposal to prevent frontrunning
+     *      Votes are tracked by token ID, not address, to prevent double-voting via transfer
      */
     function approveProposal() external {
         require(block.timestamp >= deploymentTime + GOVERNANCE_DELAY, "Governance not active yet");
         require(currentProposal.proposalTime > 0, "No active proposal");
         require(!currentProposal.executed, "Proposal already executed");
+        
+        // Check voting period hasn't expired
+        require(
+            block.timestamp <= currentProposal.proposalTime + VOTING_PERIOD,
+            "Voting period expired"
+        );
+        
+        // Check confirmation window if threshold reached
         require(!currentProposal.thresholdReached || 
                 block.timestamp <= currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW,
-                "Proposal expired");
+                "Confirmation window expired");
         
-        uint256 voterTokens = balanceOf(msg.sender);
-        require(voterTokens > 0, "Must own a Spatter");
-        require(!hasVotedForCurrentProposal[msg.sender], "Already voted");
+        uint256 voterTokenCount = balanceOf(msg.sender);
+        require(voterTokenCount > 0, "Must own a Spatter");
         
         // Lock proposal on first vote (prevents frontrunning attacks)
         if (!currentProposal.locked) {
@@ -1130,12 +1167,21 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             emit ProposalLocked(currentProposal.proposedBaseURI);
         }
         
-        // Record vote
-        hasVotedForCurrentProposal[msg.sender] = true;
-        currentProposalVoters.push(msg.sender);
-        currentProposal.totalVotesWeight += voterTokens;
+        // Count votes from tokens that haven't voted in this generation
+        uint256 newVotes = 0;
+        for (uint256 i = 0; i < voterTokenCount; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+            if (tokenVoteGeneration[tokenId] != proposalGeneration) {
+                tokenVoteGeneration[tokenId] = proposalGeneration;
+                newVotes++;
+            }
+        }
         
-        emit VoteCast(msg.sender, voterTokens);
+        require(newVotes > 0, "All your tokens already voted");
+        
+        currentProposal.totalVotesWeight += newVotes;
+        
+        emit VoteCast(msg.sender, newVotes);
         
         // Check if 67% threshold reached
         uint256 totalMinted = _nextTokenId - 1;
@@ -1151,6 +1197,7 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
     /**
      * @notice Confirm and execute proposal (only callable by original proposer)
      * @dev Must be called within 48 hours of threshold being reached
+     *      On success, all token bans are cleared
      */
     function confirmProposal() external {
         require(msg.sender == currentProposal.proposer, "Only proposer can confirm");
@@ -1165,20 +1212,51 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         baseURI = currentProposal.proposedBaseURI;
         currentProposal.executed = true;
         
-        // Clear votes for next proposal
-        _clearVotes();
+        // Clear all token bans on successful proposal
+        uint256 bannedCount = bannedTokenIds.length;
+        for (uint256 i = 0; i < bannedCount; i++) {
+            delete tokenBannedFromProposing[bannedTokenIds[i]];
+        }
+        delete bannedTokenIds;
+        
+        if (bannedCount > 0) {
+            emit AllProposalBansCleared(bannedCount);
+        }
+        
+        // Increment generation to invalidate votes (O(1) clearing)
+        proposalGeneration++;
         
         emit BaseURIUpdatedByCommunity(currentProposal.proposedBaseURI);
     }
     
     /**
-     * @dev Internal function to clear votes after proposal execution
+     * @dev Internal function to handle expired proposals
+     *      Bans the proposer's token from making future proposals
      */
-    function _clearVotes() internal {
-        for (uint256 i = 0; i < currentProposalVoters.length; i++) {
-            delete hasVotedForCurrentProposal[currentProposalVoters[i]];
+    function _handleExpiredProposal() internal {
+        uint256 tokenId = currentProposal.proposerTokenId;
+        if (tokenId != 0 && !tokenBannedFromProposing[tokenId]) {
+            tokenBannedFromProposing[tokenId] = true;
+            bannedTokenIds.push(tokenId);
+            emit TokenBannedFromProposing(tokenId);
         }
-        delete currentProposalVoters;
+        emit ProposalExpired(currentProposal.proposedBaseURI, tokenId);
+    }
+    
+    /**
+     * @dev Find a non-banned token owned by an address
+     * @param owner Address to check tokens for
+     * @return tokenId First non-banned token ID, or 0 if all are banned
+     */
+    function _findNonBannedToken(address owner) internal view returns (uint256) {
+        uint256 tokenCount = balanceOf(owner);
+        for (uint256 i = 0; i < tokenCount; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(owner, i);
+            if (!tokenBannedFromProposing[tokenId]) {
+                return tokenId;
+            }
+        }
+        return 0;
     }
     
     /**
@@ -1192,7 +1270,8 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
         bool locked,
         bool thresholdReached,
         uint256 thresholdTime,
-        bool executed
+        bool executed,
+        uint256 proposerTokenId
     ) {
         return (
             currentProposal.proposer,
@@ -1202,7 +1281,31 @@ contract Spatters is ERC721, Ownable, ReentrancyGuard, IERC2981 {
             currentProposal.locked,
             currentProposal.thresholdReached,
             currentProposal.thresholdReachedTime,
-            currentProposal.executed
+            currentProposal.executed,
+            currentProposal.proposerTokenId
         );
+    }
+    
+    /**
+     * @notice Get count of currently banned tokens
+     */
+    function getBannedTokenCount() external view returns (uint256) {
+        return bannedTokenIds.length;
+    }
+    
+    /**
+     * @notice Check if a specific token is banned from proposing
+     * @param tokenId Token ID to check
+     */
+    function isTokenBanned(uint256 tokenId) external view returns (bool) {
+        return tokenBannedFromProposing[tokenId];
+    }
+    
+    /**
+     * @notice Check if a token has voted in the current proposal
+     * @param tokenId Token ID to check
+     */
+    function hasTokenVoted(uint256 tokenId) external view returns (bool) {
+        return tokenVoteGeneration[tokenId] == proposalGeneration;
     }
 }
