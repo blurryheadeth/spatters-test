@@ -394,8 +394,9 @@ export default function PublicMint() {
     if (isCompleteConfirmed && !hasTriggeredGeneration) {
       setHasTriggeredGeneration(true);
       
-      // Calculate new token ID
-      const newTokenId = Number(totalSupply) + 1;
+      // totalSupply is already updated by the contract after mint completes
+      // So the new token ID IS totalSupply (not totalSupply + 1)
+      const newTokenId = Number(totalSupply);
       
       // Refetch contract state to clear the "selection in progress" status
       refetchMintStatus();
