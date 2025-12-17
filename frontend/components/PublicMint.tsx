@@ -26,6 +26,9 @@ export default function PublicMint() {
   const [error, setError] = useState('');
   const [hasTriggeredGeneration, setHasTriggeredGeneration] = useState(false);
   
+  // Store supply BEFORE mint to calculate correct token ID (avoids race condition)
+  const [supplyBeforeMint, setSupplyBeforeMint] = useState<number | null>(null);
+  
   // Dynamic iframe heights based on canvas dimensions from postMessage
   const [iframeHeights, setIframeHeights] = useState<{ [key: string]: number }>({});
   
@@ -391,12 +394,12 @@ export default function PublicMint() {
 
   // Handle completion confirmation
   useEffect(() => {
-    if (isCompleteConfirmed && !hasTriggeredGeneration) {
+    if (isCompleteConfirmed && !hasTriggeredGeneration && supplyBeforeMint !== null) {
       setHasTriggeredGeneration(true);
       
-      // totalSupply is already updated by the contract after mint completes
-      // So the new token ID IS totalSupply (not totalSupply + 1)
-      const newTokenId = Number(totalSupply);
+      // Use the supply we captured BEFORE the transaction
+      // New token ID = supplyBeforeMint + 1 (avoids race condition with stale totalSupply)
+      const newTokenId = supplyBeforeMint + 1;
       
       // Refetch contract state to clear the "selection in progress" status
       refetchMintStatus();
@@ -418,7 +421,7 @@ export default function PublicMint() {
         router.push(`/token/${newTokenId}`);
       }, 1500);
     }
-  }, [isCompleteConfirmed, totalSupply, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest]);
+  }, [isCompleteConfirmed, supplyBeforeMint, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest]);
 
   // Handle request mint
   const handleRequestMint = async () => {
@@ -443,6 +446,10 @@ export default function PublicMint() {
       setError('Please select an option');
       return;
     }
+    
+    // Store current supply BEFORE transaction to avoid race condition
+    // The new token ID will be supplyBeforeMint + 1
+    setSupplyBeforeMint(Number(totalSupply));
     
     try {
       await writeCompleteMint({

@@ -100,6 +100,9 @@ export default function OwnerMint() {
   // Track if we've already triggered generation (prevent double triggers)
   const [hasTriggeredGeneration, setHasTriggeredGeneration] = useState(false);
   
+  // Store supply BEFORE mint to calculate correct token ID (avoids race condition)
+  const [supplyBeforeMint, setSupplyBeforeMint] = useState<number | null>(null);
+  
   // Dynamic iframe heights based on canvas dimensions from postMessage
   const [iframeHeights, setIframeHeights] = useState<{ [key: string]: number }>({});
   
@@ -353,13 +356,13 @@ export default function OwnerMint() {
 
   // Handle completion confirmation
   useEffect(() => {
-    if ((isCompleteConfirmed || isDirectConfirmed) && !hasTriggeredGeneration) {
+    if ((isCompleteConfirmed || isDirectConfirmed) && !hasTriggeredGeneration && supplyBeforeMint !== null) {
       // Mark as triggered to prevent double triggers
       setHasTriggeredGeneration(true);
       
-      // totalSupply is already updated by the contract after mint completes
-      // So the new token ID IS totalSupply (not totalSupply + 1)
-      const newTokenId = Number(totalSupply);
+      // Use the supply we captured BEFORE the transaction
+      // New token ID = supplyBeforeMint + 1 (avoids race condition with stale totalSupply)
+      const newTokenId = supplyBeforeMint + 1;
       
       // Refetch contract state to clear the "selection in progress" status
       refetchMintStatus();
@@ -382,7 +385,7 @@ export default function OwnerMint() {
         router.push(`/token/${newTokenId}`);
       }, 1500);
     }
-  }, [isCompleteConfirmed, isDirectConfirmed, totalSupply, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest, refetchSupply]);
+  }, [isCompleteConfirmed, isDirectConfirmed, supplyBeforeMint, router, hasTriggeredGeneration, refetchMintStatus, refetchPendingRequest, refetchSupply]);
 
   // Listen for canvas dimensions from preview iframes and auto-load next preview
   useEffect(() => {
@@ -538,6 +541,9 @@ export default function OwnerMint() {
       return;
     }
     
+    // Store current supply BEFORE transaction to avoid race condition
+    setSupplyBeforeMint(Number(totalSupply));
+    
     try {
       await writeCompleteMint({
         address: contractAddress as `0x${string}`,
@@ -558,6 +564,9 @@ export default function OwnerMint() {
       setError(`Invalid seed. Must be a positive integer up to ${MAX_SEED_VALUE.toLocaleString()}`);
       return;
     }
+    
+    // Store current supply BEFORE transaction to avoid race condition
+    setSupplyBeforeMint(Number(totalSupply));
     
     // Convert integer seed to bytes32 with trailing zeros
     const seedBytes32 = integerToBytes32(BigInt(customSeed.trim()));
