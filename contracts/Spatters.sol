@@ -35,7 +35,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     // Minting cooldowns and limits
     uint256 public constant REQUEST_EXPIRATION = 55 minutes;
     uint256 public constant GLOBAL_COOLDOWN = 24 hours;  // 24h cooldown for public mint after ANY mint
-    uint256 public constant MAX_PER_WALLET = 10;
     
     // Note: Default palette is hard-coded in spatters.js (deployed to SSTORE2):
     // ["#fc1a4a", "#75d494", "#2587c3", "#f2c945", "#000000", "#FFFFFF"]
@@ -155,8 +154,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     address public activeMintRequester;    // Address with active 3-option selection
     uint256 public activeMintRequestTime;  // When the active request was made
     
-    // Anti-whale tracking
-    mapping(address => uint256) public mintedPerWallet;
     
     // Allowed mutation types (94 total from spatters.js)
     string[] public allowedMutations;
@@ -387,8 +384,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
             "Mint selection in progress"
         );
         
-        // Check anti-whale protection
-        require(mintedPerWallet[msg.sender] < MAX_PER_WALLET, "Wallet limit reached");
         require(
             block.timestamp >= lastGlobalMintTime + GLOBAL_COOLDOWN,
             "Global cooldown active"
@@ -459,7 +454,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         
         // Update tracking
         lastGlobalMintTime = block.timestamp;
-        mintedPerWallet[msg.sender]++;
         
         // Store token data
         uint256 tokenId = _nextTokenId++;
