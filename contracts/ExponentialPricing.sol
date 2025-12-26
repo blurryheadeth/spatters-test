@@ -50,11 +50,11 @@ library ExponentialPricing {
         // = START_PRICE * (16181.229...^(position/974))
         
         // Using logarithm:
-        // result = exp(ln(START_PRICE) + (position/CURVE_RANGE) * ln(END_PRICE/START_PRICE))
+        // result = START_PRICE * exp(ln(END_PRICE/START_PRICE) * (position/CURVE_RANGE))
         
         // ln(END_PRICE/START_PRICE) = ln(100/0.00618) = ln(16181.229) ≈ 9.691
         // Scaled by PRECISION: 9.691 * 1e18
-        int256 lnRatio = 9691000000000000000; // ln(16181.229) * 1e18
+        int256 lnRatio = 9691607193500630000; // ln(16181.229) * 1e18
         
         // (position/CURVE_RANGE) * lnRatio
         int256 exponent = (int256(position) * lnRatio) / int256(CURVE_RANGE);
@@ -83,7 +83,7 @@ library ExponentialPricing {
         uint256 term = PRECISION;
         
         // Taylor series expansion
-        for (uint256 i = 1; i <= 20; i++) {
+        for (uint256 i = 1; i <= 30; i++) {
             term = (term * uint256(x)) / (i * PRECISION);
             result += term;
             

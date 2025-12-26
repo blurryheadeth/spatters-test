@@ -375,6 +375,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      * Users pay mint price and get 3 seeds to preview before choosing
      */
     function requestMint() external payable nonReentrant returns (bytes32[3] memory) {
+        require(msg.sender == tx.origin, "No contracts");
         require(_nextTokenId > OWNER_RESERVE, "Owner mint period active");
         require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
         
@@ -482,6 +483,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     function requestOwnerMint(
         string[6] calldata customPalette
     ) external onlyOwner nonReentrant returns (bytes32[3] memory) {
+        require(msg.sender == tx.origin, "No contracts");
         require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
         
         // Check if ANY mint selection is in progress (blocks all minting)
