@@ -84,7 +84,6 @@ function isValidSeedInteger(value: string): boolean {
 export default function OwnerMint() {
   const router = useRouter();
   const { address, chainId } = useAccount();
-  const [recipient, setRecipient] = useState('');
   const [useCustomPalette, setUseCustomPalette] = useState(false);
   const [customPalette, setCustomPalette] = useState<string[]>(DEFAULT_COLORS);
   const [bulkPaletteInput, setBulkPaletteInput] = useState('');
@@ -221,13 +220,6 @@ export default function OwnerMint() {
   // Check if connected wallet is owner
   const isOwner = address && ownerAddress && 
     address.toLowerCase() === (ownerAddress as string).toLowerCase();
-
-  // Set recipient to owner by default
-  useEffect(() => {
-    if (address && !recipient) {
-      setRecipient(address);
-    }
-  }, [address, recipient]);
 
   // Helper to check if a pending request is still within the 55-minute window
   const isRequestStillValid = (timestamp: bigint): boolean => {
@@ -467,7 +459,6 @@ export default function OwnerMint() {
   // Reset form to initial state
   const resetForm = () => {
     setMintMode('choose');
-    setRecipient(address || '');
     setUseCustomPalette(false);
     setCustomPalette(DEFAULT_COLORS);
     setBulkPaletteInput('');
@@ -493,11 +484,6 @@ export default function OwnerMint() {
   // Validate common inputs
   const validateInputs = (): boolean => {
     setError('');
-    
-    if (!recipient || !/^0x[0-9A-Fa-f]{40}$/.test(recipient)) {
-      setError('Invalid recipient address');
-      return false;
-    }
     
     if (useCustomPalette) {
       for (let i = 0; i < 6; i++) {
@@ -526,7 +512,7 @@ export default function OwnerMint() {
         address: contractAddress as `0x${string}`,
         abi: SpattersABI.abi,
         functionName: 'requestOwnerMint',
-        args: [recipient as `0x${string}`, paletteParam],
+        args: [paletteParam],
       });
     } catch (err: any) {
       setError(err.message || 'Request failed');
@@ -580,7 +566,7 @@ export default function OwnerMint() {
         address: contractAddress as `0x${string}`,
         abi: SpattersABI.abi,
         functionName: 'ownerMint',
-        args: [recipient as `0x${string}`, paletteParam, seedBytes32],
+        args: [paletteParam, seedBytes32],
       });
     } catch (err: any) {
       setError(err.message || 'Mint failed');
@@ -747,19 +733,6 @@ export default function OwnerMint() {
           </div>
           
           <div className="space-y-6">
-            {/* Recipient Address */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Recipient Address</label>
-              <input
-                type="text"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder="0x..."
-                className="w-full px-4 py-2 border-2"
-                style={{ borderColor: COLORS.black, backgroundColor: COLORS.background, color: COLORS.black }}
-              />
-            </div>
-
             {/* Custom Seed (Required) - as integer */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Custom Seed (integer) *</label>
@@ -859,7 +832,7 @@ export default function OwnerMint() {
 
             <button
               onClick={handleDirectOwnerMint}
-              disabled={isDirectPending || isDirectConfirming || !recipient || !customSeed}
+              disabled={isDirectPending || isDirectConfirming || !customSeed}
               className="w-full font-bold py-3 px-6 border-2 hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: COLORS.green, borderColor: COLORS.black, color: COLORS.black }}
             >
@@ -897,19 +870,6 @@ export default function OwnerMint() {
         {/* Step 1: Configure and Request */}
         {previewSeeds.length === 0 && (
           <div className="space-y-6">
-            {/* Recipient Address */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: COLORS.black }}>Recipient Address</label>
-              <input
-                type="text"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder="0x..."
-                className="w-full px-4 py-2 border-2"
-                style={{ borderColor: COLORS.black, backgroundColor: COLORS.background, color: COLORS.black }}
-              />
-            </div>
-
             {/* Custom Palette Toggle */}
             <div className="flex items-center space-x-3">
               <input
@@ -988,13 +948,13 @@ export default function OwnerMint() {
 
             <button
               onClick={() => setShowConfirmModal(true)}
-              disabled={isRequestPending || isRequestConfirming || isLoadingPreviews || !recipient}
+              disabled={isRequestPending || isRequestConfirming || isLoadingPreviews}
               className="w-full font-bold py-3 px-6 transition-colors border-2"
               style={{ 
                 backgroundColor: '#2587c3', 
                 borderColor: '#000000',
                 color: '#FFFFFF',
-                opacity: (isRequestPending || isRequestConfirming || isLoadingPreviews || !recipient) ? 0.5 : 1,
+                opacity: (isRequestPending || isRequestConfirming || isLoadingPreviews) ? 0.5 : 1,
               }}
             >
               {isRequestPending || isRequestConfirming ? 'Generating Seeds...' : 
