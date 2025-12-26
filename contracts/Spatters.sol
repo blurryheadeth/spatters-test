@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -14,17 +14,18 @@ import "./DateTime.sol";
 /**
  * @title Spatters
  * @dev Fully on-chain seed-based generative NFT collection
- * Pure Art Blocks model: Only seeds and mutation records stored on-chain
+ * Only seeds and mutation records stored on-chain
  * Images generated client-side using on-chain p5.js code
- * 
+ * Only external dependency is an RPC client 
+ *
  * Features:
  * - Two-step minting with 3-choice preview selection
- * - Owner-only custom palette support (first 30 tokens)
+ * - Owner-only custom palette support
  * - Date-based mutation system with 94 mutation types
  * - EIP-2981 royalty standard (5% secondary sales)
  * - All code stored on-chain, zero external dependencies
  */
-contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
+contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC2981 {
     using Strings for uint256;
 
     // ============ Constants ============
@@ -54,7 +55,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     
     /// @notice Governance becomes available 10 years after deployment
     /// @dev TESTING ONLY: Set to 0 for Sepolia testing. Change back to 10 * 365 days for mainnet!
-    uint256 public constant GOVERNANCE_DELAY = 0; // MAINNET: 10 * 365 days
+    uint256 public constant GOVERNANCE_DELAY = 3 days; // MAINNET: 10 * 365 days
     
     /// @notice Cooldown between proposals (prevents spam)
     uint256 public constant PROPOSAL_COOLDOWN = 30 days;
@@ -110,12 +111,13 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     /// @dev tokenId => generation when voted (if generation matches current, token has voted)
     mapping(uint256 => uint256) public tokenVoteGeneration;
     
-    /// @notice Tracks which token IDs are banned from proposing
-    /// @dev Tokens are banned when their proposal fails; bans clear on any successful proposal
-    mapping(uint256 => bool) public tokenBannedFromProposing;
+    /// @notice Current ban generation (incremented when bans are cleared)
+    /// @dev Starts at 1 so default mapping value (0) means "not banned"
+    uint256 public banGeneration;
     
-    /// @notice Array of banned token IDs (for clearing bans on successful proposal)
-    uint256[] public bannedTokenIds;
+    /// @notice Tracks which token IDs are banned from proposing
+    /// @dev tokenId => generation when banned (if matches banGeneration, token is banned)
+    mapping(uint256 => uint256) public tokenBanGeneration;
     
     // ============ Structs ============
 
@@ -180,11 +182,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         bool isOwnerMint
     );
     
-    event OwnerMintRequested(
-        address indexed recipient,
-        bytes32[3] seeds,
-        uint256 timestamp
-    );
     
     event Minted(
         uint256 indexed tokenId,
@@ -212,7 +209,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     event BaseURIUpdatedByCommunity(string newURI);
     event BaseURIUpdatedByOwner(string newURI);
     event TokenBannedFromProposing(uint256 indexed tokenId);
-    event AllProposalBansCleared(uint256 tokenCount);
+    event AllProposalBansCleared(uint256 newBanGeneration);
     event ProposalExpired(string proposedURI, uint256 proposerTokenId);
 
     // ============ Constructor ============
@@ -227,6 +224,10 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         
         // Record deployment time for governance delay
         deploymentTime = block.timestamp;
+        
+        // Initialize governance generations to 1 (so default 0 means "hasn't voted" / "not banned")
+        banGeneration = 1;
+        proposalGeneration = 1;
         
         _initializeMutationTypes();
     }
@@ -473,14 +474,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
 
     /**
      * @dev Step 1 for owner: Request 3 seeds to preview (no custom seed provided)
-     * @param to Address to mint to
      * @param customPalette Array of 6 hex colors (empty strings for default)
      * 
      * This generates 3 seeds BY THE CONTRACT for the owner to preview.
      * Use ownerMint() with a customSeed if you want to skip the 3-option flow.
      */
     function requestOwnerMint(
-        address to,
         string[6] calldata customPalette
     ) external onlyOwner nonReentrant returns (bytes32[3] memory) {
         require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
@@ -503,7 +502,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         // Generate 3 unique seeds BY THE CONTRACT
         bytes32[3] memory seeds;
         for (uint8 i = 0; i < 3; i++) {
-            seeds[i] = _generateSeed(to, block.timestamp, i);
+            seeds[i] = _generateSeed(msg.sender, block.timestamp, i);
         }
         
         // Store request with recipient
@@ -511,7 +510,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
             seeds: seeds,
             timestamp: block.timestamp,
             completed: false,
-            recipient: to,
+            recipient: msg.sender,
             isOwnerMint: true,
             hasCustomPalette: hasCustomPalette
         });
@@ -528,7 +527,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         activeMintRequestTime = block.timestamp;
         
         emit MintRequested(msg.sender, seeds, block.timestamp, true);
-        emit OwnerMintRequested(to, seeds, block.timestamp);
         
         return seeds;
     }
@@ -591,7 +589,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
 
     /**
      * @dev Direct owner mint with a pre-defined seed (bypasses 3-option flow)
-     * @param to Address to mint to
      * @param customPalette Array of 6 hex colors (empty strings for default)
      * @param customSeed Required seed for deterministic minting (must be non-zero)
      * 
@@ -599,7 +596,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
      * For the 3-option preview flow, use requestOwnerMint() + completeOwnerMint().
      */
     function ownerMint(
-        address to,
         string[6] calldata customPalette,
         bytes32 customSeed
     ) external onlyOwner nonReentrant {
@@ -639,9 +635,9 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         }
         
         // Mint token
-        _safeMint(to, tokenId);
+        _safeMint(msg.sender, tokenId);
         
-        emit Minted(tokenId, to, customSeed, hasCustomPalette, block.timestamp);
+        emit Minted(tokenId, msg.sender, customSeed, hasCustomPalette, block.timestamp);
     }
 
     // ============ Mutation Functions ============
@@ -1191,7 +1187,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     /**
      * @notice Confirm and execute proposal (only callable by original proposer)
      * @dev Must be called within 48 hours of threshold being reached
-     *      On success, all token bans are cleared
+     *      On success, all token bans are cleared via O(1) generation increment
      */
     function confirmProposal() external {
         require(msg.sender == currentProposal.proposer, "Only proposer can confirm");
@@ -1206,18 +1202,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         baseURI = currentProposal.proposedBaseURI;
         currentProposal.executed = true;
         
-        // Clear all token bans on successful proposal
-        uint256 bannedCount = bannedTokenIds.length;
-        for (uint256 i = 0; i < bannedCount; i++) {
-            delete tokenBannedFromProposing[bannedTokenIds[i]];
-        }
-        delete bannedTokenIds;
+        // Clear all token bans via O(1) generation increment
+        // All tokens with tokenBanGeneration[id] == old banGeneration are now unbanned
+        banGeneration++;
+        emit AllProposalBansCleared(banGeneration);
         
-        if (bannedCount > 0) {
-            emit AllProposalBansCleared(bannedCount);
-        }
-        
-        // Increment generation to invalidate votes (O(1) clearing)
+        // Increment vote generation to invalidate votes (O(1) clearing)
         proposalGeneration++;
         
         emit BaseURIUpdatedByCommunity(currentProposal.proposedBaseURI);
@@ -1229,9 +1219,9 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
      */
     function _handleExpiredProposal() internal {
         uint256 tokenId = currentProposal.proposerTokenId;
-        if (tokenId != 0 && !tokenBannedFromProposing[tokenId]) {
-            tokenBannedFromProposing[tokenId] = true;
-            bannedTokenIds.push(tokenId);
+        // Ban the token by setting its ban generation to current
+        if (tokenId != 0 && tokenBanGeneration[tokenId] != banGeneration) {
+            tokenBanGeneration[tokenId] = banGeneration;
             emit TokenBannedFromProposing(tokenId);
         }
         emit ProposalExpired(currentProposal.proposedBaseURI, tokenId);
@@ -1246,7 +1236,8 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
         uint256 tokenCount = balanceOf(owner);
         for (uint256 i = 0; i < tokenCount; i++) {
             uint256 tokenId = tokenOfOwnerByIndex(owner, i);
-            if (!tokenBannedFromProposing[tokenId]) {
+            // Token is banned if its ban generation matches current ban generation
+            if (tokenBanGeneration[tokenId] != banGeneration) {
                 return tokenId;
             }
         }
@@ -1281,18 +1272,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuard, IERC2981 {
     }
     
     /**
-     * @notice Get count of currently banned tokens
-     */
-    function getBannedTokenCount() external view returns (uint256) {
-        return bannedTokenIds.length;
-    }
-    
-    /**
      * @notice Check if a specific token is banned from proposing
+     * @dev Token is banned if its ban generation matches current ban generation
      * @param tokenId Token ID to check
      */
     function isTokenBanned(uint256 tokenId) external view returns (bool) {
-        return tokenBannedFromProposing[tokenId];
+        return tokenBanGeneration[tokenId] == banGeneration;
     }
     
     /**
