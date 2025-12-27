@@ -395,14 +395,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         uint256 price = ExponentialPricing.calculatePrice(_nextTokenId, OWNER_RESERVE);
         require(msg.value >= price, "Insufficient payment");
         
-        // Check for existing pending request
-        // Allow new request only if previous request is completed OR expired
-        require(
-            pendingRequest.completed ||
-            block.timestamp > pendingRequest.timestamp + REQUEST_EXPIRATION,
-            "Pending request exists"
-        );
-        
         // Generate 3 unique seeds
         bytes32[3] memory seeds;
         for (uint8 i = 0; i < 3; i++) {
@@ -961,9 +953,9 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         return keccak256(abi.encodePacked(
             minter,
             timestamp,
+            nonce,
             block.prevrandao,
-            _nextTokenId,
-            nonce
+            _nextTokenId
         ));
     }
 
