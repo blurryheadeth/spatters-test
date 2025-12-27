@@ -136,7 +136,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         bytes32[3] seeds;              // 3 seeds for user to preview
         uint256 timestamp;             // When request was made
         bool completed;                // Whether mint was completed
-        address recipient;             // Who receives the minted token
         bool isOwnerMint;              // Whether this is an owner-initiated mint
         bool hasCustomPalette;         // Whether a custom palette was stored
     }
@@ -406,7 +405,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             seeds: seeds,
             timestamp: block.timestamp,
             completed: false,
-            recipient: msg.sender,
             isOwnerMint: false,
             hasCustomPalette: false
         });
@@ -499,12 +497,11 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             seeds[i] = _generateSeed(msg.sender, block.timestamp, i);
         }
         
-        // Store request with recipient
+        // Store request
         pendingRequest = MintRequest({
             seeds: seeds,
             timestamp: block.timestamp,
             completed: false,
-            recipient: msg.sender,
             isOwnerMint: true,
             hasCustomPalette: hasCustomPalette
         });
@@ -543,9 +540,8 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             "Request expired"
         );
         
-        // Get chosen seed and recipient
+        // Get chosen seed
         bytes32 chosenSeed = pendingRequest.seeds[seedChoice];
-        address recipient = pendingRequest.recipient;
         bool hasCustomPalette = pendingRequest.hasCustomPalette;
         
         // Mark request as completed and clear global active request
@@ -576,9 +572,9 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         }
         
         // Mint token
-        _safeMint(recipient, tokenId);
+        _safeMint(msg.sender, tokenId);
         
-        emit Minted(tokenId, recipient, chosenSeed, hasCustomPalette, block.timestamp);
+        emit Minted(tokenId, msg.sender, chosenSeed, hasCustomPalette, block.timestamp);
     }
 
     /**
