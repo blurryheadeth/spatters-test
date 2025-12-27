@@ -566,11 +566,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             }
         }
         
-        // Clear pending palette after use
-        for (uint i = 0; i < 6; i++) {
-            pendingPalette[i] = "";
-        }
-        
         // Mint token
         _safeMint(msg.sender, tokenId);
         
@@ -651,8 +646,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         // Generate deterministic seed for this mutation
         bytes32 mutationSeed = _generateMutationSeed(
             tokenId,
-            tokenMutations[tokenId].length,
-            mutationType
+            tokenMutations[tokenId].length
         );
         
         // Store mutation record
@@ -689,8 +683,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         // Generate deterministic seed for this mutation
         bytes32 mutationSeed = _generateMutationSeed(
             tokenId,
-            tokenMutations[tokenId].length,
-            mutationType
+            tokenMutations[tokenId].length
         );
         
         // Store mutation record
@@ -961,14 +954,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function _generateMutationSeed(
         uint256 tokenId,
-        uint256 mutationIndex,
-        string memory mutationType
+        uint256 mutationIndex
     ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(
             tokenId,
             msg.sender,          // CRITICAL: Current owner's address
             mutationIndex,
-            mutationType,
             block.timestamp,
             block.prevrandao
         ));
