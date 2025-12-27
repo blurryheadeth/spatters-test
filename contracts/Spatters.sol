@@ -1224,28 +1224,8 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     /**
      * @notice Get current proposal details
      */
-    function getCurrentProposal() external view returns (
-        address proposer,
-        string memory proposedURI,
-        uint256 proposalTime,
-        uint256 totalVotes,
-        bool locked,
-        bool thresholdReached,
-        uint256 thresholdTime,
-        bool executed,
-        uint256 proposerTokenId
-    ) {
-        return (
-            currentProposal.proposer,
-            currentProposal.proposedBaseURI,
-            currentProposal.proposalTime,
-            currentProposal.totalVotesWeight,
-            currentProposal.locked,
-            currentProposal.thresholdReached,
-            currentProposal.thresholdReachedTime,
-            currentProposal.executed,
-            currentProposal.proposerTokenId
-        );
+    function getCurrentProposal() external view returns (CommunityProposal memory) {
+        return currentProposal;
     }
     
     /**
