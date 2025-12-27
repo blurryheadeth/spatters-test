@@ -917,7 +917,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      * - This returns JSON with HTTP URLs
      * - URLs point to API wrapper service
      * - API calls SpattersGenerator.getTokenHtml() (fully on-chain)
-     * - Same model as Art Blocks!
      * 
      * @param tokenId The token ID
      * @return Metadata URL (baseURI + tokenId)
@@ -1045,7 +1044,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      * @notice Permanently lock the generator contract reference
      * @dev Once called, setGeneratorContract() can never be called again
      *      This provides collectors with cryptographic proof that the rendering
-     *      infrastructure will never change (Art Blocks-style immutability)
+     *      infrastructure will never change
      * 
      * WARNING: This is IRREVERSIBLE. Ensure the generator is fully tested
      *          and working correctly before calling this function.
@@ -1187,9 +1186,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         // All tokens with tokenBanGeneration[id] == old banGeneration are now unbanned
         banGeneration++;
         emit AllProposalBansCleared(banGeneration);
-        
-        // Increment vote generation to invalidate votes (O(1) clearing)
-        proposalGeneration++;
         
         emit BaseURIUpdatedByCommunity(currentProposal.proposedBaseURI);
     }
