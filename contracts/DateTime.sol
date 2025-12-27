@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 /**
  * @title DateTime
  * @dev Library for date and time calculations
- * Handles month/day extraction and comparisons for mutation eligibility
+ * Handles month/day extraction for mutation eligibility
  */
 library DateTime {
     uint256 constant SECONDS_PER_DAY = 24 * 60 * 60;
-    uint256 constant SECONDS_PER_YEAR = 365 * SECONDS_PER_DAY;
     
     struct DateTime {
         uint256 year;
@@ -17,38 +16,7 @@ library DateTime {
     }
     
     /**
-     * @dev Check if two timestamps are on the same month and day (anniversary check)
-     */
-    function isSameMonthAndDay(uint256 timestamp1, uint256 timestamp2) 
-        internal 
-        pure 
-        returns (bool) 
-    {
-        DateTime memory dt1 = parseTimestamp(timestamp1);
-        DateTime memory dt2 = parseTimestamp(timestamp2);
-        
-        return (dt1.month == dt2.month && dt1.day == dt2.day);
-    }
-    
-    /**
-     * @dev Check if a timestamp falls on a specific month and day
-     */
-    function isMonthAndDay(uint256 timestamp, uint256 targetMonth, uint256 targetDay) 
-        internal 
-        pure 
-        returns (bool) 
-    {
-        if (targetMonth == 0 || targetDay == 0) {
-            return false; // Invalid date
-        }
-        
-        DateTime memory dt = parseTimestamp(timestamp);
-        return (dt.month == targetMonth && dt.day == targetDay);
-    }
-    
-    /**
      * @dev Parse Unix timestamp into year/month/day
-     * Simplified version using approximation
      */
     function parseTimestamp(uint256 timestamp) 
         internal 
@@ -124,18 +92,4 @@ library DateTime {
         }
         return 0;
     }
-    
-    /**
-     * @dev Get current date as (year, month, day)
-     */
-    function getCurrentDate() 
-        internal 
-        view 
-        returns (uint256 year, uint256 month, uint256 day) 
-    {
-        DateTime memory dt = parseTimestamp(block.timestamp);
-        return (dt.year, dt.month, dt.day);
-    }
 }
-
-
