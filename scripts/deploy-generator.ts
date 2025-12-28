@@ -133,17 +133,14 @@ async function main() {
     console.error("❌ Failed to read template:", error);
   }
 
-  // 6. Test getTemplateConfig
-  console.log("\n🧪 Testing template config...");
+  // 6. Test getStorageAddresses
+  console.log("\n🧪 Testing storage addresses...");
   try {
-    const config = await generator.getTemplateConfig();
-    console.log(`✅ getTemplateConfig() works`);
-    console.log(`   Spatters: ${config[0]}`);
-    console.log(`   Generator: ${config[1]}`);
-    console.log(`   Storage chunks: ${config[2].length}`);
-    console.log(`   Template chunks: ${config[3].length}`);
+    const storageAddresses = await generator.getStorageAddresses();
+    console.log(`✅ getStorageAddresses() works`);
+    console.log(`   Storage chunks: ${storageAddresses.length}`);
   } catch (error) {
-    console.error("❌ Failed to read config:", error);
+    console.error("❌ Failed to read storage addresses:", error);
   }
 
   // 7. Save deployment info

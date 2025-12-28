@@ -217,28 +217,6 @@ contract SpattersGenerator {
     }
 
     /**
-     * @notice Get all configuration needed for the HTML template
-     * @dev API uses this to get all addresses for template injection
-     * @return spattersContract The Spatters NFT contract address
-     * @return generatorContract This contract's address
-     * @return storageAddresses Array of SSTORE2 addresses for spatters.js
-     * @return templateAddresses Array of SSTORE2 addresses for HTML template
-     */
-    function getTemplateConfig() external view returns (
-        address spattersContract,
-        address generatorContract,
-        address[] memory storageAddresses,
-        address[] memory templateAddresses
-    ) {
-        return (
-            SPATTERS_CONTRACT,
-            address(this),
-            STORAGE_ADDRESSES,
-            HTML_TEMPLATE_ADDRESSES
-        );
-    }
-
-    /**
      * @notice Internal function to read data from SSTORE2 contract
      * @param storageAddress The SSTORE2 contract address
      * @return The stored bytes (excluding the STOP opcode prefix)
