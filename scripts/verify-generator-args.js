@@ -13,6 +13,6 @@ module.exports = [
     "0xc3e17597C6E981f6e6c8Cc976103efEc35783294"
   ], // SSTORE2 addresses for spatters.js chunks
   [
-    "0x4DbfEEDf0E34bbE3C0af0614277e905A97cB5eE9"
+    "0x8377374D59b116C016f4efa65858652D1A1a5a88"
   ] // SSTORE2 addresses for HTML template
 ];

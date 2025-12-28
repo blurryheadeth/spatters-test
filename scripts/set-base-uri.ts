@@ -5,7 +5,7 @@ async function main() {
   const deploymentPath = "./deployments/sepolia.json";
   const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
   
-  const baseURI = "https://spatters-frontend.vercel.app/api/metadata/";
+  const baseURI = "https://spatters.vercel.app/api/metadata/";
   
   console.log("Setting baseURI on Spatters...");
   console.log("Spatters contract:", deployment.address);
