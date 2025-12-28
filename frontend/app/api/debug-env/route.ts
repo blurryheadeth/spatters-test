@@ -20,7 +20,7 @@ export async function GET() {
     },
     expected: {
       CONTRACT_ADDRESS: '0x294949BA59348514C65ca48c82E6ADd87696A6Ed',
-      GENERATOR_ADDRESS: '0xFad64bbc5b685eEF10bBCc27d82777A90047127c',
+      GENERATOR_ADDRESS: '0x046d2Dc3E36b22E93185C1716Cc3C5D9909D6B62',
     }
   }, {
     headers: {

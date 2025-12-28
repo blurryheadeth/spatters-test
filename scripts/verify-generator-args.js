@@ -1,6 +1,6 @@
 // Constructor arguments for SpattersGenerator.sol verification
 module.exports = [
-  "0x297289E11d07CCBa79cFee9EA9f7f8f07Df9af78", // Spatters contract address
+  "0xBEE7fD7eB2Fc18ceDAa09508cBAB3663891B675D", // Spatters contract address
   [
     "0x5F84FFECc09e67A736a8A329bFf8bAd5DeB5d643",
     "0x4b3E5c90F23668eCCAB75E7bF8fEa1ae139B8b08",
