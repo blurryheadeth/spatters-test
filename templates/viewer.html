@@ -8,8 +8,8 @@
 <body>
 <script>
 const CONFIG = {
-  sepoliaRpc: "{{SEPOLIA_RPC}}",
-  mainnetRpc: "{{MAINNET_RPC}}",
+  contractRpc: "{{CONTRACT_RPC}}",
+  artBlocksRpc: "{{ARTBLOCKS_RPC}}",
   tokenId: {{TOKEN_ID}},
   generatorContract: "{{GENERATOR_CONTRACT}}",
   spattersContract: "{{SPATTERS_CONTRACT}}",
@@ -89,7 +89,7 @@ async function loadP5jsFromArtBlocks() {
   for (let i = 0; i < CONFIG.p5ChunkCount; i++) {
     const indexHex = encodeUint256(i);
     const callData = GET_DEPENDENCY_SCRIPT_SELECTOR + CONFIG.p5DependencyBytes32.slice(2) + indexHex;
-    const result = await ethCall(CONFIG.mainnetRpc, CONFIG.artBlocksRegistry, callData);
+    const result = await ethCall(CONFIG.artBlocksRpc, CONFIG.artBlocksRegistry, callData);
     chunks.push(decodeAbiString(result));
   }
   const compressedBase64 = chunks.join('');
@@ -104,7 +104,7 @@ async function loadP5jsFromArtBlocks() {
 async function getTokenData(tokenId) {
   const selector = '0xb09afec1';
   const data = selector + encodeUint256(tokenId);
-  const result = await ethCall(CONFIG.sepoliaRpc, CONFIG.generatorContract, data);
+  const result = await ethCall(CONFIG.contractRpc, CONFIG.generatorContract, data);
   const hex = result.slice(2);
   const seed = '0x' + hex.slice(0, 64);
   const mutationSeedsOffset = parseInt(hex.slice(64, 128), 16) * 2;
@@ -145,7 +145,7 @@ async function getTokenData(tokenId) {
 async function loadSpattersJs() {
   const chunks = await Promise.all(
     CONFIG.storageAddresses.map(async (addr) => {
-      const bytecode = await getBytecode(CONFIG.sepoliaRpc, addr);
+      const bytecode = await getBytecode(CONFIG.contractRpc, addr);
       return hexToString(bytecode);
     })
   );

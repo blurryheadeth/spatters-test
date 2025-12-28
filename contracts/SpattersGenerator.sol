@@ -23,7 +23,7 @@ interface ISpatters {
  * @title SpattersGenerator
  * @notice On-chain data provider and HTML template storage for Spatters NFTs
  * @dev Stores:
- *      - HTML template with embedded pako.js and loader JavaScript (in SSTORE2)
+ *      - HTML template with loader JavaScript (in SSTORE2)
  *      - SSTORE2 addresses for spatters.js chunks
  *      - Reference to Spatters NFT contract for token data
  * 
@@ -31,9 +31,9 @@ interface ISpatters {
  * - API server fetches HTML template from chain
  * - API injects RPC URLs (only off-chain dependency)
  * - Browser executes template which loads all data from blockchain:
- *   - spatters.js from Sepolia (our SSTORE2 contracts)
- *   - p5.js from Ethereum Mainnet (Art Blocks DependencyRegistry)
- *   - Token data from Sepolia (Spatters contract)
+ *   - spatters.js from our SSTORE2 contracts
+ *   - p5.js from Artblocks DependencyRegistry
+ *   - Token data from Spatters contract
  * - Fully on-chain except RPC URL configuration
  */
 contract SpattersGenerator {
@@ -176,8 +176,8 @@ contract SpattersGenerator {
     /**
      * @notice Get the complete HTML template (concatenated from all chunks)
      * @dev The template contains placeholders that the API replaces:
-     *      - {{SEPOLIA_RPC}} - Sepolia RPC URL
-     *      - {{MAINNET_RPC}} - Mainnet RPC URL (for Art Blocks p5.js)
+     *      - {{CONTRACT_RPC}} - RPC URL for Spatters contract chain
+     *      - {{ARTBLOCKS_RPC}} - Mainnet RPC URL (Art Blocks p5.js is always on Mainnet)
      *      - {{TOKEN_ID}} - The token ID
      *      - {{GENERATOR_CONTRACT}} - This contract's address
      *      - {{SPATTERS_CONTRACT}} - Spatters NFT contract address

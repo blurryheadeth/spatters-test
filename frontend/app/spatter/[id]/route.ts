@@ -101,9 +101,11 @@ export async function GET(
     });
 
     // Replace ONLY the placeholders - keep everything else exactly as on-chain
+    // CONTRACT_RPC = your Spatters contract chain (Sepolia during dev, Mainnet in production)
+    // ARTBLOCKS_RPC = Art Blocks DependencyRegistry on Mainnet (always Mainnet)
     const html = htmlTemplate
-      .replace(/\{\{SEPOLIA_RPC\}\}/g, SEPOLIA_RPC_URL || '')
-      .replace(/\{\{MAINNET_RPC\}\}/g, MAINNET_RPC_URL || '')
+      .replace(/\{\{CONTRACT_RPC\}\}/g, rpcUrl || '')
+      .replace(/\{\{ARTBLOCKS_RPC\}\}/g, MAINNET_RPC_URL || '')
       .replace(/\{\{TOKEN_ID\}\}/g, tokenId.toString())
       .replace(/\{\{GENERATOR_CONTRACT\}\}/g, GENERATOR_ADDRESS)
       .replace(/\{\{SPATTERS_CONTRACT\}\}/g, CONTRACT_ADDRESS || '')

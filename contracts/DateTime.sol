@@ -40,7 +40,7 @@ library DateTime {
         }
         
         // Calculate month and day
-        uint256 month = 1;
+        uint256 month;
         uint256 day;
         
         for (month = 1; month <= 12; month++) {
