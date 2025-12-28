@@ -18,6 +18,9 @@ const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia';
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 // Remove trailing slash to prevent double slashes in URLs
 const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+// Supabase storage for direct PNG access
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'spatters-pixels';
 
 const chain = NETWORK === 'mainnet' ? mainnet : sepolia;
 const rpcUrl = NETWORK === 'mainnet' 
@@ -127,11 +130,16 @@ export async function GET(
     const mutationCount = mutations.length;
 
     // Build OpenSea-compatible metadata
+    // Use direct Supabase PNG URL for better compatibility with external platforms
+    const imageUrl = SUPABASE_URL 
+      ? `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${tokenId}.png`
+      : `${BASE_URL}/api/image/${tokenId}`;
+    
     const metadata = {
       name: `Spatter #${tokenId}`,
       description: 'Fully on-chain generative art with time-based mutations. Click the artwork to cycle through mutation history.',
-      // Static thumbnail (SVG from Supabase cache, fast loading)
-      image: `${BASE_URL}/api/image/${tokenId}`,
+      // Static PNG thumbnail from Supabase storage (direct CDN link)
+      image: imageUrl,
       // Interactive HTML viewer (loads pre-computed pixels from Supabase, fast)
       animation_url: `${BASE_URL}/api/token/${tokenId}`,
       // Link to the custom frontend page for this token
