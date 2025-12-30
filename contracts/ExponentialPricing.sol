@@ -83,7 +83,7 @@ library ExponentialPricing {
         uint256 term = PRECISION;
         
         // Taylor series expansion
-        for (uint256 i = 1; i <= 30; i++) {
+        for (uint256 i = 1; i <= 40; i++) {
             term = (term * uint256(x)) / (i * PRECISION);
             result += term;
             
