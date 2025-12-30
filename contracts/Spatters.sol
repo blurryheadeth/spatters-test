@@ -55,7 +55,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     
     /// @notice Governance becomes available 10 years after deployment
     /// @dev TESTING ONLY: Set to 0 for Sepolia testing. Change back to 10 * 365 days for mainnet!
-    uint256 public constant GOVERNANCE_DELAY = 3 days; // MAINNET: 10 * 365 days
+    uint256 public constant GOVERNANCE_DELAY = 1 days; // MAINNET: 10 * 365 days
     
     /// @notice Cooldown between proposals (prevents spam)
     uint256 public constant PROPOSAL_COOLDOWN = 30 days;
@@ -642,43 +642,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         
         // Record the current UTC day to prevent multiple mutations
         lastMutationDay[tokenId] = block.timestamp / 1 days;
-        
-        // Generate deterministic seed for this mutation
-        bytes32 mutationSeed = _generateMutationSeed(
-            tokenId,
-            tokenMutations[tokenId].length
-        );
-        
-        // Store mutation record
-        tokenMutations[tokenId].push(MutationRecord({
-            mutationType: mutationType,
-            seed: mutationSeed,
-            timestamp: block.timestamp
-        }));
-        
-        emit Mutated(
-            tokenId,
-            tokenMutations[tokenId].length - 1,
-            mutationType,
-            mutationSeed,
-            block.timestamp
-        );
-    }
-
-    /**
-     * @dev Owner bypass for mutation testing (Sepolia only - remove for mainnet)
-     * Allows contract owner to mutate any token without date/cooldown restrictions
-     * @param tokenId Token to mutate
-     * @param mutationType Type of mutation to apply
-     */
-    function ownerMutate(
-        uint256 tokenId,
-        string memory mutationType
-    ) external onlyOwner nonReentrant {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
-        require(_isValidMutationType(mutationType), "Invalid mutation type");
-        
-        // No date/cooldown checks - owner can mutate anytime for testing
         
         // Generate deterministic seed for this mutation
         bytes32 mutationSeed = _generateMutationSeed(

@@ -1479,7 +1479,7 @@ function mutate(seed) {
             }
         }
         applyGradients(subArrays,interpolationFactorsArrays,newSelectedColors,splitFlagsArray);
-        applyAntialiasing(10);
+        applyAntialiasing(5);
     } else {
         // Apply antialiasing to the pixel colors stored in canvasArray and modifies these colors accordingly
         applyAntialiasing(0);
