@@ -1,0 +1,11 @@
+{
+  "network": "mainnet",
+  "chainId": 1,
+  "templateAddresses": [
+    "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
+  ],
+  "templateChunks": 1,
+  "templateSize": 6286,
+  "deployedAt": "2025-12-31T19:29:35.000Z"
+}
+

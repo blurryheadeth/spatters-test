@@ -1,6 +1,11 @@
-module.exports = [
-  "0x1a6603d5083aaed6be7d5e52f7f3cf060ed0b346",
-  [
+{
+  "network": "mainnet",
+  "generatorAddress": "0x6bb4ee9535032e18a54ef069df296d43f869bafa",
+  "spattersAddress": "0x1a6603d5083aaed6be7d5e52f7f3cf060ed0b346",
+  "htmlTemplateAddresses": [
+    "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
+  ],
+  "storageAddresses": [
     "0x8e5bcb26f1ad493785fc50997f35e9df57d9c58f",
     "0x59f1133b30759364318f416ec937ede04b00b724",
     "0x7ab4d5973b64bc36248800dade40d334ba5fe46d",
@@ -11,7 +16,7 @@ module.exports = [
     "0x6b69ffaa667d851a81dac9c06c36528e639aed45",
     "0xb0dc5ea620ba6172b16802f07fddb900edadd21d"
   ],
-  [
-    "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
-  ]
-];
+  "deployedAt": "2025-12-31T19:34:35.000Z",
+  "deployer": "0xE01061A414876A271628FdcA9840e1A98720c762"
+}
+

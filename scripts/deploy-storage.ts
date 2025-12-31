@@ -2,154 +2,123 @@ import { ethers, network } from "hardhat";
 import fs from 'fs';
 import path from 'path';
 
+// ============================================================
+// CONFIGURATION - Update these after each successful deployment
+// ============================================================
+const CHUNK_TO_DEPLOY = 10; // All chunks deployed! This is just for reference.
+
+// All spatters.js chunk addresses (MAINNET)
+const DEPLOYED_ADDRESSES: string[] = [
+  "0x8e5bcb26f1ad493785fc50997f35e9df57d9c58f", // chunk 1
+  "0x59f1133b30759364318f416ec937ede04b00b724", // chunk 2
+  "0x7ab4d5973b64bc36248800dade40d334ba5fe46d", // chunk 3
+  "0x6abb8445dca6a5ee8506fe67d0a27d310213bbee", // chunk 4
+  "0x12ed39cdd2b7233e264e13e33ea4bee1e4ce8a77", // chunk 5
+  "0x24af1e1a1fe57fa70d029cbda51c29af34a1d311", // chunk 6
+  "0x1d5231d5b27b8342964ad6bca9cab65d0f925856", // chunk 7
+  "0x6b69ffaa667d851a81dac9c06c36528e639aed45", // chunk 8
+  "0xb0dc5ea620ba6172b16802f07fddb900edadd21d", // chunk 9 ✓ COMPLETE
+];
+// ============================================================
+
 /**
  * SSTORE2 Write Function
- * 
- * Creates a contract where the bytecode IS the data (prefixed with STOP opcode).
- * This matches the solady/SSTORE2 pattern used by Art Blocks.
- * 
- * The init code:
- * 1. Copies the data portion to memory
- * 2. Returns it as the contract's runtime code
- * 
- * After deployment, the contract's bytecode is: 0x00 + data
- * The STOP opcode (0x00) ensures the contract can't be called.
  */
 function createSSTORE2Bytecode(data: Uint8Array): string {
-  // The data will be stored as runtime code, prefixed with 0x00 (STOP opcode)
   const dataWithStop = new Uint8Array([0x00, ...data]);
   const dataLength = dataWithStop.length;
   
-  // Calculate where data starts in the init code
-  // Init code length varies based on data length encoding
-  let initCode: number[];
-  
-  // Init code (12 bytes total):
-  // PUSH2 size (3) + DUP1 (1) + PUSH1 offset (2) + PUSH1 dest (2) + CODECOPY (1) + PUSH1 retoff (2) + RETURN (1) = 12
-  initCode = [
-    0x61, (dataLength >> 8) & 0xff, dataLength & 0xff, // PUSH2 dataLength (3 bytes)
-    0x80, // DUP1 (1 byte)
-    0x60, 0x0c, // PUSH1 12 - offset where data starts (2 bytes)
-    0x60, 0x00, // PUSH1 0 - dest in memory (2 bytes)
-    0x39, // CODECOPY (1 byte)
-    0x60, 0x00, // PUSH1 0 - return offset (2 bytes)
-    0xf3, // RETURN (1 byte)
+  const initCode = [
+    0x61, (dataLength >> 8) & 0xff, dataLength & 0xff,
+    0x80,
+    0x60, 0x0c,
+    0x60, 0x00,
+    0x39,
+    0x60, 0x00,
+    0xf3,
   ];
   
-  // Combine init code + data
   const fullBytecode = new Uint8Array([...initCode, ...dataWithStop]);
-  
   return ethers.hexlify(fullBytecode);
 }
 
 async function main() {
-  console.log(`\nDeploying SSTORE2 storage contracts to ${network.name}...`);
+  console.log(`\n========================================`);
+  console.log(`Deploying chunk ${CHUNK_TO_DEPLOY} to ${network.name}`);
+  console.log(`========================================\n`);
+  
   const [signer] = await ethers.getSigners();
-  console.log(`Using account: ${signer.address}`);
-  console.log(`Account balance: ${ethers.formatEther(await ethers.provider.getBalance(signer.address))} ETH\n`);
+  console.log(`Account: ${signer.address}`);
+  console.log(`Balance: ${ethers.formatEther(await ethers.provider.getBalance(signer.address))} ETH\n`);
   
   // Load chunks
   const chunksPath = path.join(__dirname, 'spatters-chunks.json');
-  if (!fs.existsSync(chunksPath)) {
-    console.error('Error: spatters-chunks.json not found!');
-    console.error('Run: npx ts-node scripts/chunk-spatters.ts');
+  const { chunks } = JSON.parse(fs.readFileSync(chunksPath, 'utf8'));
+  
+  if (CHUNK_TO_DEPLOY < 1 || CHUNK_TO_DEPLOY > chunks.length) {
+    console.error(`Invalid chunk number. Must be 1-${chunks.length}`);
     process.exit(1);
   }
   
-  const { chunks } = JSON.parse(fs.readFileSync(chunksPath, 'utf8'));
+  const chunkIndex = CHUNK_TO_DEPLOY - 1;
+  const chunk = chunks[chunkIndex];
   
-  console.log(`Deploying ${chunks.length} storage contracts...`);
-  console.log(`(This will take ~${chunks.length * 15} seconds with transaction confirmations)\n`);
+  console.log(`Chunk size: ${chunk.length} chars (~${Math.ceil(chunk.length / 1024)}KB)`);
+  console.log(`\nSending transaction...`);
   
-  const spattersAddresses: string[] = [];
-  let totalGasUsed = 0n;
+  // Convert and create bytecode
+  const data = ethers.toUtf8Bytes(chunk);
+  const bytecode = createSSTORE2Bytecode(data);
   
-  for (let i = 0; i < chunks.length; i++) {
-    const chunkNum = i + 1;
-    const chunk = chunks[i];
+  // Send the transaction - this WILL work even if it throws after
+  const deployTx = await signer.sendTransaction({ data: bytecode });
+  
+  // Print hash immediately - even if script crashes after this, tx is sent
+  console.log(`\n✓ Transaction sent!`);
+  console.log(`  Hash: ${deployTx.hash}`);
+  console.log(`\n  View on Etherscan: https://${network.name === 'mainnet' ? '' : network.name + '.'}etherscan.io/tx/${deployTx.hash}`);
+  console.log(`\n  Waiting for confirmation...`);
+  
+  // Try to wait - might crash here on mainnet but tx is already sent
+  const receipt = await deployTx.wait();
+  
+  console.log(`\n✓ Deployed!`);
+  console.log(`  Contract: ${receipt!.contractAddress}`);
+  console.log(`  Gas used: ${receipt!.gasUsed.toString()}`);
+  
+  console.log(`\n========================================`);
+  console.log(`Next steps:`);
+  console.log(`1. Add this address to DEPLOYED_ADDRESSES array:`);
+  console.log(`   "${receipt!.contractAddress}", // chunk ${CHUNK_TO_DEPLOY}`);
+  console.log(`2. Update CHUNK_TO_DEPLOY to ${CHUNK_TO_DEPLOY + 1}`);
+  console.log(`3. Run again: npx hardhat run scripts/deploy-storage.ts --network ${network.name}`);
+  console.log(`========================================\n`);
+  
+  // If all chunks deployed, save final config
+  if (CHUNK_TO_DEPLOY === chunks.length) {
+    const allAddresses = [...DEPLOYED_ADDRESSES, receipt!.contractAddress];
+    const deploymentsDir = path.join(__dirname, '..', 'deployments');
+    if (!fs.existsSync(deploymentsDir)) fs.mkdirSync(deploymentsDir);
     
-    console.log(`[${chunkNum}/${chunks.length}] Deploying chunk (${chunk.length} chars / ~${Math.ceil(chunk.length / 1024)}KB)...`);
-    
-    try {
-      // Convert string to bytes
-      const data = ethers.toUtf8Bytes(chunk);
-      
-      // Create proper SSTORE2 init code
-      const bytecode = createSSTORE2Bytecode(data);
-      
-      // Deploy the SSTORE2 contract
-      const deployTx = await signer.sendTransaction({
-        data: bytecode
-      });
-      
-      console.log(`  Tx hash: ${deployTx.hash}`);
-      
-      const receipt = await deployTx.wait();
-      
-      if (!receipt || !receipt.contractAddress) {
-        throw new Error('Failed to get contract address from receipt');
-      }
-      
-      const address = receipt.contractAddress;
-      spattersAddresses.push(address);
-      totalGasUsed += receipt.gasUsed;
-      
-      console.log(`  ✓ Deployed to: ${address}`);
-      console.log(`  Gas used: ${receipt.gasUsed.toString()}\n`);
-      
-      // Verify the deployment worked
-      const deployedCode = await ethers.provider.getCode(address);
-      if (deployedCode.length < 10) {
-        throw new Error(`Deployment verification failed - no code at ${address}`);
-      }
-      console.log(`  Verified: ${(deployedCode.length - 2) / 2} bytes stored\n`);
-      
-    } catch (error) {
-      console.error(`  ✗ Failed to deploy chunk ${chunkNum}:`, error);
-      throw error;
-    }
+    fs.writeFileSync(
+      path.join(deploymentsDir, `${network.name}-storage.json`),
+      JSON.stringify({
+        network: network.name,
+        timestamp: new Date().toISOString(),
+        spattersAddresses: allAddresses,
+      }, null, 2)
+    );
+    console.log(`✓ All chunks deployed! Config saved to deployments/${network.name}-storage.json`);
   }
-  
-  // Calculate costs
-  const gasPrice = (await ethers.provider.getFeeData()).gasPrice || 0n;
-  const totalCost = totalGasUsed * gasPrice;
-  const totalCostEth = ethers.formatEther(totalCost);
-  
-  console.log('─'.repeat(60));
-  console.log('✓ All storage contracts deployed!\n');
-  console.log(`Total contracts: ${spattersAddresses.length}`);
-  console.log(`Total gas used: ${totalGasUsed.toString()}`);
-  console.log(`Total cost: ~${totalCostEth} ETH\n`);
-  
-  // Save addresses
-  const storageConfig = {
-    network: network.name,
-    timestamp: new Date().toISOString(),
-    totalGasUsed: totalGasUsed.toString(),
-    totalCostEth: totalCostEth,
-    spattersAddresses: spattersAddresses,
-    p5jsAddress: "" // Using CDN for p5.js
-  };
-  
-  const deploymentsDir = path.join(__dirname, '..', 'deployments');
-  if (!fs.existsSync(deploymentsDir)) {
-    fs.mkdirSync(deploymentsDir);
-  }
-  
-  const outputPath = path.join(deploymentsDir, `${network.name}-storage.json`);
-  fs.writeFileSync(
-    outputPath,
-    JSON.stringify(storageConfig, null, 2)
-  );
-  
-  console.log(`Storage config saved to: ${outputPath}`);
-  console.log(`\nAddresses for API configuration:`);
-  console.log(JSON.stringify(spattersAddresses, null, 2));
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
+    // Even if we crash, show helpful message
+    console.error(`\n⚠️  Script crashed, but transaction may have succeeded!`);
+    console.error(`    Check Etherscan for your tx hash above.`);
+    console.error(`    If successful, find contract address and add to DEPLOYED_ADDRESSES.\n`);
     console.error(error);
     process.exit(1);
   });

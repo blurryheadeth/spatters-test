@@ -54,8 +54,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     uint256 public immutable deploymentTime;
     
     /// @notice Governance becomes available 10 years after deployment
-    /// @dev TESTING ONLY: Set to 0 for Sepolia testing. Change back to 10 * 365 days for mainnet!
-    uint256 public constant GOVERNANCE_DELAY = 1 days; // MAINNET: 10 * 365 days
+    uint256 public constant GOVERNANCE_DELAY = 10 * 365 days;
     
     /// @notice Cooldown between proposals (prevents spam)
     uint256 public constant PROPOSAL_COOLDOWN = 30 days;

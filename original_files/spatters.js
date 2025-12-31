@@ -980,7 +980,7 @@ function mutate(seed) {
 
     let selectedcolors = setupVariables.selectedcolors;
     fill(0,0,0);
-    
+
     beginShape();
     // Draw seedpoints and connect them
     for (let i = 0; i < seedpoints.length; i++) {
@@ -994,6 +994,7 @@ function mutate(seed) {
         let radius = baseRadius * currentSeed.radiusIncrease;
 
         // Draw the semicircle around the point
+        //drawSemicircle(currentSeed.x, currentSeed.y, baseRadius, centralPoint);
         drawHalfCircle(currentSeed.x, currentSeed.y, radius, seedPointAngle);
     
         if (nextSeedIndex ==-1) {
@@ -1141,6 +1142,7 @@ function mutate(seed) {
 
     //Now we will draw lines to split the area in 1-4 subareas
     for (let i = 0; i < dividerCount; i++){
+
         //add a color for the new subsection
 
         if(!variablesGenerated || missingDividers>i){
@@ -1155,7 +1157,7 @@ function mutate(seed) {
             selectedcolors = setupVariables.selectedcolors;
 
             // Select a random point on the top edge
-            let startPointX = floor(random(width));
+            let startPointX = floor(random(width));  
             let angle = random(); // Random angle in radians (180 degrees) as % of range between min and max angle
 
             setupVariables.dividers[setupVariables.dividers.length] = {
@@ -1209,7 +1211,6 @@ function mutate(seed) {
             angle = newRand * (maxAngle - minAngle) + minAngle;
         }
 
-
         drawLine(startPointX, angle, minAngle, maxAngle);
     }
     
@@ -1220,7 +1221,7 @@ function mutate(seed) {
     //Create a first empty array because sometimes we have a shape with 0 pixels with 0 lines to its right
     let subArrays = [[]];
     let borderArrays = [];
-
+  
     // Loop through each pixel in the matchingPixels array
     for (let i = 0; i < matchingPixels.length; i++) {
         let pixel = matchingPixels[i];
@@ -1267,7 +1268,7 @@ function mutate(seed) {
             weightsArray[pixel.x][pixel.y] = borderWeight;
         }
     }
-    
+
     // Add gradient to the shape if it has more than one color
     if (subArrays.length == 1 || gradientType == 0){    
         // Apply antialiasing to the pixel colors stored in canvasArray and modifies these colors accordingly
@@ -1541,8 +1542,7 @@ function mutate(seed) {
     }
     
     
-    
-    
+      
     // Finally, here we will add circles and lines
     
     let bordersArray = structuredClone(shapeArray);
@@ -1865,7 +1865,7 @@ function mutate(seed) {
         if (gradientType==1){
             antialiasThreshold = 110;
             antialiasThresholdDenominator = 5500;
-            antialiasSlope = 1;
+            antialiasSlope = 5.25;
         } else if (gradientType==2) {
             antialiasThreshold = 220;    
             antialiasThresholdDenominator = 220;
@@ -2596,7 +2596,7 @@ function mutate(seed) {
         if (gradientType==1){
             antialiasThreshold = 110;
             antialiasThresholdDenominator = 5500;
-            antialiasSlope = 1;
+            antialiasSlope = 5.25;
         } else if (gradientType==2) {
             antialiasThreshold = 220;    
             antialiasThresholdDenominator = 220;
@@ -2974,14 +2974,13 @@ function checkIfRight(pixel,line) {
 function drawLine(startX, initialAngle, minAngle, maxAngle) {
     let diagonal = ceil((canvasHeight**2+canvasWidth**2)**0.5);
     let angle = adjustAngle(startX,initialAngle,minAngle,maxAngle,diagonal);
-
     if(angle == null) {
         return;
     }
 
     let endX = startX + cos(angle) * diagonal;
     let endY = sin(angle) * diagonal;
-    
+
     // If there are no intersections with previous lines, draw the line and store it in previousLines
     //line(startX, 0, endX, endY);
     previousLines.push({ x1: startX, y1: 0, x2: endX, y2: endY });
@@ -2993,7 +2992,7 @@ function adjustAngle(startX,initialAngle,minAngle,maxAngle,diagonal){
     let angle = initialAngle;
     let intersection = 0;
     let minReached = false;
-    
+
     while (intersection == 0){
         intersection = 1;
         let endX = startX + cos(angle) * lineLength;
@@ -3258,6 +3257,20 @@ function generateSeedpoints(baseRadius) {
 }
 
 // Function to draw a semicircle around a seedpoint
+function drawSemicircle(x, y, radius, centralPoint) {
+    push();
+    translate(x, y);
+
+    // Calculate the angle to face the edges of the canvas
+    let angle = atan2(centralPoint.y - y, centralPoint.x - x) + PI / 2;
+
+    rotate(angle);
+
+    // Draw a half circle (180 degrees) using the arc function
+    arc(0, 0, radius * 2, radius * 2, 0, PI);
+    pop();
+}
+
 function drawHalfCircle(centerX, centerY, radius, seedPointAngle) {
 
     for (let i = 0; i <= PI; i += 0.1) {
@@ -3429,27 +3442,27 @@ function calculatePixelsInsideCircle(cx, cy, r) {
     
     for (let x = startX; x <= endX; x++) {
         for (let y = startY; y <= endY; y++) {
-        // Calculate distance from the center of the circle
-        let d = dist(x, y, cx, cy);
-        // If the distance is less than the radius, the pixel is inside the circle
-        if (d < r) {
-            if (canvasArray[x] == undefined || canvasArray[x][y] == undefined || shapeArray[x][y] != 1) {
-                return null;    
+            // Calculate distance from the center of the circle
+            let d = dist(x, y, cx, cy);
+            // If the distance is less than the radius, the pixel is inside the circle
+            if (d < r) {
+                if (canvasArray[x] == undefined || canvasArray[x][y] == undefined || shapeArray[x][y] != 1) {
+                    return null;    
+                }
+                    includedPixels.push({
+                    x:x,
+                    y:y
+                });
+            } else if (floor(d)<=r) {
+                if (canvasArray[x] == undefined || canvasArray[x][y] == undefined || shapeArray[x][y] != 1) {
+                    return null;    
+                }
+                borderPixels.push({
+                    x:x,
+                    y:y,
+                    weight: d-floor(d)
+                });  
             }
-                includedPixels.push({
-                x:x,
-                y:y
-            });
-        } else if (floor(d)<=r) {
-            if (canvasArray[x] == undefined || canvasArray[x][y] == undefined || shapeArray[x][y] != 1) {
-                return null;    
-            }
-            borderPixels.push({
-                x:x,
-                y:y,
-                weight: d-floor(d)
-            });  
-        }
         }
     }
     return [includedPixels,borderPixels];
