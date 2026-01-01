@@ -61,8 +61,9 @@ contract SpattersGeneratorV2 {
         "understand the NFT may have ZERO monetary value and you accept this risk; "
         "(4) The smart contracts have NOT been audited by any third party; (5) You "
         "are at least 18 years old and not located in a sanctioned jurisdiction; "
-        "(6) You have read the full Terms of Service at the URL returned by "
-        "getTermsOfServiceURL().";
+        "(6) You have read ALL legal documents (Terms of Service, Privacy Policy, "
+        "Risk Disclosure, NFT License, Cookie Policy, Copyright Policy) at the URL "
+        "returned by getTermsOfServiceURL().";
 
     // ============ Storage ============
 

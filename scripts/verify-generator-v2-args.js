@@ -21,6 +21,6 @@ module.exports = [
   spattersConfig.address,                    // _spattersContract
   storageConfig.spattersAddresses,           // _storageAddresses
   htmlTemplateAddresses,                     // _htmlTemplateAddresses
-  "https://spatters.art/legal/terms"         // _initialTermsURL
+  "https://spatters.art/legal/all"           // _initialTermsURL (comprehensive page with all legal docs)
 ];
 

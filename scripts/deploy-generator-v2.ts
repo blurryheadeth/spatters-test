@@ -14,8 +14,8 @@ async function main() {
   console.log("\n🎨 Deploying SpattersGeneratorV2 to", network.name);
   console.log("================================================\n");
 
-  // Initial Terms of Service URL
-  const INITIAL_TERMS_URL = "https://spatters.art/legal/terms";
+  // Initial Terms URL - points to comprehensive page with all legal documents
+  const INITIAL_TERMS_URL = "https://spatters.art/legal/all";
 
   // 1. Load the storage configuration (spatters.js chunks)
   const storageConfigPath = path.join(
