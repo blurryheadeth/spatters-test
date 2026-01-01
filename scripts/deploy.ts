@@ -16,15 +16,11 @@ async function main() {
   // Get network info
   const network = await ethers.provider.getNetwork();
 
-  // Initial Terms URL for legal documentation
-  const INITIAL_TERMS_URL = "https://spatters.art/legal/all";
-  
-  // Deploy the contract with initial terms URL
+  // Deploy the contract (no constructor args - legal terms set after deployment)
   const Spatters = await ethers.getContractFactory("Spatters");
   console.log("Deploying Spatters contract...");
-  console.log("Initial Terms URL:", INITIAL_TERMS_URL);
   
-  const spatters = await Spatters.deploy(INITIAL_TERMS_URL);
+  const spatters = await Spatters.deploy();
   await spatters.waitForDeployment();
 
   const address = await spatters.getAddress();
@@ -79,17 +75,20 @@ async function main() {
   console.log("  Step 3: completeMint() - Choose from 3 previewed seeds");
   console.log("\nNext steps:");
   console.log("1. Verify contract on Etherscan:");
-  console.log(`   npx hardhat verify --network ${network.name} ${address} "${INITIAL_TERMS_URL}"`);
-  console.log("\n2. Deploy new spatters.js chunks:");
+  console.log(`   npx hardhat verify --network ${network.name} ${address}`);
+  console.log("\n2. Set legal terms (from owner wallet via Etherscan or script):");
+  console.log(`   setLegalNotice("BY INTERACTING WITH THIS CONTRACT...")`);
+  console.log(`   setTermsOfServiceURL("https://spatters.art/legal/all")`);
+  console.log("\n3. Deploy new spatters.js chunks:");
   console.log(`   npx hardhat run scripts/deploy-storage-all.ts --network ${network.name}`);
-  console.log("\n3. Deploy SpattersGeneratorV2 contract:");
+  console.log("\n4. Deploy SpattersGeneratorV2 contract:");
   console.log(`   npx hardhat run scripts/deploy-generator-v2.ts --network ${network.name}`);
-  console.log("\n4. Set generatorContract on Spatters:");
+  console.log("\n5. Set generatorContract on Spatters:");
   console.log(`   npx hardhat run scripts/set-generator-v2.ts --network ${network.name}`);
-  console.log("\n5. Set baseURI for token metadata:");
+  console.log("\n6. Set baseURI for token metadata:");
   console.log(`   Call setBaseURI("https://spatters.art/api/metadata/") from owner wallet`);
-  console.log("\n6. Mint owner reserve using 3-step flow");
-  console.log("7. Test full minting flow on frontend");
+  console.log("\n7. Mint owner reserve using 3-step flow");
+  console.log("8. Test full minting flow on frontend");
 }
 
 main()

@@ -41,7 +41,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     uint256 public constant OWNER_RESERVE = 30;
     
     // Minting cooldowns and limits
-    uint256 public constant REQUEST_EXPIRATION = 55 minutes;
+    uint256 public constant REQUEST_EXPIRATION = 45 minutes;
     uint256 public constant GLOBAL_COOLDOWN = 24 hours;  // 24h cooldown for public mint after ANY mint
     
     // Note: Default palette is hard-coded in spatters.js (deployed to SSTORE2):
@@ -272,8 +272,9 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     /**
      * @dev Constructor initializes the Spatters NFT collection
      * Script storage addresses are managed by the separate SpattersGenerator contract
+     * Legal terms (legalNotice, termsOfServiceURL) should be set after deployment via setters
      */
-    constructor(string memory _initialTermsURL) ERC721("Spatters", "SPAT") Ownable(msg.sender) {
+    constructor() ERC721("Spatters", "SPAT") Ownable(msg.sender) {
         // Set initial royalty receiver to contract owner
         royaltyReceiver = msg.sender;
         
@@ -284,11 +285,8 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         banGeneration = 1;
         proposalGeneration = 1;
         
-        // Initialize legal terms
-        termsOfServiceURL = _initialTermsURL;
-        legalNotice = "BY INTERACTING: (1) Fees NON-REFUNDABLE; (2) NOT for investment, "
-            "NO profit expectation; (3) NFT may have ZERO value; (4) Contract NOT audited; "
-            "(5) You are 18+, not in sanctioned jurisdiction; (6) Read terms at getTermsOfServiceURL().";
+        // Note: legalNotice and termsOfServiceURL are left empty
+        // Set them after deployment via setLegalNotice() and setTermsOfServiceURL()
         
         _initializeMutationTypes();
     }
@@ -441,7 +439,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function commitMint() external payable nonReentrant {
         require(msg.sender == tx.origin, "No contracts");
-        require(_nextTokenId > OWNER_RESERVE, "Owner mint period active");
+        require(_nextTokenId > OWNER_RESERVE, "Owner period");
         require(_nextTokenId <= MAX_SUPPLY, "Max supply reached");
         
         // Check if ANY mint process is in progress (blocks all minting)
@@ -453,12 +451,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         
         require(
             block.timestamp >= lastGlobalMintTime + GLOBAL_COOLDOWN,
-            "Global cooldown active"
+            "Cooldown"
         );
         
         // Check payment
         uint256 price = ExponentialPricing.calculatePrice(_nextTokenId, OWNER_RESERVE);
-        require(msg.value >= price, "Insufficient payment");
+        require(msg.value >= price, "Underpaid");
         
         // Store commit (NO seeds generated yet - that's the security feature)
         pendingCommit = MintCommit({
@@ -485,13 +483,13 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function requestMint() external nonReentrant returns (bytes32[3] memory) {
         // Verify this user is the active requester
-        require(activeMintRequester == msg.sender, "Not your pending commit");
+        require(activeMintRequester == msg.sender, "Not your commit");
         require(pendingCommit.timestamp > 0, "No pending commit");
         require(!pendingCommit.isOwnerMint, "Owner mint");
-        require(pendingRequest.timestamp == 0, "Seeds already generated");
+        require(pendingRequest.timestamp == 0, "Seeds exist");
         
         // Must wait at least 1 block for blockhash to be available
-        require(block.number > pendingCommit.commitBlock, "Wait 1 block for randomness");
+        require(block.number > pendingCommit.commitBlock, "Wait 1 block");
         
         // Blockhash only available for last 256 blocks
         require(block.number <= pendingCommit.commitBlock + 256, "Blockhash expired");
@@ -504,12 +502,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         
         // Get the blockhash of the commit block (unpredictable at commit time)
         bytes32 commitBlockHash = blockhash(pendingCommit.commitBlock);
-        require(commitBlockHash != bytes32(0), "Blockhash unavailable");
+        require(commitBlockHash != bytes32(0), "No blockhash");
         
         // Generate 3 unique seeds using the commit block's hash
         bytes32[3] memory seeds;
         for (uint8 i = 0; i < 3; i++) {
-            seeds[i] = _generateSeedFromBlockhash(msg.sender, commitBlockHash, i);
+            seeds[i] = _generateSeedFromBlockhash(msg.sender, pendingCommit.timestamp, commitBlockHash, i);
         }
         
         // Store request with generated seeds
@@ -534,10 +532,10 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         require(seedChoice < 3, "Invalid seed choice");
         
         // Verify this user is the active requester
-        require(activeMintRequester == msg.sender, "Not your pending request");
+        require(activeMintRequester == msg.sender, "Not your request");
         
-        require(pendingRequest.timestamp > 0, "Call requestMint first");
-        require(!pendingRequest.completed, "Request already completed");
+        require(pendingRequest.timestamp > 0, "No request");
+        require(!pendingRequest.completed, "Already done");
         require(!pendingRequest.isOwnerMint, "Owner mint");
         require(
             block.timestamp <= pendingCommit.timestamp + REQUEST_EXPIRATION,
@@ -633,13 +631,13 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function requestOwnerMint() external onlyOwner nonReentrant returns (bytes32[3] memory) {
         // Verify this is the active request
-        require(activeMintRequester == msg.sender, "Not your pending commit");
+        require(activeMintRequester == msg.sender, "Not your commit");
         require(pendingCommit.timestamp > 0, "No pending commit");
-        require(pendingCommit.isOwnerMint, "Not an owner mint commit");
-        require(pendingRequest.timestamp == 0, "Seeds already generated");
+        require(pendingCommit.isOwnerMint, "Not owner commit");
+        require(pendingRequest.timestamp == 0, "Seeds exist");
         
         // Must wait at least 1 block for blockhash to be available
-        require(block.number > pendingCommit.commitBlock, "Wait 1 block for randomness");
+        require(block.number > pendingCommit.commitBlock, "Wait 1 block");
         
         // Blockhash only available for last 256 blocks
         require(block.number <= pendingCommit.commitBlock + 256, "Blockhash expired");
@@ -652,12 +650,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         
         // Get the blockhash of the commit block
         bytes32 commitBlockHash = blockhash(pendingCommit.commitBlock);
-        require(commitBlockHash != bytes32(0), "Blockhash unavailable");
+        require(commitBlockHash != bytes32(0), "No blockhash");
         
         // Generate 3 unique seeds using the commit block's hash
         bytes32[3] memory seeds;
         for (uint8 i = 0; i < 3; i++) {
-            seeds[i] = _generateSeedFromBlockhash(msg.sender, commitBlockHash, i);
+            seeds[i] = _generateSeedFromBlockhash(msg.sender, pendingCommit.timestamp, commitBlockHash, i);
         }
         
         // Store request with generated seeds
@@ -682,11 +680,11 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         require(seedChoice < 3, "Invalid seed choice");
         
         // Verify this is the active request
-        require(activeMintRequester == msg.sender, "Not your pending request");
+        require(activeMintRequester == msg.sender, "Not your request");
         
-        require(pendingRequest.timestamp > 0, "Call requestOwnerMint first");
-        require(!pendingRequest.completed, "Request already completed");
-        require(pendingRequest.isOwnerMint, "Not an owner mint request");
+        require(pendingRequest.timestamp > 0, "No request");
+        require(!pendingRequest.completed, "Already done");
+        require(pendingRequest.isOwnerMint, "Not owner request");
         require(
             block.timestamp <= pendingCommit.timestamp + REQUEST_EXPIRATION,
             "Request expired"
@@ -746,7 +744,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         require(
             activeMintRequester == address(0) ||
             block.timestamp > activeMintRequestTime + REQUEST_EXPIRATION,
-            "Mint selection in progress"
+            "Mint active"
         );
         
         // Validate custom palette if provided
@@ -793,14 +791,14 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         string memory mutationType
     ) external nonReentrant {
         require(ownerOf(tokenId) == msg.sender, "Not token owner");
-        require(_isValidMutationType(mutationType), "Invalid mutation type");
-        require(canMutate(tokenId), "Cannot mutate today");
+        require(_isValidMutationType(mutationType), "Invalid type");
+        require(canMutate(tokenId), "Cannot mutate");
         
         // Check no pending mutation commit for this token
         require(
             mutationCommits[tokenId].timestamp == 0 ||
             block.timestamp > mutationCommits[tokenId].timestamp + REQUEST_EXPIRATION,
-            "Mutation commit pending"
+            "Commit pending"
         );
         
         // Store mutation commit
@@ -824,10 +822,10 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         require(ownerOf(tokenId) == msg.sender, "Not token owner");
         
         MutationCommit memory commit = mutationCommits[tokenId];
-        require(commit.timestamp > 0, "No pending mutation commit");
+        require(commit.timestamp > 0, "No commit");
         
         // Must wait at least 1 block for blockhash to be available
-        require(block.number > commit.commitBlock, "Wait 1 block for randomness");
+        require(block.number > commit.commitBlock, "Wait 1 block");
         
         // Blockhash only available for last 256 blocks
         require(block.number <= commit.commitBlock + 256, "Blockhash expired");
@@ -835,23 +833,21 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         // Check expiration
         require(
             block.timestamp <= commit.timestamp + REQUEST_EXPIRATION,
-            "Mutation commit expired"
+            "Commit expired"
         );
-        
-        // Verify still eligible (day hasn't changed, etc.)
-        require(canMutate(tokenId), "Cannot mutate today");
         
         // Record the current UTC day to prevent multiple mutations
         lastMutationDay[tokenId] = block.timestamp / 1 days;
         
         // Get the blockhash of the commit block
         bytes32 commitBlockHash = blockhash(commit.commitBlock);
-        require(commitBlockHash != bytes32(0), "Blockhash unavailable");
+        require(commitBlockHash != bytes32(0), "No blockhash");
         
         // Generate deterministic seed using the commit block's hash
         bytes32 mutationSeed = _generateMutationSeedFromBlockhash(
             tokenId,
             tokenMutations[tokenId].length,
+            commit.timestamp,
             commitBlockHash
         );
         
@@ -873,11 +869,6 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             block.timestamp
         );
     }
-    
-    /**
-     * @dev Legacy single-step mutate function (REMOVED for security)
-     * Use commitMutation() + applyMutation() instead.
-     */
 
     /**
      * @dev Check if a token can be mutated today
@@ -1066,7 +1057,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      * @param newReceiver New address to receive royalty payments
      */
     function setRoyaltyReceiver(address newReceiver) external onlyOwner {
-        require(newReceiver != address(0), "Invalid receiver address");
+        require(newReceiver != address(0), "Invalid address");
         royaltyReceiver = newReceiver;
         emit RoyaltyReceiverUpdated(newReceiver);
     }
@@ -1116,11 +1107,13 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function _generateSeedFromBlockhash(
         address minter,
+        uint256 timestamp,
         bytes32 commitBlockHash,
         uint8 nonce
     ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(
             minter,
+            timestamp,
             commitBlockHash,
             nonce,
             _nextTokenId
@@ -1136,12 +1129,14 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
     function _generateMutationSeedFromBlockhash(
         uint256 tokenId,
         uint256 mutationIndex,
+        uint256 timestamp,
         bytes32 commitBlockHash
     ) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(
             tokenId,
-            msg.sender,          // CRITICAL: Current owner's address
+            msg.sender,
             mutationIndex,
+            timestamp,
             commitBlockHash
         ));
     }
@@ -1192,10 +1187,10 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No funds to withdraw");
+        require(balance > 0, "No funds");
         
         (bool success, ) = owner().call{value: balance}("");
-        require(success, "Withdrawal failed");
+        require(success, "Failed");
     }
 
     // ============ Legal Terms Functions ============
@@ -1272,7 +1267,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      */
     function lockGenerator() external onlyOwner {
         require(!generatorLocked, "Already locked");
-        require(generatorContract != address(0), "Set generator before locking");
+        require(generatorContract != address(0), "No generator");
         generatorLocked = true;
         emit GeneratorPermanentlyLocked(generatorContract);
     }
@@ -1284,7 +1279,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      * @param newURI Proposed new base URI
      */
     function proposeBaseURI(string memory newURI) external {
-        require(block.timestamp >= deploymentTime + GOVERNANCE_DELAY, "Governance not active yet");
+        require(block.timestamp >= deploymentTime + GOVERNANCE_DELAY, "Governance inactive");
         require(balanceOf(msg.sender) > 0, "Must own a Spatter");
         require(bytes(newURI).length > 0, "URI cannot be empty");
         
@@ -1295,8 +1290,8 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             block.timestamp > currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW;
         bool currentExpired = votingExpired || confirmationExpired;
         
-        require(!currentProposal.locked || currentExpired, "Active proposal in progress");
-        require(block.timestamp >= lastProposalTime + PROPOSAL_COOLDOWN, "Proposal cooldown active");
+        require(!currentProposal.locked || currentExpired, "Proposal active");
+        require(block.timestamp >= lastProposalTime + PROPOSAL_COOLDOWN, "Proposal cooldown");
         
         // Handle expired proposal - ban the proposer's token
         if (currentExpired && currentProposal.proposerTokenId != 0) {
@@ -1305,7 +1300,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
         
         // Find a non-banned token owned by proposer
         uint256 proposerToken = _findNonBannedToken(msg.sender);
-        require(proposerToken != 0, "All tokens banned");
+        require(proposerToken != 0, "Tokens banned");
         
         // Increment generation to invalidate previous votes (O(1) clearing)
         proposalGeneration++;
@@ -1334,20 +1329,20 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      *      Votes are tracked by token ID, not address, to prevent double-voting via transfer
      */
     function approveProposal() external {
-        require(block.timestamp >= deploymentTime + GOVERNANCE_DELAY, "Governance not active yet");
+        require(block.timestamp >= deploymentTime + GOVERNANCE_DELAY, "Governance inactive");
         require(currentProposal.proposalTime > 0, "No active proposal");
         require(!currentProposal.executed, "Proposal already executed");
         
         // Check voting period hasn't expired
         require(
             block.timestamp <= currentProposal.proposalTime + VOTING_PERIOD,
-            "Voting period expired"
+            "Voting expired"
         );
         
         // Check confirmation window if threshold reached
         require(!currentProposal.thresholdReached || 
                 block.timestamp <= currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW,
-                "Confirmation window expired");
+                "Window expired");
         
         uint256 voterTokenCount = balanceOf(msg.sender);
         require(voterTokenCount > 0, "Must own a Spatter");
@@ -1368,7 +1363,7 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
             }
         }
         
-        require(newVotes > 0, "All your tokens already voted");
+        require(newVotes > 0, "Already voted");
         
         currentProposal.totalVotesWeight += newVotes;
         
@@ -1391,12 +1386,12 @@ contract Spatters is ERC721Enumerable, Ownable, ReentrancyGuardTransient, IERC29
      *      On success, all token bans are cleared via O(1) generation increment
      */
     function confirmProposal() external {
-        require(msg.sender == currentProposal.proposer, "Only proposer can confirm");
-        require(currentProposal.thresholdReached, "Threshold not reached");
+        require(msg.sender == currentProposal.proposer, "Not proposer");
+        require(currentProposal.thresholdReached, "No threshold");
         require(!currentProposal.executed, "Already executed");
         require(
             block.timestamp <= currentProposal.thresholdReachedTime + CONFIRMATION_WINDOW,
-            "Proposal expired - window closed"
+            "Proposal expired"
         );
         
         // Execute the change
