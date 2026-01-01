@@ -16,11 +16,15 @@ async function main() {
   // Get network info
   const network = await ethers.provider.getNetwork();
 
-  // Deploy the contract (no constructor arguments - script storage is in SpattersGenerator)
+  // Initial Terms URL for legal documentation
+  const INITIAL_TERMS_URL = "https://spatters.art/legal/all";
+  
+  // Deploy the contract with initial terms URL
   const Spatters = await ethers.getContractFactory("Spatters");
   console.log("Deploying Spatters contract...");
+  console.log("Initial Terms URL:", INITIAL_TERMS_URL);
   
-  const spatters = await Spatters.deploy();
+  const spatters = await Spatters.deploy(INITIAL_TERMS_URL);
   await spatters.waitForDeployment();
 
   const address = await spatters.getAddress();
@@ -69,19 +73,23 @@ async function main() {
   }
 
   console.log("\n⚠️  Save this contract address: ", address);
+  console.log("\nNew 3-Step Secure Minting Flow:");
+  console.log("  Step 1: commitMint() - Pay fee, record block number");
+  console.log("  Step 2: requestMint() - Generate seeds from blockhash (wait 1 block)");
+  console.log("  Step 3: completeMint() - Choose from 3 previewed seeds");
   console.log("\nNext steps:");
   console.log("1. Verify contract on Etherscan:");
-  console.log(`   npx hardhat verify --network ${network.name} ${address}`);
-  console.log("\n2. Deploy SpattersGenerator contract (stores script addresses):");
-  console.log(`   npx hardhat run scripts/deploy-generator.ts --network ${network.name}`);
-  console.log("\n3. Set generatorContract on Spatters:");
-  console.log(`   npx hardhat run scripts/set-generator.ts --network ${network.name}`);
-  console.log("\n4. Mint owner reserve (up to 30 tokens with optional custom palettes):");
-  console.log(`   npx hardhat run scripts/mint-owner-reserve.ts --network ${network.name}`);
+  console.log(`   npx hardhat verify --network ${network.name} ${address} "${INITIAL_TERMS_URL}"`);
+  console.log("\n2. Deploy new spatters.js chunks:");
+  console.log(`   npx hardhat run scripts/deploy-storage-all.ts --network ${network.name}`);
+  console.log("\n3. Deploy SpattersGeneratorV2 contract:");
+  console.log(`   npx hardhat run scripts/deploy-generator-v2.ts --network ${network.name}`);
+  console.log("\n4. Set generatorContract on Spatters:");
+  console.log(`   npx hardhat run scripts/set-generator-v2.ts --network ${network.name}`);
   console.log("\n5. Set baseURI for token metadata:");
-  console.log(`   Call setBaseURI("https://your-domain.com/api/metadata/") from owner wallet`);
-  console.log("\n6. Test full minting flow on frontend");
-  console.log("7. Verify artwork renders correctly before mainnet launch");
+  console.log(`   Call setBaseURI("https://spatters.art/api/metadata/") from owner wallet`);
+  console.log("\n6. Mint owner reserve using 3-step flow");
+  console.log("7. Test full minting flow on frontend");
 }
 
 main()
