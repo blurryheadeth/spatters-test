@@ -58,13 +58,41 @@ async function main() {
     
     // Send the transaction
     const deployTx = await signer.sendTransaction({ data: bytecode });
+    const txHash = deployTx.hash;
     
-    console.log(`Tx hash: ${deployTx.hash}`);
+    console.log(`Tx hash: ${txHash}`);
     console.log(`Waiting for confirmation...`);
     
-    const receipt = await deployTx.wait();
+    // Handle the ethers.js bug where it crashes on empty "to" field for contract deployments
+    // We catch any error and manually wait for the receipt using the tx hash
+    let receipt;
+    try {
+      receipt = await deployTx.wait();
+    } catch (waitError: any) {
+      // If wait() fails (ethers.js bug), get receipt directly from provider
+      console.log(`⚠️  wait() threw error (ethers.js bug), fetching receipt manually...`);
+      
+      // Wait for transaction to be mined
+      let attempts = 0;
+      while (attempts < 60) { // Wait up to 5 minutes
+        receipt = await ethers.provider.getTransactionReceipt(txHash);
+        if (receipt) break;
+        await new Promise(r => setTimeout(r, 5000)); // Wait 5 seconds
+        attempts++;
+        console.log(`   Waiting for confirmation... (attempt ${attempts})`);
+      }
+      
+      if (!receipt) {
+        console.error(`❌ Could not get receipt for chunk ${chunkNum}`);
+        console.error(`   Tx hash: ${txHash}`);
+        console.error(`   Check Etherscan and add address manually if successful.`);
+        throw new Error(`Failed to confirm chunk ${chunkNum}`);
+      }
+    }
     
     if (!receipt || !receipt.contractAddress) {
+      console.error(`❌ Chunk ${chunkNum} deployment failed - no contract address`);
+      console.error(`   Tx hash: ${txHash}`);
       throw new Error(`Chunk ${chunkNum} deployment failed - no contract address`);
     }
     
@@ -73,6 +101,17 @@ async function main() {
     
     deployedAddresses.push(receipt.contractAddress);
     totalGasUsed += receipt.gasUsed;
+    
+    // Save progress after each chunk in case of later failure
+    const progressFile = path.join(__dirname, '..', 'deployments', `${network.name}-storage-progress.json`);
+    fs.writeFileSync(progressFile, JSON.stringify({
+      network: network.name,
+      timestamp: new Date().toISOString(),
+      completedChunks: chunkNum,
+      totalChunks: chunks.length,
+      spattersAddresses: deployedAddresses,
+    }, null, 2));
+    console.log(`   Progress saved (${chunkNum}/${chunks.length} chunks)`);
   }
   
   console.log(`\n========================================`);
