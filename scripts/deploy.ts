@@ -68,6 +68,24 @@ async function main() {
     console.log("\n✅ Contract address and ABI saved to frontend/contracts/Spatters.json");
   }
 
+  // Save to deployments folder (required by deploy-generator-v2.ts)
+  const deploymentsDir = path.join(__dirname, "..", "deployments");
+  if (!fs.existsSync(deploymentsDir)) {
+    fs.mkdirSync(deploymentsDir, { recursive: true });
+  }
+  
+  const deploymentInfo = {
+    address: address,
+    network: network.name,
+    deployedAt: new Date().toISOString()
+  };
+  
+  fs.writeFileSync(
+    path.join(deploymentsDir, `${network.name}.json`),
+    JSON.stringify(deploymentInfo, null, 2)
+  );
+  console.log(`✅ Deployment info saved to deployments/${network.name}.json`);
+
   console.log("\n⚠️  Save this contract address: ", address);
   console.log("\nNew 3-Step Secure Minting Flow:");
   console.log("  Step 1: commitMint() - Pay fee, record block number");
