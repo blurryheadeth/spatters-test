@@ -22,6 +22,7 @@ let originalPalette = ["#fc1a4a", "#75d494", "#2587c3", "#f2c945", "#000000", "#
 let showingHistory = false;
 let canvasHistory = [];
 let historicalIndex = 0;
+let canvasHistoryDimensions = [];
 
 let variablesGenerated = false;
 let setupVariables = {
@@ -53,6 +54,7 @@ function generate (mintSeed, mutationArray, palette = []) {
     mutate(mintSeed);
     variablesGenerated = true;
     canvasHistory.push(structuredClone(pixels));
+    canvasHistoryDimensions.push({width: canvasWidth, height: canvasHeight});
 
     for (let i=0; i<mutationArray.length; i++) {
         seedpoints = [];
@@ -68,6 +70,7 @@ function generate (mintSeed, mutationArray, palette = []) {
         setupVariables.mutation = mutationArray[i][1];
         mutate(mutationArray[i][0])
         canvasHistory.push(structuredClone(pixels));
+        canvasHistoryDimensions.push({width: canvasWidth, height: canvasHeight});
     };
     
     updatePixels();
@@ -77,7 +80,11 @@ function generate (mintSeed, mutationArray, palette = []) {
 }
 
 function mouseClicked() {
-    for (let i = 0; i <pixels.length; i++) {
+    let dimensions = canvasHistoryDimensions[historicalIndex];
+    if (width !== dimensions.width || height !== dimensions.height) {
+        resizeCanvas(dimensions.width, dimensions.height);
+    }
+    for (let i = 0; i < canvasHistory[historicalIndex].length; i++) {
         pixels[i] = canvasHistory[historicalIndex][i];
     }
 
