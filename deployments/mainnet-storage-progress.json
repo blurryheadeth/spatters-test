@@ -1,12 +1,7 @@
 {
   "network": "mainnet",
-  "generatorAddress": "0xf7696bcdb6573a193821fe0abc43cbe4ebaf0889",
-  "generatorVersion": "V2",
-  "spattersAddress": "0x7bb87e0ad03f435e6b395e8c773a93aa712f9b2f",
-  "htmlTemplateAddresses": [
-    "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
-  ],
-  "storageAddresses": [
+  "completedChunks": 9,
+  "addresses": [
     "0x6277a33b8f350f783b1b68c32fdd0de5125f38e1",
     "0xb8651b5dfca8ea8e4349ae00ce9b99dc75606478",
     "0xefaf9e227da073c65fbfb03135ae20e982020847",
@@ -16,7 +11,5 @@
     "0x03324a46a23fd348bb86b62e6a1d9a9734d8874c",
     "0xb5f77d4c29adc4c0a93d492dff625bcb95d13b9a",
     "0xfb1dc84774e31bcc72f8007e2341e4cf0eac52a2"
-  ],
-  "initialTermsURL": "https://spatters.art/legal/all",
-  "deployedAt": "2026-01-02T12:00:00.000Z"
+  ]
 }
