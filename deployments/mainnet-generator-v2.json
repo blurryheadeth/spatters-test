@@ -1,32 +1,22 @@
 {
-  "address": "0xce3eeabee902f737f9be598942e21b60bfdf729e",
   "network": "mainnet",
-  "chainId": 1,
-  "deploymentTxHash": "0xe1fb7f2e2064ceccfe1c688af7304d358471252e424b187acb624fd3f2aa83af",
-  "blockNumber": 24140136,
-  "deployer": "0xE01061A414876A271628FdcA9840e1A98720c762",
-  "constructorArgs": {
-    "spattersContract": "0x1a6603d5083aaed6be7d5e52f7f3cf060ed0b346",
-    "storageAddresses": [
-      "0x8e5bcb26f1ad493785fc50997f35e9df57d9c58f",
-      "0x59f1133b30759364318f416ec937ede04b00b724",
-      "0x7ab4d5973b64bc36248800dade40d334ba5fe46d",
-      "0x6abb8445dca6a5ee8506fe67d0a27d310213bbee",
-      "0x12ed39cdd2b7233e264e13e33ea4bee1e4ce8a77",
-      "0x24af1e1a1fe57fa70d029cbda51c29af34a1d311",
-      "0x1d5231d5b27b8342964ad6bca9cab65d0f925856",
-      "0x6b69ffaa667d851a81dac9c06c36528e639aed45",
-      "0xb0dc5ea620ba6172b16802f07fddb900edadd21d"
-    ],
-    "htmlTemplateAddresses": [
-      "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
-    ],
-    "initialTermsURL": "https://spatters.art/legal/all"
-  },
-  "deployedAt": "2026-01-01T01:39:23Z",
-  "gasUsed": "1687877",
-  "gasPrice": "0.037619508 gwei",
-  "costETH": "0.000062953575652932",
-  "costUSD": "$0.19"
+  "generatorAddress": "0x3a23ff0c7743a7fe2efe5433dd67e6ed18e72c47",
+  "generatorVersion": "V2",
+  "spattersAddress": "0x7bb87e0ad03f435e6b395e8c773a93aa712f9b2f",
+  "htmlTemplateAddresses": [
+    "0x258a3b904ff36ea5c41533a79d726ed023dbf3ac"
+  ],
+  "storageAddresses": [
+    "0x02776c2aebae1ad045dc6599f48d57d6b07fc4fc",
+    "0xe80e6f3b276d481e407fcc7e24c96796923e2011",
+    "0x4eddf4db4a94f1dc74b097fcd6c9a2d2780f2bd7",
+    "0xe1fd1a01d2f1e46ae727649b16c7ebe55eb7c213",
+    "0xa3a0d4f7157115a53d7a7d3831d9f0ede8d1e19d",
+    "0x961106f4ebf8149d67c24f2d7607e8ca8824caec",
+    "0x39e5ef06a2e79810d51389c554fbbf3462b9d997",
+    "0x74807509530fa8270f2b0b42190ddd124e8b9b40",
+    "0x96de87b37cc2fbeba89f0c725f2eed51d4d9d75d"
+  ],
+  "initialTermsURL": "https://spatters.art/legal/all",
+  "deployedAt": "2026-01-01T23:50:11.000Z"
 }
-

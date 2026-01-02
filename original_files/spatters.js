@@ -84,6 +84,7 @@ function mouseClicked() {
     if (width !== dimensions.width || height !== dimensions.height) {
         resizeCanvas(dimensions.width, dimensions.height);
     }
+    loadPixels();
     for (let i = 0; i < canvasHistory[historicalIndex].length; i++) {
         pixels[i] = canvasHistory[historicalIndex][i];
     }
